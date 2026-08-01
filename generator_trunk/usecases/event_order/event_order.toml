@@ -17,6 +17,7 @@
 # Verdicts: 0 PASS, 2 charge-before-reserve, 3 ship-before-charge, 4 double-charge,
 # 5 not-shipped-without-timeout.
 # ============================================================================
+spec_version = "1"
 title = "Event-order / saga — FW_Permut step order + FW_Optional sudden actions, invariant oracle"
 note  = "Distributed-workflow interaction testing: order-sensitivity + idempotency + liveness."
 args  = ["mode=event_order"]

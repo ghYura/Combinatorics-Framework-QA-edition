@@ -307,10 +307,9 @@
   ],
   "spec_name": "event_order",
   "spec_path": "usecases/event_order/event_order.toml",
-  "spec_sha256": "9ce598598ef6a3336df75b71a6ac67c8f3db1080dafc8826893e66cfac14a9f4",
-  "spec_version": "legacy",
+  "spec_sha256": "d1e23717b3f9229c0cfbdee88730890ec77d06589ee946cc1536993f6cdffdb5",
+  "spec_version": "1",
   "warnings": [
-    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)",
     "2 FW_Optional slot(s) — optional multiplier ×4 expands the post-sieve space into the final candidate count"
   ]
 }
