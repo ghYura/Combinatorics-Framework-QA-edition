@@ -34,11 +34,15 @@ Create a new parent directory and clone both repositories as siblings:
 ```bash
 mkdir -p downloaded-repos
 cd downloaded-repos
-gh repo clone ghYura/Combinatorics-Framework
+gh repo clone ghYura/Combinatorics-Framework-QA-edition
 gh repo clone ghYura/SUT
-cd Combinatorics-Framework
+cd Combinatorics-Framework-QA-edition
 export BUNDLE_SUT_ROOT="$(cd ../SUT && pwd -P)"
 ```
+
+This edition is `ghYura/Combinatorics-Framework-QA-edition`. `ghYura/Combinatorics-Framework` is a
+different repository — cloning it instead gives you a different tree, and every path below assumes
+the QA edition.
 
 Keep the two directory names unchanged for these commands. `BUNDLE_SUT_ROOT` is the supported
 portable connection between the repositories; no symlink or copied SUT tree is required.
@@ -98,6 +102,22 @@ Its expected signal is `OK — 20 case(s), 0 failure(s)`.
 
 ## 6. Optional local database deployment and full run
 
+Everything up to this point was database-free. From here on every command needs **two reachable
+PostgreSQL endpoints and their credentials**: one main database for Core/Reader and one results
+database for the Executor. Bundle never guesses them — a run refuses to start until they are
+configured, and it will not mix ports from one source with credentials from another.
+
+The two supported ways to supply them:
+
+- **the local deploy stack** — `deploy up` starts the containers and writes ports, user and a
+  generated password into `generator_trunk/deploy/.env`, which is then the single source for both;
+- **your own cluster** — export `BUNDLE_MAIN_DB_*`/`BUNDLE_RESULTS_DB_*` yourself, including both
+  passwords.
+
+Note that a process environment left over from another cluster keeps normal precedence over most
+settings, so prefer a clean shell for the commands below, or select the deploy stack explicitly
+where a command offers that choice (`doctor --deploy`, the engine demo's `--db-endpoint deploy`).
+
 The managed deploy profile is local-only: its published ports bind to `127.0.0.1`. Install the
 deployment extra, validate the profile, and start the two PostgreSQL containers:
 
@@ -106,6 +126,14 @@ python -m pip install -e '.[deploy]'
 python generator_trunk/bundle_run.py deploy validate
 python generator_trunk/bundle_run.py deploy up
 python generator_trunk/bundle_run.py doctor --deploy
+```
+
+`deploy up` starts exactly the two database containers. `deploy validate` additionally validates the
+optional Adminer monitoring service that is declared in the same compose profile but is **not**
+started by default — add it explicitly when you want the web UI on `127.0.0.1:18080`:
+
+```bash
+python generator_trunk/bundle_run.py deploy up --monitoring
 ```
 
 `deploy up` creates `generator_trunk/deploy/.env` with a generated local password, a pair of

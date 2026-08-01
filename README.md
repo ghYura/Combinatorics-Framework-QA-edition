@@ -46,12 +46,27 @@ gateway.
 ## See the engine directly
 
 The smallest complete proof of advanced composition — no reference application, no LLM adapter, no
-network, no external SUT, standard library only:
+external SUT, standard library only:
 
 ```bash
 python generator_trunk/engine_demo/run_direct_engine_smoke.py plan   # no database needed
-python generator_trunk/engine_demo/run_direct_engine_smoke.py run    # bounded full chain
 ```
+
+`plan` is side-effect-free. It prints `⛔ BUDGET BLOCKING` for this scenario and still exits 0 —
+that is expected: the brace chain's cardinality is genuinely `UNKNOWN` until Core runs, and budget
+evaluation on the plan path is analysis-only, with `run` as the enforcement point.
+
+The bounded full chain additionally needs **two PostgreSQL endpoints and their credentials**.
+`--db-endpoint` is required and has no default; it selects ports *and* credentials from one source:
+
+```bash
+python generator_trunk/bundle_run.py deploy up                        # local stack
+python generator_trunk/engine_demo/run_direct_engine_smoke.py run --db-endpoint deploy
+```
+
+Use `--db-endpoint manual --main-port PORT --results-port PORT` to target your own cluster, with
+`BUNDLE_MAIN_DB_PASSWORD`/`BUNDLE_RESULTS_DB_PASSWORD` in the environment. The launcher prints the
+resolved endpoint and the *source* of each setting (never a credential value) before it starts.
 
 `FW_Group`, `FW_PermutR(2)` and a three-link nested-brace chain compose a fourth-order executable
 record pipeline; an exact differential oracle judges it. See
@@ -149,6 +164,10 @@ python generator_trunk/bundle_run.py deploy validate
 python generator_trunk/bundle_run.py deploy up
 python generator_trunk/bundle_run.py doctor --deploy
 ```
+
+`deploy up` starts exactly the two database containers. The compose profile also declares an
+optional Adminer monitoring service — `deploy validate` validates it, but it is opt-in and is only
+started by `deploy up --monitoring` (web UI on `127.0.0.1:18080`).
 
 `deploy up` creates the ignored `generator_trunk/deploy/.env` on first use. It stores both a
 generated local password and checkout-scoped volume names, so a re-downloaded checkout does not
