@@ -1,0 +1,84 @@
+# ============================================================================
+# Java comprehensive e2e — ONE harness, FIVE Core rules, EVERY combo compiles+runs.
+# Rule distribution (the "distribute pieces to the rule that breeds new tests" idea):
+#   HEAD/TAIL  → FW_Combi(1)   constant invariant frame (class + helpers + verdict)
+#   MODE,SIZE  → FW_Combi(1)   orthogonal config dims (cartesian)
+#   OPSEQ      → FW_Permut     ORDER-sensitive op sequence (non-commutative → varies score)
+#   OPTFLAGS   → FW_Subsets    optional flags present/absent
+#   MUTATORS   → FW_Combi(2)   apply 2-of-3 mutators
+# Every slot is an independent, fully-declared statement, so ANY combination
+# concatenates into a valid runnable Candidate.java (raw=true; Reader concatenator='').
+# est ≈ 1·2·3·6·4·3·1 = 432 programs.  Verdict: FW_VAR = (score % 7 == 0) ? 1 : 0.
+# ============================================================================
+title = "Java comprehensive e2e (5 rules; every combo compiles+runs+sets FW_VAR)"
+note  = "FW_Combi(1) config × FW_Permut op-order × FW_Subsets flags × FW_Combi(2) mutators."
+goals = ["bugs_found"]
+args  = ["mode=java_e2e"]
+
+[[slots]]   # invariant frame: class + fields + helper methods + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''public class Candidate {
+    public static int FW_VAR = 0;
+    static int score = 0;
+    static boolean fGzip = false, fAuth = false;
+    static void s1(){ score = score * 2 + 1; }
+    static void s2(){ score = score * 3; }
+    static void s3(){ score = score + 5; }
+    static void mA(){ score = score ^ 5; }
+    static void mB(){ score = score + 10; }
+    static void mC(){ score = score - 3; }
+    public static void main(String[] args){
+''']
+
+[[slots]]   # config dim 1 (cartesian leaf)
+sheet  = "MODE"
+key    = "mode"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        int MODE = 0;\n", "        int MODE = 1;\n"]
+
+[[slots]]   # config dim 2 (cartesian leaf)
+sheet  = "SIZE"
+key    = "size"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        int SIZE = 1;\n", "        int SIZE = 2;\n", "        int SIZE = 3;\n"]
+
+[[slots]]   # ORDER-sensitive op sequence → permutations (non-commutative ops → score varies)
+sheet  = "OPSEQ"
+key    = "opseq"
+verb   = "FW_Permut"
+raw    = true
+values = ["        s1();\n", "        s2();\n", "        s3();\n"]
+
+[[slots]]   # optional flags → subsets (present / absent)
+sheet  = "OPTFLAGS"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = ["        fGzip = true;\n", "        fAuth = true;\n"]
+
+[[slots]]   # apply 2-of-3 mutators → combinations
+sheet  = "MUTATORS"
+key    = "mut"
+verb   = "FW_Combi(2)"
+raw    = true
+values = ["        mA();\n", "        mB();\n", "        mC();\n"]
+
+[[slots]]   # invariant frame: fold config/flags into the score, compute verdict, close
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''        score += MODE * 100 + SIZE * 10 + (fGzip ? 1 : 0) + (fAuth ? 2 : 0);
+        FW_VAR = (score % 7 == 0) ? 1 : 0;
+    }
+}
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "combo verdict: score % 7 == 0 (a 'failing' combination)"

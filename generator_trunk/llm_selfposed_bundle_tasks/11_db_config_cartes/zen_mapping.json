@@ -1,0 +1,70 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_11_db_config_cartes",
+  "category": "DB-config tuning / FW_Cartes workload matrix",
+  "user_problem": "I tune PostgreSQL-like database configs across workload classes and data sizes. I need to cross config profiles with OLTP/analytics/mixed workloads, catch under-provisioned combinations, and compare p95 latency, cost, and stability.",
+  "bundle_offer": "Bundle models DB config profile as FW_Cartes(WORKLOAD), crossing each config profile with each workload class, then crosses that matrix with data size. The TAIL oracle catches workload-specific under-provisioning and the Analyzer exposes p95/cost/stability trade-offs.",
+  "hypothesis": "The 3 config profiles x 3 workload classes x 2 data sizes produce 18 candidates; analytics workloads fail when work_mem is below 64 MB, OLTP workloads fail when pool_size is below 32, and the remaining candidates form a p95/cost/stability trade-off set.",
+  "zen_mapping": [
+    {
+      "freedom": "DB config profile crossed with workload class",
+      "shape": "cross another sheet",
+      "verb": "FW_Cartes(WORKLOAD)",
+      "cardinality": "3 x 3 = 9 matrix cells"
+    },
+    {
+      "freedom": "workload class operand",
+      "shape": "exactly one of a set, set aside as the Cartes operand",
+      "verb": "FW_Combi(1) + FW_Exclude",
+      "cardinality": "3 operand values"
+    },
+    {
+      "freedom": "data size",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "workload/config compatibility",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Cartes",
+      "FW_Combi",
+      "FW_Combi",
+      "TAIL oracle ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "p95_ms",
+        "dir": "min"
+      },
+      {
+        "key": "cost_units",
+        "dir": "min"
+      },
+      {
+        "key": "stability_score",
+        "dir": "max"
+      }
+    ],
+    "oracle": "FW_VAR=2 analytics workload under-provisioned when work_mem < 64 MB; FW_VAR=3 OLTP workload under-provisioned when pool_size < 32; FW_VAR=0 acceptable"
+  },
+  "pattern": "database config workload matrix",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/database config workload matrix"
+    }
+  ]
+}

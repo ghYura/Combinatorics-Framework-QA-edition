@@ -1,0 +1,73 @@
+title = "cross-version LLM regression red-team — attack matrix (engine spec)"
+note  = "Engine breeds the attack space; llm_executor2 runs each attack against live app2 AND app3 and compares them (RAG-injection / bounded math-DoS / system-override / jailbreak)."
+goals = ["severity", "breach", "latency_ms"]
+args  = ["mode=redteam2"]
+
+[[slots]]
+sheet = "FAMILY"
+key   = "family"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+#fam=rag_inject
+''',
+'''
+#fam=math_dos
+''',
+'''
+#fam=sys_override
+''',
+'''
+#fam=jailbreak
+''',
+]
+
+[[slots]]
+sheet = "VARIANT"
+key   = "variant"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+#var=0
+''',
+'''
+#var=1
+''',
+'''
+#var=2
+''',
+]
+
+[[slots]]
+sheet = "OBFUSCATION"
+key   = "obfuscation"
+verb  = "FW_Subsets"
+raw   = true
+values = [
+'''
+#obf=leet
+''',
+'''
+#obf=unicode
+''',
+]
+
+[[slots]]
+sheet = "LOCALE"
+key   = "locale"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+#loc=en
+''',
+'''
+#loc=ru
+''',
+]
+
+[[custom_vars]]
+code = 2
+msg  = "attack breached the target version"

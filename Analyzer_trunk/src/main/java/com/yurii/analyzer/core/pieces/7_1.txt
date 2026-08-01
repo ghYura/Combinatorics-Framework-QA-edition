@@ -1,0 +1,26 @@
+// ── 7_1.txt — variant 1: per-call HashSet  (O(1) lookup, O(M) build)
+// Same contract. Wins when one scoreLine call iterates many tokens
+// against the SAME topTokens list (the typical pattern). The N×M
+// scan turns into N×1 + M build cost, paying off when N > log(M).
+//
+// (For the "ideal" version, the framework can additionally keep an
+//  identity-keyed cache of List → Set so we don't rebuild the set
+//  for every scoreLine invocation against the same topTokens. This
+//  variant intentionally keeps the build local for clarity.)
+
+    public static boolean isHighFreqToken(String token, List<String> topTokens,
+                                          Map<String, Integer> support, int cutoff) {
+        long __t0 = System.nanoTime();
+        Metrics.p7_invocations++;
+        Metrics.p7_total_topk_size += (topTokens == null ? 0 : topTokens.size());
+        try {
+            if (token == null || topTokens == null) return false;
+            HashSet<String> set = new HashSet<>(topTokens);
+            boolean ok = set.contains(token)
+                      && support.getOrDefault(token, 0) >= cutoff;
+            if (ok) Metrics.p7_match_count++;
+            return ok;
+        } finally {
+            Metrics.p7_duration_ns += System.nanoTime() - __t0;
+        }
+    }

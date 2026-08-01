@@ -1,0 +1,34 @@
+// ── 4_1.txt — variant 1: BigDecimal.stripTrailingZeros + plain string
+// Same contract. BigDecimal is exact w.r.t. the requested 3-decimal
+// rendering; consequently outputs differ from the printf variant in
+// edge cases like 0.5000000001 (formatted as "0.500" by both) and
+// 1.9999999999 (printf rounds to "2.000", BigDecimal HALF_UP also
+// "2.000"). Test set: behaviourally identical for all practical
+// inputs, but allocations are heavier.
+
+    public static String canonicalNumber(double n) {
+        long __t0 = System.nanoTime();
+        Metrics.p4_invocations++;
+        Metrics.p4_sum_of_inputs += n;
+        try {
+            String out;
+            if (Math.abs(n - Math.rint(n)) < 1e-9) {
+                out = String.valueOf((long) Math.round(n));
+            } else {
+                BigDecimal bd = new BigDecimal(n, MathContext.DECIMAL64)
+                        .setScale(3, RoundingMode.HALF_UP)
+                        .stripTrailingZeros();
+                // re-pad if all decimals stripped (e.g. "5" → "5.000")
+                String s = bd.toPlainString();
+                int dot = s.indexOf('.');
+                int dec = dot < 0 ? 0 : s.length() - dot - 1;
+                if (dot < 0) s = s + ".000";
+                else if (dec < 3) s = s + "0".repeat(3 - dec);
+                out = s;
+            }
+            Metrics.p4_total_output_chars += out.length();
+            return out;
+        } finally {
+            Metrics.p4_duration_ns += System.nanoTime() - __t0;
+        }
+    }

@@ -1,0 +1,121 @@
+# ============================================================================
+# USE-CASE #5 — Event-order / distributed-workflow (saga) testing.
+#
+# A 3-step saga (reserve -> charge -> ship) run in EVERY order (FW_Permut), with
+# FW_Optional "sudden actions" (duplicate delivery, peer timeout) that may or may
+# not fire before the probe. A deterministic in-candidate state machine is the
+# SUT; the oracle checks distributed-workflow invariants:
+#   - charge only after reserve  (order matters)
+#   - ship only after charge     (order matters)
+#   - idempotency: a duplicate delivery must NOT double-charge
+#   - liveness: shipped unless a timeout legitimately prevented it
+#
+# This is where ordinary unit tests miss interaction defects: only the
+# reserve<charge<ship order is valid, and the duplicate-without-idempotency-key
+# fault double-charges. Self-contained -> trusted-local.
+# 6(STEP order=3!) x 2(OPT_DUP) x 2(OPT_TIMEOUT) = 24 candidates (optional x4).
+# Verdicts: 0 PASS, 2 charge-before-reserve, 3 ship-before-charge, 4 double-charge,
+# 5 not-shipped-without-timeout.
+# ============================================================================
+title = "Event-order / saga — FW_Permut step order + FW_Optional sudden actions, invariant oracle"
+note  = "Distributed-workflow interaction testing: order-sensitivity + idempotency + liveness."
+args  = ["mode=event_order"]
+
+[[goals]]
+key = "charges"
+dir = "min"
+
+[[slots]]   # invariant frame: saga state machine + step impl + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''STATE = {"reserved": False, "charged": False, "shipped": False, "charges": 0}
+DUP = 0
+TIMEOUT = 0
+ORDER = []
+
+def _do(step):
+    if step == "reserve":
+        STATE["reserved"] = True
+        return ""
+    if step == "charge":
+        if not STATE["reserved"]:
+            return "charge_before_reserve"
+        STATE["charged"] = True
+        STATE["charges"] += 1
+        return ""
+    if step == "ship":
+        if not STATE["charged"]:
+            return "ship_before_charge"
+        STATE["shipped"] = True
+        return ""
+    return ""
+''']
+
+[[slots]]   # ORDER-sensitive saga step sequence -> permutations (only reserve<charge<ship is valid)
+sheet  = "STEP"
+key    = "step"
+verb   = "FW_Permut"
+raw    = true
+values = ["ORDER.append(\"reserve\")\n", "ORDER.append(\"charge\")\n", "ORDER.append(\"ship\")\n"]
+
+[[slots]]   # sudden action: duplicate delivery (may or may not fire)
+sheet  = "OPT_DUP"
+key    = "opt_dup"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["DUP = 1\n"]
+
+[[slots]]   # sudden action: peer timeout (may or may not fire)
+sheet  = "OPT_TIMEOUT"
+key    = "opt_timeout"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["TIMEOUT = 1\n"]
+
+[[slots]]   # invariant frame: run saga in ORDER, apply sudden actions, evaluate invariants
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_breach = ""
+for _s in ORDER:
+    _r = _do(_s)
+    if _r and not _breach:
+        _breach = _r
+# sudden action: a duplicate delivery WITHOUT an idempotency key double-charges
+if DUP and STATE["charged"]:
+    STATE["charges"] += 1
+# sudden action: a peer timeout leaves the shipment unacknowledged
+if TIMEOUT:
+    STATE["shipped"] = False
+if _breach == "charge_before_reserve":
+    FW_VAR = 2
+elif _breach == "ship_before_charge":
+    FW_VAR = 3
+elif STATE["charges"] > 1:
+    FW_VAR = 4
+elif not STATE["shipped"] and not TIMEOUT:
+    FW_VAR = 5
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=event_order order=%s dup=%d timeout=%d charges=%d shipped=%d breach=%s FW_VAR=%d"
+      % (">".join(ORDER), DUP, TIMEOUT, STATE["charges"], int(STATE["shipped"]), _breach or "none", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "charge before reserve (order violation)"
+[[custom_vars]]
+code = 3
+msg = "ship before charge (order violation)"
+[[custom_vars]]
+code = 4
+msg = "double charge (idempotency violation on duplicate delivery)"
+[[custom_vars]]
+code = 5
+msg = "not shipped without a timeout cause (liveness violation)"

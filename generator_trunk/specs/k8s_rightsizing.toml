@@ -1,0 +1,36 @@
+title = "DevOps/FinOps — Kubernetes right-sizing"
+goals = ["cost_per_pod", "p99_latency_ms", "throughput_rps"]
+args  = ["loadprofile=spike_100_to_5000_rps", "duration=120s"]
+
+[[slots]]
+sheet = "CPU"
+key   = "cpu_limit"
+values = ["2.0", "1.0", "0.5"]
+
+[[slots]]
+sheet = "RAM"
+key   = "ram_limit"
+values = ["4Gi", "2Gi", "1Gi"]
+
+[[slots]]
+sheet = "GC"
+key   = "jvm_gc"
+values = ["g1gc", "zgc", "shenandoah"]
+
+[[slots]]
+sheet = "HPA"
+key   = "hpa_target_cpu"
+values = ["60", "80", "90"]
+
+[[custom_vars]]
+code = 2
+msg  = "pod OOMKilled (out of memory)"
+[[custom_vars]]
+code = 3
+msg  = "p99 latency above SLO"
+[[custom_vars]]
+code = 4
+msg  = "throughput below target RPS"
+[[custom_vars]]
+code = 5
+msg  = "pod failed readiness/liveness probe"

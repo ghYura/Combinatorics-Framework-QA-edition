@@ -1,0 +1,152 @@
+# ============================================================================
+# pricing_testgen — COMBINATORIAL QA TEST GENERATION (the correct paradigm).
+#
+# The QA engineer does NOT decompose the program under test. The SUT is FIXED.
+# The engineer hand-authors the CONSTITUENT UNITS OF THE TESTS — input values,
+# the order of test actions, optional test conditions — and the Core breeds them
+# into concrete, runnable TEST CASES that exercise the fixed SUT. (Same shape as
+# scenarios/api_orders: a fixed Orders API + author-written RESOURCE/AUTH/OP_SEQUENCE/…)
+#
+#   HEAD   → the FIXED system under test + the correct-spec reference + harness (CONSTANT)
+#   QTY    → FW_Combi(1)   author-chosen input values (boundary: 3 / 1 / 0)
+#   COUPON → FW_Combi(1)   author-chosen input values (0 / 5 / a coupon bigger than a small cart)
+#   STEPS  → FW_Permut     the ORDER the test applies {tax, coupon, shipping} (3! = 6)
+#   OPT    → FW_Subsets    optional test conditions present/absent (gift / giftcard)
+#
+# The SUT has two real defects: apply_coupon() does not clamp at 0 (negative total),
+# and shipping added before tax gets taxed (overcharge). The verdict FW_VAR=1 = the
+# generated test case FAILED the SUT vs the correct reference. est fw_final =
+# QTY(3) · COUPON(3) · STEPS(3!=6) · OPT(2^2=4) = 216 runnable test cases.
+# ============================================================================
+title = "pricing_testgen — combinatorial QA test-gen: author the test UNITS, fixed SUT, breed test cases"
+note  = "User-authored test ingredients (input values × action order × optional conditions) bred into 216 test cases against a FIXED, buggy pricing SUT. FW_VAR=1 = the test case caught a defect."
+goals = ["overcharge", "drift", "violations"]
+args  = ["mode=pricing_testgen"]
+
+# --- HEAD: the FIXED system under test (the QA author does NOT change this) +
+#     the correct-spec reference for the oracle + harness. CONSTANT. ---
+[[slots]]
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''UNIT = 9.99
+TAX_PCT = 8.0
+SHIP_FEE = 7.00
+TOL = 0.011
+# ----- SYSTEM UNDER TEST (fixed) -----
+def apply_tax(t):
+    return t + t * TAX_PCT / 100.0
+def apply_coupon(t):
+    return t - COUPON                 # DEFECT: no clamp at 0 -> total can go negative
+def add_shipping(t):
+    return t + SHIP_FEE
+# ----- correct-spec reference for the oracle -----
+def price_ref():
+    t = QTY * UNIT
+    t = apply_tax(t)                  # tax on goods only
+    t = max(0.0, t - COUPON)          # coupon clamped, applied after tax
+    t = t + SHIP_FEE                  # shipping is NOT taxed
+    if F_GIFT:
+        t = t + 2.50
+    if F_CARD:
+        t = t + 4.00
+    return round(t, 2)
+QTY = 1
+COUPON = 0.0
+F_GIFT = False
+F_CARD = False
+total = 0.0
+METRICS = {"app": "pricing_testgen", "unit": UNIT, "tax_pct": TAX_PCT, "ship_fee": SHIP_FEE,
+           "qty": 0, "coupon": 0.0, "total": 0.0, "reference": 0.0, "overcharge": 0.0,
+           "drift": 0.0, "f_gift": 0, "f_card": 0, "neg": 0, "over": 0, "FW_VAR": 0}
+''']
+
+# --- QTY: author-written input values (a cartesian input axis; 0 is a boundary) ---
+[[slots]]
+sheet  = "QTY"
+key    = "qty"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["QTY = 3\n", "QTY = 1\n", "QTY = 0\n"]
+
+# --- COUPON: author-written input values (50 is bigger than a small cart) ---
+[[slots]]
+sheet  = "COUPON"
+key    = "coupon"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["COUPON = 0.0\n", "COUPON = 5.0\n", "COUPON = 50.0\n"]
+
+# --- INIT: start the test's running total from the chosen inputs (CONSTANT frame) ---
+[[slots]]
+sheet  = "INIT"
+key    = "init"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["total = QTY * UNIT\n"]
+
+# --- STEPS: the ORDER the test applies the SUT operations (permutations, 3! = 6).
+#     Author decides these are the actions; the engine tries every order. ---
+[[slots]]
+sheet  = "STEPS"
+key    = "steps"
+verb   = "FW_Permut"
+raw    = true
+values = [
+'''total = apply_tax(total)
+''',
+'''total = apply_coupon(total)
+''',
+'''total = add_shipping(total)
+''',
+]
+
+# --- OPT: optional test conditions present/absent (Subsets ⇒ 2^2 = 4) ---
+[[slots]]
+sheet  = "OPT"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = [
+'''total = total + 2.50
+F_GIFT = True
+''',
+'''total = total + 4.00
+F_CARD = True
+''',
+]
+
+# --- TAIL: compute the correct reference, run the oracle, print ONE K=V line. CONSTANT. ---
+[[slots]]
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''total = round(total, 2)
+ref = price_ref()
+neg = total < -TOL
+over = total > ref + TOL
+METRICS["qty"] = QTY
+METRICS["coupon"] = COUPON
+METRICS["total"] = round(total, 4)
+METRICS["reference"] = round(ref, 4)
+METRICS["overcharge"] = round(max(0.0, total - ref), 4)
+METRICS["drift"] = round(abs(total - ref), 4)
+METRICS["f_gift"] = int(F_GIFT)
+METRICS["f_card"] = int(F_CARD)
+METRICS["neg"] = int(neg)
+METRICS["over"] = int(over)
+FW_VAR = 1 if (neg or over) else 0
+FW_CUSTOM_VAR = FW_VAR
+METRICS["FW_VAR"] = FW_VAR
+def _fmt(v):
+    if isinstance(v, float):
+        return ("%.4f" % v).rstrip("0").rstrip(".")
+    return str(v)
+print(" ".join("%s=%s" % (k, _fmt(v)) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "test case caught a SUT defect: negative total (coupon not clamped) or overcharge (shipping taxed)"

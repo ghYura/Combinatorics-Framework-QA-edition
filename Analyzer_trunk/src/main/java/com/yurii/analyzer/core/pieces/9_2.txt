@@ -1,0 +1,41 @@
+// ── 9_2.txt — variant 2: predicate-priority list (extensible) ────────
+// Same contract. Encodes each classification rule as a (predicate,
+// label) pair in a static immutable list. Adding a new line type is
+// a one-line addition to RULES; no if/else editing required. Slightly
+// more allocation than the if/else but much easier for the
+// combinatorics framework to *programmatically* extend with new
+// classifier rules.
+
+    @FunctionalInterface
+    public interface Rule {
+        boolean matches(List<String> tokens, Map<String, String> kv,
+                        List<Double> numbers, int placeholders);
+    }
+
+    private static final List<Map.Entry<Rule, String>> RULES = List.of(
+            Map.entry((tk, kv, nm, ph) -> kv.size() >= 2 && !nm.isEmpty(), "kv_numeric"),
+            Map.entry((tk, kv, nm, ph) -> kv.size() >= 2,                  "kv"),
+            Map.entry((tk, kv, nm, ph) -> ph > 0,                          "templated"),
+            Map.entry((tk, kv, nm, ph) -> nm.size() >= 3 && tk.size() <= 10, "numeric"),
+            Map.entry((tk, kv, nm, ph) -> tk.size() >= 10,                 "text"));
+
+    public static String lineKind(String line, List<String> tokens, Map<String, String> kv,
+                                  List<Double> numbers, int placeholders) {
+        long __t0 = System.nanoTime();
+        Metrics.p9_invocations++;
+        Metrics.p9_total_input_chars += (line == null ? 0 : line.length());
+        try {
+            String t = line == null ? "" : line.trim();
+            if (t.isEmpty()) return "empty";
+            if (COMMENT_RE.matcher(t).lookingAt()) return "comment";
+            for (Map.Entry<Rule, String> e : RULES) {
+                if (e.getKey().matches(tokens, kv, numbers, placeholders)) {
+                    if ("kv_numeric".equals(e.getValue())) Metrics.p9_kv_numeric_count++;
+                    return e.getValue();
+                }
+            }
+            return "mixed";
+        } finally {
+            Metrics.p9_duration_ns += System.nanoTime() - __t0;
+        }
+    }

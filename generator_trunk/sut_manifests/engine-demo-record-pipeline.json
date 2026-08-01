@@ -1,0 +1,67 @@
+{
+  "schema": "bundle.sut-manifest/v1",
+  "id": "engine-demo-record-pipeline",
+  "title": "Direct engine demonstration — record pipeline",
+  "maturity": "canonical",
+  "summary": "The minimal direct engine path: a self-contained record-processing pipeline compiled from FW_Group, FW_PermutR and a three-link nested-brace chain, judged by an exact differential oracle. No external checkout, no network, standard library only.",
+  "source": {
+    "kind": "in-repository",
+    "path": "generator_trunk/engine_demo",
+    "revision_resolution": "Moves with the Framework checkout; the engine revision reported by `bundle_run.py architecture` identifies it."
+  },
+  "lifecycle": {
+    "install": "none — Python standard library only",
+    "start": "none — the SUT is a library the candidate imports; there is no server to start",
+    "health": "python -m pytest -q generator_trunk/engine_demo/test_engine_demo.py",
+    "stop": "none — no process outlives a candidate"
+  },
+  "determinism": {
+    "deterministic": true,
+    "reset": "Each candidate is an independent subprocess building its own pipeline from a fixed integer corpus; no state survives a candidate.",
+    "seed": "No seed needed: the corpus is a module constant and every stage is a total, deterministic function."
+  },
+  "oracle": {
+    "kind": "exact-differential",
+    "description": "Three independent layers: a compiled closure-tree evaluator versus a separately written recursive interpreter; a structural output-length bound computed without executing anything; and an exact service contract (non-empty, non-decreasing, in band) that alone may report a domain failure.",
+    "independence": "The two evaluators are deliberately not factored together — the duplication IS the oracle. test_the_differential_oracle_is_not_vacuous seeds a defect into one and requires the other to catch it, so a passing differential check is evidence rather than a tautology.",
+    "implementation": "generator_trunk/engine_demo/record_pipeline.py"
+  },
+  "controls": {
+    "known_pass": [
+      "normalize + (sort, sort): contract satisfied",
+      "spread + (scale(-1), scale(-1)): contract satisfied"
+    ],
+    "known_fail": [
+      "normalize + (sort, scale(-1)): not_non_decreasing",
+      "spread + (sort, scale(-1)): not_non_decreasing"
+    ],
+    "intentional_defects": [
+      {
+        "id": "order-sensitive-negation",
+        "description": "Sorting and then negating produces a descending stream that violates the declared service contract. Neither grouped module can violate it alone: both are monotone.",
+        "detected_by": "contract_violation -> not_non_decreasing (FW_VAR=5)",
+        "interaction_only": true
+      }
+    ]
+  },
+  "access": {"read": ["{scratch}"], "write": ["{scratch}"], "network": []},
+  "limits": {"wall_seconds_per_candidate": 20, "memory_mb": 256, "max_candidates_per_gate": 64},
+  "trusted_artifacts": [],
+  "capability_row": {
+    "language": "python", "candidate_sink": "loose-files", "handoff": "v2",
+    "run_mode": "verdict", "execution_policy": "trusted-local",
+    "executor_pool": "single", "repeat": "k1", "analyzer": "formal"
+  },
+  "candidate_origin": "reviewed-checked-in",
+  "cleanup": "python generator_trunk/bundle_run.py cleanup <run-dir>; runtime output lives under /tmp/fw_work and never in the source tree.",
+  "ci": {
+    "tier": 2,
+    "workflow_gate": "canonical-sut-engine-demo",
+    "tests": ["generator_trunk/engine_demo/test_engine_demo.py", "generator_trunk/test_bundle_architecture.py"],
+    "scenarios": ["generator_trunk/engine_demo/direct_engine_smoke"]
+  },
+  "caveats": [
+    "Bounded at 8 candidates by design: it is the minimal proof of higher-order composition, not a scale or coverage showcase.",
+    "Uses trusted-local because the candidate fragments are reviewed and checked in; generated candidates must not reuse this row."
+  ]
+}

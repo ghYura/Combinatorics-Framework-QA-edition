@@ -1,0 +1,50 @@
+// ── 9_1.txt — variant 1: switch on a packed feature bitmap ───────────
+// Same contract. Encodes the four feature predicates into a 4-bit
+// integer (kvCount≥2 / hasNumbers / placeholders>0 / tokens≥10) plus
+// a comment flag, then looks up the category in a small dispatch
+// table. Fewer branches in the JIT'd output; uniform cost.
+
+    private static final String[] LK_TABLE = {
+            // Bits: bit3 = tokens>=10, bit2 = placeholders>0,
+            //       bit1 = numbers>=1, bit0 = kv>=2
+            // Index 0..15, lower-priority predicates suppressed by higher ones.
+            "mixed",       // 0000
+            "kv",          // 0001  kv only
+            "numeric",     // 0010  numbers only (then refined by tokens<=10)
+            "kv_numeric",  // 0011  kv + numbers
+            "templated",   // 0100
+            "kv",          // 0101
+            "templated",   // 0110
+            "kv_numeric",  // 0111
+            "text",        // 1000  many tokens only
+            "kv",          // 1001
+            "mixed",       // 1010  many tokens + numbers (not kv) → mixed
+            "kv_numeric",  // 1011
+            "templated",   // 1100
+            "kv",          // 1101
+            "templated",   // 1110
+            "kv_numeric",  // 1111
+    };
+
+    public static String lineKind(String line, List<String> tokens, Map<String, String> kv,
+                                  List<Double> numbers, int placeholders) {
+        long __t0 = System.nanoTime();
+        Metrics.p9_invocations++;
+        Metrics.p9_total_input_chars += (line == null ? 0 : line.length());
+        try {
+            String t = line == null ? "" : line.trim();
+            if (t.isEmpty()) return "empty";
+            if (COMMENT_RE.matcher(t).lookingAt()) return "comment";
+            int idx = (kv.size() >= 2 ? 1 : 0)
+                    | (numbers.size() >= 1 ? 2 : 0)
+                    | (placeholders > 0 ? 4 : 0)
+                    | (tokens.size() >= 10 ? 8 : 0);
+            String result = LK_TABLE[idx];
+            // Refine: 'numeric' requires <=10 tokens
+            if ("numeric".equals(result) && tokens.size() > 10) result = "mixed";
+            if ("kv_numeric".equals(result)) Metrics.p9_kv_numeric_count++;
+            return result;
+        } finally {
+            Metrics.p9_duration_ns += System.nanoTime() - __t0;
+        }
+    }

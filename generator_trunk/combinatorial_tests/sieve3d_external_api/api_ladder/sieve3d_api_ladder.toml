@@ -1,0 +1,431 @@
+spec_version = "1"
+title = "sieve3d external API ladder - combined body-hole route and experiment checks"
+note = "Drives combined 3D-body/2D-sieve challenges through sieve3d.api_v1 with recording, route coverage, ordered actions, subsets, and optional observers."
+args = ["mode=sieve3d_api_ladder"]
+
+[[goals]]
+key = "passed_volume_pct"
+dir = "max"
+[[goals]]
+key = "actions"
+dir = "min"
+[[goals]]
+key = "clearance"
+dir = "max"
+[[goals]]
+key = "api_route_depth"
+dir = "max"
+[[goals]]
+key = "record_steps"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import json, os, sys, tempfile, time
+from pathlib import Path
+
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+SIEVE3D_ROOT = os.environ.get("SIEVE3D_ROOT", str((_sut_root / "3Dprofile-VS-2Dsieve").resolve()))
+if SIEVE3D_ROOT not in sys.path:
+    sys.path.insert(0, SIEVE3D_ROOT)
+
+from sieve3d import api_v1
+from sieve3d.api import Scene as ApiScene
+from sieve3d.scene import SceneData, preset
+from sieve3d.experiment import Experiment
+from sieve3d.store import StateStore
+from sieve3d.recorder import Recorder, V1_MUT
+
+CASE_LIBRARY = {
+    "cylinder_round": {"preset": "shape_sorter", "body": "cylinder", "hole": "round", "pose": {"spin": 0, "tilt": 0, "turn": 0, "dx": 0, "dy": 0}, "min_passed": 95.0, "family": "axial"},
+    "cylinder_slot_sideways": {"preset": "shape_sorter", "body": "cylinder", "hole": "slot", "pose": {"spin": 0, "tilt": 90, "turn": 90, "dx": 0, "dy": 0}, "min_passed": 95.0, "family": "sideways"},
+    "cube_hex_oblique": {"preset": "shape_sorter", "body": "cube", "hole": "hexagon", "pose": {"spin": 45, "tilt": 54.74, "turn": 0, "dx": 0, "dy": 0}, "min_passed": 80.0, "family": "oblique"},
+    "slab_slot_edge": {"preset": "shape_sorter", "body": "slab", "hole": "slot", "pose": {"spin": 0, "tilt": 90, "turn": 90, "dx": 0, "dy": 0}, "min_passed": 90.0, "family": "sideways"},
+    "tri_prism_triangle": {"preset": "shape_sorter", "body": "tri-prism", "hole": "triangle", "pose": {"spin": 0, "tilt": 0, "turn": 0, "dx": 0, "dy": 0}, "min_passed": 90.0, "family": "axial"},
+    "cross_prism_cross": {"preset": "shape_sorter", "body": "cross-prism", "hole": "cross", "pose": {"spin": 0, "tilt": 0, "turn": 0, "dx": 0, "dy": 0}, "min_passed": 90.0, "family": "profiled"},
+}
+
+SELECTED_CASES = []
+CASE_EXECUTION_ORDER = []
+CASE_RESULTS = {}
+CURRENT_CASE_RESULT = None
+ACTIONS = []
+OBS = []
+ROUTE = "l0_fits"
+API_ROUTE_DEPTH = 0
+BODY = "cylinder"
+HOLE = "round"
+POSE = {"spin": 0, "tilt": 0, "turn": 0, "dx": 0, "dy": 0}
+MIN_PASSED = 95.0
+METRICS = {"feasible": 0, "clearance": -999.0, "passed_volume_pct": 0.0,
+           "actions": 0, "events_seen": 0, "api_calls": 0, "api_errors": 0,
+           "route_count": 0, "api_route_depth": 0, "case_count": 0,
+           "record_steps": 0}
+REC_FILE = "none"
+REC_JSON = "none"
+LAST_ERROR = "none"
+CRITERIA_PROFILE = "sieve3d_api_ladder_v2"
+CRITERIA_METRICS = {
+    # Analyzer-facing contract: TAIL must print these exact numeric keys.
+    "passed_volume_pct": {"dir": "max", "meaning": "minimum exact experiment volume percent across selected cases"},
+    "actions": {"dir": "min", "meaning": "manipulation count required by experiment actions"},
+    "clearance": {"dir": "max", "meaning": "minimum fit predicate margin across selected body-hole cases"},
+    "api_route_depth": {"dir": "max", "meaning": "highest exercised external API level, L0..L4"},
+    "record_steps": {"dir": "max", "meaning": "mutating API calls captured in the saved .rec trace"},
+}
+CRITERIA_METRIC_TOKEN = ",".join("%s:%s" % (k, v["dir"]) for k, v in CRITERIA_METRICS.items())
+
+class ApiHarness:
+    def __init__(self):
+        self.scene = ApiScene(preset("shape_sorter"))
+        self.store = StateStore()
+        self.experiment = Experiment(self.scene, self.store)
+        self.results_cache = None
+        self.workers = 0
+        self.recorder = Recorder(self.store, Path(tempfile.mkdtemp(prefix="sieve3d-rec-")))
+
+    def initial_snapshot(self):
+        return {"scene": self.scene.data.to_dict(), "experiment": self.experiment.snapshot()["bodies"], "versions": dict(self.store.versions)}
+
+    def replace_scene(self, newdata):
+        self.scene = ApiScene(newdata if isinstance(newdata, SceneData) else SceneData.from_dict(newdata))
+        self.after_scene_mutation("replaced")
+
+    def after_scene_mutation(self, etype, name=None):
+        self.results_cache = None
+        self.experiment.scene = self.scene
+        self.experiment.sync_scene(reset=(etype == "replaced"))
+        self.store.bump("scene", etype, {"name": name} if name else None)
+
+    def get_job(self, jid=None):
+        return None
+
+_state = ApiHarness()
+
+def _safe_token(text):
+    return "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in str(text))[:180] or "case"
+
+def _call(method, path, fn, state, payload):
+    started = time.monotonic()
+    try:
+        data = fn(state, payload)
+        elapsed = (time.monotonic() - started) * 1000.0
+        api_v1.envelope(state.store, data, elapsed_ms=elapsed)
+        state.store.record_call("%s %s" % (method, path), elapsed, True)
+        if method == "POST" and path in V1_MUT:
+            state.recorder.log("v1", method, path, payload or {})
+        return data
+    except api_v1.ApiError as exc:
+        elapsed = (time.monotonic() - started) * 1000.0
+        api_v1.envelope(state.store, error=exc, elapsed_ms=elapsed)
+        state.store.record_call("%s %s" % (method, path), elapsed, False)
+        raise
+
+def _start_recording():
+    return _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "action"})
+
+def _finish_recording(label):
+    global REC_FILE, REC_JSON
+    try:
+        _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "cut"})
+    except api_v1.ApiError as exc:
+        if exc.code != "conflict":
+            raise
+    info = _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "retrieve_last_record"})
+    METRICS["record_steps"] = int(info.get("steps_count", 0))
+    out_dir = Path(os.environ.get("SIEVE3D_REC_OUT_DIR", os.getcwd())) / "sieve3d_rec_results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stem = "%s_%s_%d_%d" % (CRITERIA_PROFILE, _safe_token(label), os.getpid(), int(time.time() * 1000))
+    rec_path = out_dir / (stem + ".rec")
+    json_path = out_dir / (stem + ".json")
+    records = info.get("records") or []
+    rec_path.write_text("\n".join(json.dumps(r, ensure_ascii=True) for r in records) + "\n", encoding="utf-8")
+    json_path.write_text(json.dumps({"file": info.get("file"), "steps_count": info.get("steps_count"), "saved_rec": str(rec_path), "source_path": info.get("path")}, sort_keys=True), encoding="utf-8")
+    REC_FILE = str(rec_path)
+    REC_JSON = str(json_path)
+    return info
+
+def _select_case(case_id):
+    if case_id not in SELECTED_CASES:
+        SELECTED_CASES.append(case_id)
+
+def _load_case(case_id):
+    global BODY, HOLE, POSE, MIN_PASSED, CURRENT_CASE_RESULT
+    c = CASE_LIBRARY[case_id]
+    BODY, HOLE, POSE, MIN_PASSED = c["body"], c["hole"], dict(c["pose"]), float(c["min_passed"])
+    CURRENT_CASE_RESULT = {
+        "case": case_id, "min_passed": MIN_PASSED, "fit_checks": 0,
+        "feasible": 0, "clearance": -999.0, "passed_volume_pct": 0.0,
+    }
+    CASE_RESULTS[case_id] = CURRENT_CASE_RESULT
+
+def _queue_action(action):
+    ACTIONS.append(action)
+
+def _remember_fit(data):
+    feasible = int(bool(data.get("feasible")))
+    if CURRENT_CASE_RESULT is not None:
+        CURRENT_CASE_RESULT["fit_checks"] += 1
+        CURRENT_CASE_RESULT["feasible"] = feasible
+    if data.get("clearance") is not None:
+        clearance = float(data.get("clearance"))
+        if CURRENT_CASE_RESULT is not None:
+            CURRENT_CASE_RESULT["clearance"] = clearance
+
+def _sync_case_metrics():
+    results = [CASE_RESULTS[c] for c in SELECTED_CASES if c in CASE_RESULTS]
+    if not results:
+        return
+    METRICS["feasible"] = min(
+        int(r["fit_checks"] > 0 and r["feasible"] == 1) for r in results)
+    METRICS["clearance"] = min(float(r["clearance"]) for r in results)
+    if ROUTE in ("l3_experiment", "l4_observe"):
+        METRICS["passed_volume_pct"] = min(
+            float(r["passed_volume_pct"]) for r in results)
+
+def _case_oracle_failures():
+    failures = []
+    for case_id in SELECTED_CASES:
+        result = CASE_RESULTS.get(case_id)
+        if result is None:
+            failures.append(case_id + ":not_run")
+            continue
+        if result["fit_checks"] <= 0 or result["feasible"] != 1:
+            failures.append(case_id + ":not_feasible")
+        if (ROUTE in ("l3_experiment", "l4_observe") and
+                result["passed_volume_pct"] < result["min_passed"]):
+            failures.append("%s:passed_%.2f_lt_%.2f" % (
+                case_id, result["passed_volume_pct"], result["min_passed"]))
+    return failures
+
+def _anchor_pose():
+    data = _call("POST", "/api/v1/anchor", api_v1.h_anchor, _state, {"body": BODY, "hole": HOLE})
+    _remember_fit(data)
+    return dict(data.get("pose") or POSE)
+
+def _run_l0():
+    spec = _call("GET", "/api/v1/spec", api_v1.h_spec, _state, {})
+    METRICS["route_count"] = len(spec["routes"])
+    _call("GET", "/api/v1/catalog", api_v1.h_catalog, _state, {})
+    _call("GET", "/api/v1/limits", api_v1.h_limits, _state, {})
+    _call("GET", "/api/v1/classes", api_v1.h_classes, _state, {})
+    fit = _call("POST", "/api/v1/fits", api_v1.h_fits, _state, {"body": BODY, "hole": HOLE, "pose": POSE})
+    _remember_fit(fit)
+    if not fit.get("feasible"):
+        _anchor_pose()
+
+def _run_l1():
+    before = _state.store.versions["scene"]
+    _call("POST", "/api/v1/scene/update", api_v1.h_scene_update, _state, {"set": {"plate.w": _state.scene.data.sieve.w + 1}})
+    if _state.store.versions["scene"] <= before:
+        raise RuntimeError("scene version did not bump")
+    _call("GET", "/api/v1/scene", api_v1.h_scene_get, _state, {})
+    _run_l0()
+
+def _run_l2():
+    pose = _anchor_pose()
+    fit = _call("POST", "/api/v1/fits", api_v1.h_fits, _state, {"body": BODY, "hole": HOLE, "pose": pose})
+    _remember_fit(fit)
+
+def _run_experiment():
+    global LAST_ERROR
+    assigned = False
+    for action in ACTIONS:
+        try:
+            if action == "assign":
+                _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "assign", "params": {"hole": HOLE}})
+                pose = _anchor_pose()
+                _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "set_pose", "params": pose})
+                assigned = True
+            elif action == "drop":
+                if not assigned:
+                    METRICS["api_errors"] += 1
+                    LAST_ERROR = "drop_before_assign"
+                    continue
+                out = _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "drop", "params": {"max_dz": 220}})
+                CURRENT_CASE_RESULT["passed_volume_pct"] = float(out["state"]["passed_pct"])
+                METRICS["actions"] += int(out["state"].get("actions", 0))
+        except api_v1.ApiError as exc:
+            METRICS["api_errors"] += 1
+            LAST_ERROR = exc.code
+
+def _run_l4():
+    seq = _call("GET", "/api/v1/state", api_v1.h_state, _state, {})["seq"]
+    _run_experiment()
+    ev = _call("GET", "/api/v1/events", api_v1.h_events, _state, {"since": seq, "timeout": 0.01})
+    METRICS["events_seen"] = max(METRICS["events_seen"], len(ev["events"]))
+    m = _call("GET", "/api/v1/metrics", api_v1.h_metrics, _state, {})
+    METRICS["api_calls"] = max(METRICS["api_calls"], len(m["api_calls"]))
+
+def _run_selected_route(route, depth):
+    global ROUTE, API_ROUTE_DEPTH, LAST_ERROR
+    ROUTE, API_ROUTE_DEPTH = route, int(depth)
+    METRICS["api_route_depth"] = max(METRICS["api_route_depth"], API_ROUTE_DEPTH)
+    if not SELECTED_CASES:
+        LAST_ERROR = "no_case_selected"
+        METRICS["api_errors"] += 1
+        return
+    # The action permutation is meaningful for every API level: on catalog,
+    # setup, and solver routes it reverses the independent selected-case order;
+    # on experiment routes it additionally remains the manipulation order.
+    # This avoids multiplying L0-L2 candidates by a label-only factor while
+    # exercising the invariant that independent cases cannot mask one another.
+    case_order = list(SELECTED_CASES)
+    if ACTIONS[:1] == ["drop"]:
+        case_order.reverse()
+    CASE_EXECUTION_ORDER[:] = case_order
+    for case_id in case_order:
+        try:
+            _load_case(case_id)
+            _call("POST", "/api/v1/scene/preset", api_v1.h_scene_preset,
+                  _state, {"name": CASE_LIBRARY[case_id]["preset"]})
+            METRICS["case_count"] += 1
+            if route == "l0_fits":
+                _run_l0()
+            elif route == "l1_scene_update":
+                _run_l1()
+            elif route == "l2_anchor":
+                _run_l2()
+            elif route == "l3_experiment":
+                _run_experiment()
+            elif route == "l4_observe":
+                _run_l4()
+            else:
+                raise RuntimeError("unknown route " + route)
+        except Exception as exc:
+            METRICS["api_errors"] += 1
+            LAST_ERROR = case_id + ":" + type(exc).__name__
+    _sync_case_metrics()
+
+def _run_observer(obs):
+    if obs == "events":
+        ev = _call("GET", "/api/v1/events", api_v1.h_events, _state, {"since": 0, "timeout": 0.01})
+        METRICS["events_seen"] = max(METRICS["events_seen"], len(ev["events"]))
+    elif obs == "metrics":
+        m = _call("GET", "/api/v1/metrics", api_v1.h_metrics, _state, {})
+        METRICS["api_calls"] = max(METRICS["api_calls"], len(m["api_calls"]))
+    elif obs == "record_status":
+        _call("GET", "/api/v1/record", api_v1.h_record_status, _state, {})
+    if obs not in OBS:
+        OBS.append(obs)
+
+# Required by the SUT recorder contract: start through API at the very end of HEAD.
+_start_recording()
+''']
+
+[[slots]]
+sheet = "CASE"
+key = "case"
+verb = "FW_Combi(2)"
+raw = true
+values = [
+  '_select_case("cylinder_round");',
+  '_select_case("cylinder_slot_sideways");',
+  '_select_case("cube_hex_oblique");',
+  '_select_case("slab_slot_edge");',
+  '_select_case("tri_prism_triangle");',
+  '_select_case("cross_prism_cross");',
+]
+
+[[slots]]
+sheet = "ACTION"
+key = "action"
+verb = "FW_Permut"
+raw = true
+values = [
+  '_queue_action("assign");',
+  '_queue_action("drop");',
+]
+
+[[slots]]
+sheet = "ROUTE"
+key = "route"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  '_run_selected_route("l0_fits", 0);',
+  '_run_selected_route("l1_scene_update", 1);',
+  '_run_selected_route("l2_anchor", 2);',
+  '_run_selected_route("l3_experiment", 3);',
+  '_run_selected_route("l4_observe", 4);',
+]
+
+[[slots]]
+sheet = "OBS"
+key = "obs"
+verb = "FW_Subsets"
+raw = true
+values = [
+  '_run_observer("events");',
+  '_run_observer("metrics");',
+]
+
+[[slots]]
+sheet = "OPT_RECORD_STATUS"
+key = "opt_record_status"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['_run_observer("record_status");']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_REC_INFO = _finish_recording("%s_%s_%s" % (ROUTE, "-".join(SELECTED_CASES), "+".join(OBS) or "none"))
+try:
+    _CASE_FAILURES = _case_oracle_failures()
+    if ROUTE in ("l3_experiment", "l4_observe") and ACTIONS != ["assign", "drop"]:
+        FW_VAR = 4
+    elif METRICS["api_errors"]:
+        FW_VAR = 2
+    elif _CASE_FAILURES:
+        LAST_ERROR = "+".join(_CASE_FAILURES)
+        FW_VAR = 3
+    elif "events" in OBS and METRICS["events_seen"] <= 0:
+        FW_VAR = 5
+    elif "metrics" in OBS and METRICS["api_calls"] <= 0:
+        FW_VAR = 5
+    elif METRICS["record_steps"] <= 0:
+        FW_VAR = 6
+    else:
+        FW_VAR = 0
+except Exception as _exc:
+    LAST_ERROR = type(_exc).__name__ + ":" + str(_exc).replace(" ", "_")
+    FW_VAR = 6
+FW_CUSTOM_VAR = FW_VAR
+print("app=sieve3d_api_ladder criteria_profile=%s criteria_metrics=%s cases=%s case_execution_order=%s route=%s depth=%d action_order=%s "
+      "observers=%s feasible=%d clearance=%.4f passed_volume_pct=%.2f actions=%d "
+      "events_seen=%d api_calls=%d api_errors=%d case_failures=%d record_file=%s record_json=%s record_steps=%d last_error=%s FW_VAR=%d"
+      % (CRITERIA_PROFILE, CRITERIA_METRIC_TOKEN, "+".join(SELECTED_CASES), ">".join(CASE_EXECUTION_ORDER), ROUTE, API_ROUTE_DEPTH, ">".join(ACTIONS),
+         "+".join(OBS) or "none", METRICS["feasible"], METRICS["clearance"],
+         METRICS["passed_volume_pct"], METRICS["actions"], METRICS["events_seen"],
+         METRICS["api_calls"], METRICS["api_errors"], len(_CASE_FAILURES), _safe_token(REC_FILE), _safe_token(REC_JSON),
+         METRICS["record_steps"], LAST_ERROR, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "external API envelope or route contract returned an unexpected API error"
+[[custom_vars]]
+code = 3
+msg = "selected body/hole case did not achieve the required fit or pass-through target"
+[[custom_vars]]
+code = 4
+msg = "experiment action order was invalid; the API rejected a non-teleportable manipulation"
+[[custom_vars]]
+code = 5
+msg = "live observer route did not report the expected event or metric stream"
+[[custom_vars]]
+code = 6
+msg = "recording was not captured/saved or candidate infrastructure failed"

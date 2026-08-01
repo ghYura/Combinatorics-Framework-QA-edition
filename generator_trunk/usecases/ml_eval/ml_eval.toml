@@ -1,0 +1,96 @@
+# ============================================================================
+# USE-CASE #8 — ML/LLM evaluation (DISCRETE outer structure; LOCAL surrogate).
+#
+# The Bundle's fit for ML is the discrete OUTER structure (preprocessing order,
+# quantization, decoding), not continuous hyperparameter search. External/paid/
+# nonlocal LLM endpoints are BLOCKED by policy -- so this uses a LOCAL, seeded,
+# DETERMINISTIC surrogate model (a pure function) standing in for the LLM, and
+# models cost + the (here pinned) nondeterminism EXPLICITLY. For a real eval,
+# swap `_surrogate` for a call to a LOCAL model server on the sandbox's internal
+# network (the secure-app pattern, networked-api-probe profile) -- the spec,
+# oracle, metrics and Pareto analysis stay identical.
+#
+# Space: preprocessing-order (FW_Permut over 3) x quantization (3) x decoding (3)
+#   = 6 * 3 * 3 = 54 configs. Quality-gate oracle: accuracy >= 0.70 -> PASS, else
+# DOMAIN_FAIL (FW_VAR=4). Analyzer Pareto over accuracy:max, latency_ms:min,
+# cost_usd:min. Self-contained -> trusted-local.
+# ============================================================================
+title = "ML/LLM eval — discrete outer structure, local deterministic surrogate, cost-aware Pareto"
+note  = "FW_Permut preprocessing-order x FW_Combi(1) quant/decode; quality gate + 3-objective Pareto."
+args  = ["mode=ml_eval"]
+
+[[goals]]
+key = "accuracy"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "cost_usd"
+dir = "min"
+
+[[slots]]   # invariant frame: local deterministic surrogate + cost model + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''SEED = 1729            # pinned -> reproducible (real eval records seed + sampling params)
+QUANT = "fp16"
+DECODE = "greedy"
+PREP = []
+
+def _prep_score(order):
+    # robustness depends on ORDER: strip_html must precede normalize; dedup_ws last.
+    bonus = 0.0
+    if order.index("strip_html") < order.index("normalize"):
+        bonus += 0.06
+    if order.index("dedup_ws") == len(order) - 1:
+        bonus += 0.03
+    return bonus
+
+def _surrogate(prep_order, quant, decode):
+    base_acc = {"greedy": 0.72, "beam": 0.85, "sampling": 0.78}[decode]
+    quant_pen = {"fp16": 0.0, "int8": -0.03, "int4": -0.12}[quant]
+    acc = round(min(1.0, base_acc + quant_pen + _prep_score(prep_order)), 4)
+    lat = {"greedy": 20.0, "beam": 60.0, "sampling": 35.0}[decode] * {"fp16": 1.0, "int8": 0.7, "int4": 0.5}[quant]
+    cost = round(lat * 0.0009, 5)        # explicit cost model (USD per request)
+    return acc, round(lat, 2), cost
+''']
+
+[[slots]]   # quantization (cartesian leaf)
+sheet  = "QUANT"
+key    = "quant"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["QUANT = \"fp16\"\n", "QUANT = \"int8\"\n", "QUANT = \"int4\"\n"]
+
+[[slots]]   # decoding strategy (cartesian leaf)
+sheet  = "DECODE"
+key    = "decode"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["DECODE = \"greedy\"\n", "DECODE = \"beam\"\n", "DECODE = \"sampling\"\n"]
+
+[[slots]]   # ORDER-sensitive preprocessing pipeline -> permutations (robustness depends on order)
+sheet  = "PREP"
+key    = "prep"
+verb   = "FW_Permut"
+raw    = true
+values = ["PREP.append(\"strip_html\")\n", "PREP.append(\"normalize\")\n", "PREP.append(\"dedup_ws\")\n"]
+
+[[slots]]   # invariant frame: evaluate surrogate, quality-gate verdict, emit metrics
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_acc, _lat, _cost = _surrogate(PREP, QUANT, DECODE)
+FW_VAR = 0 if _acc >= 0.70 else 4     # 4 = below quality gate (DOMAIN_FAIL)
+FW_CUSTOM_VAR = FW_VAR
+print("app=ml_eval prep=%s quant=%s decode=%s seed=%d "
+      "accuracy=%.4f latency_ms=%.2f cost_usd=%.5f FW_VAR=%d"
+      % (">".join(PREP), QUANT, DECODE, SEED, _acc, _lat, _cost, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 4
+msg = "below quality gate (accuracy < 0.70)"

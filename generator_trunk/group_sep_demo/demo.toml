@@ -1,0 +1,90 @@
+title = "FW_Separator (in its real context) + brace — glue woven into the join operand"
+note  = "A = FW_Combi(2) over 3 steps with separator=GLUE → its dual table fw2_A has GLUE woven between each pair's elements. The brace joins fw2_A ⋈ fw2_B (M:N). So each joined plan shows GLUE between the A-pair elements — proving FW_Separator weaves into the sub-combo/fw2_ output that a brace consumes (NOT a plain cartesian slot). GLUE is a non-excluded 1-value sheet (declared last) so FW_Separator can read its first value."
+args = ["mode=group_sep_demo"]
+
+# brace: top-level key (before tables); joins the RESULT tables of A and B, M:N
+seq_extra = [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]]
+
+[[goals]]
+key = "n"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+parts = []
+''',
+]
+
+[[slots]]
+sheet = "A"
+key   = "a"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+separator = "GLUE"
+raw   = true
+values = [
+'''
+parts.append("audit")
+''',
+'''
+parts.append("migrate")
+''',
+'''
+parts.append("backup")
+''',
+]
+
+[[slots]]
+sheet = "B"
+key   = "b"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''
+parts.append("region:eu")
+''',
+'''
+parts.append("region:us")
+''',
+]
+
+[[slots]]
+sheet = "JOINED"
+key   = "joined"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+pass  # brace overwrites this sheet with the A x B join
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+_n = len(parts)
+FW_VAR = 0
+print("app=gs plan=%s n=%d FW_VAR=%d" % ("|".join(parts), _n, FW_VAR))
+''',
+]
+
+[[slots]]
+sheet = "GLUE"
+key   = "glue"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+parts.append("GLUE")
+''',
+]

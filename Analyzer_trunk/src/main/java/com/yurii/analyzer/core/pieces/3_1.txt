@@ -1,0 +1,27 @@
+// ── 3_1.txt — variant 1: regex (.)\1+ collapse on category-mapped buf
+// Same contract. Two passes: first map each char to its category,
+// then collapse runs via a precompiled regex. JIT-friendly on long
+// runs, slower on short fragmentary text due to pattern overhead.
+
+    private static final Pattern SIG_RUNS = Pattern.compile("(.)\\1+");
+
+    public static String compressSignature(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p3_invocations++;
+        Metrics.p3_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return "";
+            char[] mapped = new char[text.length()];
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                mapped[i] = Character.isDigit(ch) ? 'D'
+                          : Character.isLetter(ch) ? 'L'
+                          : Character.isWhitespace(ch) ? 'S' : 'P';
+            }
+            String out = SIG_RUNS.matcher(new String(mapped)).replaceAll("$1");
+            Metrics.p3_total_output_chars += out.length();
+            return out;
+        } finally {
+            Metrics.p3_duration_ns += System.nanoTime() - __t0;
+        }
+    }

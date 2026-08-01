@@ -1,0 +1,97 @@
+spec_version = "1"
+title = "AI constraint-stack breakpoint study"
+note = "Ordering tasks vary structural complexity, combinations of constraint/rendering pressure, and exact output schemas."
+args = ["suite=ai_combi_testing", "study=constraint-stack"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+from generator_trunk.AI_combi_testing_platform.renderers import emit_atom
+PLAN = initialize_candidate(family="ordering", seed=31415, complexity=1)
+''']
+
+[[slots]]
+sheet = "COMPLEXITY"
+key = "complexity"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.complexity = 1
+''',
+'''PLAN.complexity = 3
+''',
+'''PLAN.complexity = 5
+''',
+'''PLAN.complexity = 7
+'''
+]
+
+[[slots]]
+sheet = "PRESSURE_FEATURES"
+key = "pressure_features"
+verb = "FW_Subsets_RANGE(1,2)"
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "constraint_order:reverse")
+''',
+'''emit_atom(PLAN.program_stream, "distractor:neutral")
+''',
+'''emit_atom(PLAN.program_stream, "instruction_order:mixed")
+'''
+]
+
+[[slots]]
+sheet = "OUTPUT_SCHEMA"
+key = "output_schema"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.schema = "json"
+''',
+'''PLAN.schema = "plain"
+''',
+'''PLAN.schema = "csv"
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

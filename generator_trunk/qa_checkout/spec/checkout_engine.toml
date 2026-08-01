@@ -1,0 +1,151 @@
+# ============================================================================
+# checkout_engine — a pure-QA system under test, decomposed & dispersed.
+#
+# SUT: a checkout total = discount → tax → flat fees (surcharge, membership) →
+# optional modifiers → round. The CLASSIC bug class is ORDER OF OPERATIONS:
+# a flat fee added BEFORE tax gets taxed (the customer is overcharged for tax on
+# a fee that should be tax-exempt). The combinatorics breeds every step order and
+# the self-check (independent canonical recompute) flags the overcharging ones.
+#
+#   ROUND  → FW_Combi(1)   alternative rounding impls (cartesian leaf; benign)
+#   ORDER  → FW_Permut     ORDER of {apply_tax, +surcharge, +membership} (3! = 6) —
+#                          tax must come FIRST or the fees get taxed (overcharge)
+#   OPT    → FW_Subsets    optional modifiers present/absent (loyalty / gift / expedite)
+#
+# Verdict: FW_VAR = 1 iff the customer is OVERCHARGED vs the canonical reference
+# (tax applied before the flat fees) or the total goes negative. raw=true;
+# Reader concatenator=''. No data cell starts with "FW_".
+# est fw_final = ROUND(2) · ORDER(3!=6) · OPT(2^3=8) = 96 runnable checkout tests.
+# ============================================================================
+title = "checkout_engine — order-of-operations tax bug (Combi impls × Permut order × Subsets options)"
+note  = "Pure-QA combinatorial test-gen with execution: the engine breeds the step orders that tax a flat fee (overcharge). FW_VAR=1 = customer overcharged vs the canonical reference."
+goals = ["overcharge", "drift", "violations", "total"]
+args  = ["mode=checkout_engine"]
+
+# --- HEAD: constant frame — prices, METRICS, helpers, pre-declared working vars.
+#     Applies the discount FIRST (fixed); the ORDER block permutes tax vs the fees. ---
+[[slots]]
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''UNIT = 9.99
+QTY = 3
+DISC_PCT = 20.0
+TAX_PCT = 8.0
+SURCHARGE = 4.00
+MEMBERSHIP = 3.00
+GIFT = 2.50
+EXPEDITE = 6.00
+LOYALTY_PCT = 10.0
+TOL = 0.011
+def apply_tax(t):
+    return t + t * TAX_PCT / 100.0
+def apply_disc(t):
+    return max(0.0, t * (1.0 - DISC_PCT / 100.0))
+f_loyalty = False
+f_gift = False
+f_expedite = False
+subtotal = UNIT * QTY
+total = apply_disc(subtotal)
+METRICS = {"app": "checkout_engine", "unit": UNIT, "qty": QTY, "disc_pct": DISC_PCT,
+           "tax_pct": TAX_PCT, "surcharge": SURCHARGE, "membership": MEMBERSHIP,
+           "subtotal": round(subtotal, 4), "total": 0.0, "reference": 0.0,
+           "overcharge": 0.0, "drift": 0.0, "fees_taxed": 0,
+           "f_loyalty": 0, "f_gift": 0, "f_expedite": 0, "neg": 0, "over": 0, "FW_VAR": 0}
+''']
+
+# --- ROUND: alternative rounding impls (cartesian leaf; affects cents, not the bug) ---
+[[slots]]
+sheet  = "ROUND"
+key    = "round"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''def rnd(x):
+    return x
+''',
+'''def rnd(x):
+    return int(x * 100 + 0.5) / 100.0
+''',
+]
+
+# --- ORDER: the order of {tax, +surcharge, +membership} (permutations, 3! = 6).
+#     A flat fee added BEFORE apply_tax gets taxed → overcharge. tax-first is correct. ---
+[[slots]]
+sheet  = "ORDER"
+key    = "order"
+verb   = "FW_Permut"
+raw    = true
+values = [
+'''total = apply_tax(total)
+''',
+'''total = total + SURCHARGE
+''',
+'''total = total + MEMBERSHIP
+''',
+]
+
+# --- OPT: optional modifiers present/absent (Subsets ⇒ 2^3 = 8). Applied after the
+#     priced core; the reference applies them identically via flags (no spurious fail). ---
+[[slots]]
+sheet  = "OPT"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = [
+'''total = total * (1.0 - LOYALTY_PCT / 100.0)
+f_loyalty = True
+''',
+'''total = total + GIFT
+f_gift = True
+''',
+'''total = total + EXPEDITE
+f_expedite = True
+''',
+]
+
+# --- TAIL: round, compute the canonical reference (tax BEFORE the fees), check the
+#     overcharge/negative invariant, set FW_VAR, print ONE aggregated K=V line. ---
+[[slots]]
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''total = rnd(total)
+ref = apply_disc(subtotal)
+ref = apply_tax(ref)
+ref = ref + SURCHARGE + MEMBERSHIP
+if f_loyalty:
+    ref = ref * (1.0 - LOYALTY_PCT / 100.0)
+if f_gift:
+    ref = ref + GIFT
+if f_expedite:
+    ref = ref + EXPEDITE
+ref = rnd(ref)
+over = total > ref + TOL
+neg = total < -TOL
+fees_taxed = int(round((total - ref) / (SURCHARGE * TAX_PCT / 100.0))) if over else 0
+METRICS["total"] = round(total, 4)
+METRICS["reference"] = round(ref, 4)
+METRICS["overcharge"] = round(max(0.0, total - ref), 4)
+METRICS["drift"] = round(abs(total - ref), 4)
+METRICS["fees_taxed"] = fees_taxed
+METRICS["f_loyalty"] = int(f_loyalty)
+METRICS["f_gift"] = int(f_gift)
+METRICS["f_expedite"] = int(f_expedite)
+METRICS["neg"] = int(neg)
+METRICS["over"] = int(over)
+FW_VAR = 1 if (over or neg) else 0
+FW_CUSTOM_VAR = FW_VAR
+METRICS["FW_VAR"] = FW_VAR
+def _fmt(v):
+    if isinstance(v, float):
+        return ("%.4f" % v).rstrip("0").rstrip(".")
+    return str(v)
+print(" ".join("%s=%s" % (k, _fmt(v)) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "customer overcharged: a flat fee was taxed (wrong step order) or total went negative"

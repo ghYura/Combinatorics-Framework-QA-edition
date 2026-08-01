@@ -1,0 +1,63 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_14_control_pair_combi2",
+  "category": "security control pair selection (FW_Combi(2))",
+  "user_problem": "I need to choose exactly two security controls from rate_limit, captcha, waf, and review_queue. Order does not matter and repeats are not allowed. Which pairs are safe for public API and admin API traffic, and how do coverage, friction, and cost trade off?",
+  "bundle_offer": "Bundle models the control pair as FW_Combi(2): choose exactly two distinct controls, order irrelevant. It crosses the pair with traffic profile, uses a TAIL oracle for admin-without-WAF and public excessive-friction policies, and returns a coverage/friction/cost Pareto front with PASS-aware annotations.",
+  "hypothesis": "Four controls choose two gives C(4,2)=6 pairs; crossing public/admin traffic gives 12 candidates. Admin traffic fails without WAF, public traffic fails for captcha+review_queue, and the remaining pairs form a coverage/friction/cost trade-off.",
+  "zen_mapping": [
+    {
+      "freedom": "choose exactly two security controls",
+      "shape": "k of n, order irrelevant, no repetition",
+      "verb": "FW_Combi(2)",
+      "cardinality": "C(4,2) = 6"
+    },
+    {
+      "freedom": "traffic profile",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "control-pair policy",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "TAIL oracle ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "coverage_score",
+        "dir": "max"
+      },
+      {
+        "key": "friction_score",
+        "dir": "min"
+      },
+      {
+        "key": "cost_units",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=2 admin traffic pair is missing WAF; FW_VAR=3 public traffic pair has excessive friction; FW_VAR=0 safe"
+  },
+  "pattern": "security control choose-k pair",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/security control choose-k pair"
+    }
+  ]
+}

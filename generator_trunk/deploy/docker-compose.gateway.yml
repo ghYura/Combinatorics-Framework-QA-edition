@@ -1,0 +1,71 @@
+# Overlay for the Evaluation Gateway. Use together with the local DB stack:
+#
+#   docker compose -f deploy/docker-compose.yml -f deploy/docker-compose.gateway.yml up -d
+#
+# Required local-only secret files:
+#   deploy/gateway-tokens.json   JSON token->tenant map
+#   deploy/certs/gateway.crt     TLS certificate
+#   deploy/certs/gateway.key     TLS private key
+#
+# The gateway binds 0.0.0.0 inside the container, so TLS is mandatory by the
+# service itself. The published host port is still loopback-only.
+services:
+  gateway:
+    build:
+      context: ../..
+      dockerfile: generator_trunk/deploy/gateway.Dockerfile
+    container_name: fwbundle-gateway
+    env_file: [.env]
+    environment:
+      BUNDLE_MAIN_DB_HOST: main-db
+      BUNDLE_MAIN_DB_PORT: "5432"
+      BUNDLE_RESULTS_DB_HOST: results-db
+      BUNDLE_RESULTS_DB_PORT: "5432"
+      BUNDLE_MAIN_DB_USER: ${POSTGRES_USER:-postgres}
+      BUNDLE_RESULTS_DB_USER: ${POSTGRES_USER:-postgres}
+      BUNDLE_MAIN_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      BUNDLE_RESULTS_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      BUNDLE_JAVA_CMD: java
+      BUNDLE_JAVAC_CMD: javac
+    command:
+      - python3
+      - bundle_gateway.py
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8787"
+      - --transport
+      - grpc
+      - --runs-root
+      - /var/lib/fwbundle-gateway/runs
+      - --tokens-file
+      - /run/secrets/gateway_tokens
+      - --tls-cert
+      - /run/secrets/gateway_tls_cert
+      - --tls-key
+      - /run/secrets/gateway_tls_key
+    ports:
+      - "127.0.0.1:${BUNDLE_GATEWAY_HOST_PORT:-18787}:8787"
+    volumes:
+      - fwbundle_gateway_runs:/var/lib/fwbundle-gateway
+    secrets:
+      - gateway_tokens
+      - gateway_tls_cert
+      - gateway_tls_key
+    depends_on:
+      main-db:
+        condition: service_healthy
+      results-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+secrets:
+  gateway_tokens:
+    file: ./gateway-tokens.json
+  gateway_tls_cert:
+    file: ./certs/gateway.crt
+  gateway_tls_key:
+    file: ./certs/gateway.key
+
+volumes:
+  fwbundle_gateway_runs:

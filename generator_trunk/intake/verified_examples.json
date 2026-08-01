@@ -1,0 +1,542 @@
+[
+ {
+  "id": "qa_pub_vs_bar",
+  "spec": "usecases/qa_pub_vs_bar/qa_pub_vs_bar.toml",
+  "title": "Tester vs Pub \u2014 the QA sweep drives a fallible bar simulator and catches its bugs",
+  "blurb": "The combinatorial tester feeds every (action-order \u00d7 quantity \u00d7 target \u00d7 garnish \u00d7 last-call) order to a real barmen+clients simulator (tester_vs_pub) whose outputs range from adequate to inadequate \u2014 crash on junk, overflow on huge, serve a lizard, wrong change, silent-drop. The oracle convicts the bar when it misbehaves. FW_Permut \u00d7 FW_Combi \u00d7 FW_Subsets + FW_Optional; 40 bar defects caught of 360.",
+  "candidates": "360",
+  "pass": "320",
+  "analyzer": "caught:max"
+ },
+ {
+  "id": "qa_pub_crawl",
+  "spec": "usecases/qa_pub_crawl/qa_pub_crawl.toml",
+  "title": "A QA tester goes into a pub \u2014 the joke, run for real",
+  "blurb": "The classic boundary-testing joke as one comprehensive multi-verb sweep: entry \u00d7 action-order (FW_Permut) \u00d7 weird quantities (1/0/-1/huge/abcd) \u00d7 absurd targets \u00d7 garnish subsets (FW_Subsets), with two sudden FW_Optional events (happy-hour, last-call). The bar accepts valid orders and rejects invalid ones cleanly \u2014 never crashes, never overflows. 192 valid orders accepted, 2688 rejected cleanly.",
+  "candidates": "2880",
+  "pass": "192",
+  "analyzer": "accepted:max,price:min"
+ },
+ {
+  "id": "may29_run_decomposition_inventory_decomp",
+  "spec": "May29_run/decomposition/inventory_decomposed.toml",
+  "title": "decomposition of inventory \u2014 9 pieces, rewrite & combine",
+  "blurb": "Each slot = one code piece; add rewrites to values; the cartesian of rewrites surfaces indirect interactions. raw=true \u2192 verbatim; Reader concatenator",
+  "candidates": "1",
+  "pass": "1",
+  "analyzer": ""
+ },
+ {
+  "id": "combinatorial_tests_sieve3d_external_api",
+  "spec": "combinatorial_tests/sieve3d_external_api/api_ladder/sieve3d_api_ladder.toml",
+  "title": "sieve3d external API ladder - combined body-hole route and experiment checks",
+  "blurb": "Drives combined 3D-body/2D-sieve challenges through sieve3d.api_v1 with recording, route coverage, ordered actions, subsets, and optional observers.",
+  "candidates": "18",
+  "pass": "10",
+  "analyzer": "passed_volume_pct:max,actions:min,clearance:max,api_route_depth:max,record_steps:max"
+ },
+ {
+  "id": "constraints_diff_fuzz_sieve_diff_fuzz_ru",
+  "spec": "constraints/diff_fuzz_sieve/diff_fuzz_run.toml",
+  "title": "Differential fuzzing #4 (RUN) \u2014 correct vs naive evaluator, full Bundle",
+  "blurb": "Slots concatenate into a self-checking .py; FW_VAR=2 marks a precedence divergence.",
+  "candidates": "243",
+  "pass": "207",
+  "analyzer": "divergences:max"
+ },
+ {
+  "id": "constraints_diff_fuzz_when_diff_fuzz_whe",
+  "spec": "constraints/diff_fuzz_when/diff_fuzz_when.toml",
+  "title": "Differential fuzzing #4 (RUN) \u2014 correct vs naive evaluator, full Bundle",
+  "blurb": "Slots concatenate into a self-checking .py; FW_VAR=2 marks a precedence divergence.",
+  "candidates": "243",
+  "pass": "207",
+  "analyzer": "divergences:max"
+ },
+ {
+  "id": "examples_decomposition_inventory_decompo",
+  "spec": "examples/decomposition/inventory_decomposed.toml",
+  "title": "decomposition of inventory \u2014 9 pieces, rewrite & combine",
+  "blurb": "Each slot = one code piece; add rewrites to values; the cartesian of rewrites surfaces indirect interactions. raw=true \u2192 verbatim; Reader concatenator",
+  "candidates": "1",
+  "pass": "1",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_auth_matrix_auth_mat",
+  "spec": "fintech_oot/batches/auth_matrix/auth_matrix.toml",
+  "title": "fintech_oot \u2014 auth_matrix (current finance_stack simulator, 2 live instances + in-process)",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "16",
+  "pass": "16",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_compound_faults3_com",
+  "spec": "fintech_oot/batches/compound_faults3/compound_faults3.toml",
+  "title": "fintech_oot \u2014 compound_faults3 (current finance_stack simulator, 2 live instances + in-pro",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "10",
+  "pass": "10",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_cross_factors_cross_",
+  "spec": "fintech_oot/batches/cross_factors/cross_factors.toml",
+  "title": "fintech_oot \u2014 cross_factors (current finance_stack simulator, 2 live instances + in-proces",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "48",
+  "pass": "48",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_currency_matrix_curr",
+  "spec": "fintech_oot/batches/currency_matrix/currency_matrix.toml",
+  "title": "fintech_oot \u2014 currency_matrix (current finance_stack simulator, 2 live instances + in-proc",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "9",
+  "pass": "9",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_identity_accounts_id",
+  "spec": "fintech_oot/batches/identity_accounts/identity_accounts.toml",
+  "title": "fintech_oot \u2014 identity_accounts (current finance_stack simulator, 2 live instances + in-pr",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "30",
+  "pass": "30",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_intra_transfer_intra",
+  "spec": "fintech_oot/batches/intra_transfer/intra_transfer.toml",
+  "title": "fintech_oot \u2014 intra_transfer (current finance_stack simulator, 2 live instances + in-proce",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "90",
+  "pass": "90",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_live_crossbank_live_",
+  "spec": "fintech_oot/batches/live_crossbank/live_crossbank.toml",
+  "title": "fintech_oot \u2014 live_crossbank (current finance_stack simulator, 2 live instances + in-proce",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "4",
+  "pass": "4",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_risk_gates_risk_gate",
+  "spec": "fintech_oot/batches/risk_gates/risk_gates.toml",
+  "title": "fintech_oot \u2014 risk_gates (current finance_stack simulator, 2 live instances + in-process)",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "36",
+  "pass": "36",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_sanctions_sanctions",
+  "spec": "fintech_oot/batches/sanctions/sanctions.toml",
+  "title": "fintech_oot \u2014 sanctions (current finance_stack simulator, 2 live instances + in-process)",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "16",
+  "pass": "16",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_time_sync_time_sync",
+  "spec": "fintech_oot/batches/time_sync/time_sync.toml",
+  "title": "fintech_oot \u2014 time_sync (current finance_stack simulator, 2 live instances + in-process)",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "24",
+  "pass": "24",
+  "analyzer": ""
+ },
+ {
+  "id": "fintech_oot_batches_transfer_lifecycle_t",
+  "spec": "fintech_oot/batches/transfer_lifecycle/transfer_lifecycle.toml",
+  "title": "fintech_oot \u2014 transfer_lifecycle (current finance_stack simulator, 2 live instances + in-p",
+  "blurb": "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions",
+  "candidates": "18",
+  "pass": "18",
+  "analyzer": ""
+ },
+ {
+  "id": "model_usecases_run_asm_superopt_asm_sup",
+  "spec": "model_usecases/run/asm_superopt/asm_superopt.toml",
+  "title": "ASM superoptimization (RUN) \u2014 fastest correct sum_to_n for THIS hardware, full Bundle",
+  "blurb": "Middle slots INIT x LOOP = the combinatorial asm object; HEAD/TAIL assemble+verify+time on the host; RunMeFirstOnce observes the hardware/OS. FW_VAR=0",
+  "candidates": "12",
+  "pass": "12",
+  "analyzer": "ns_total:min,correct:max"
+ },
+ {
+  "id": "model_usecases_run_code_variants_code_v",
+  "spec": "model_usecases/run/code_variants/code_variants_run.toml",
+  "title": "Code variedness #6 (RUN) \u2014 63 equivalent variants self-measured, full Bundle",
+  "blurb": "Each candidate self-measures (inspect.getsource) and prints its software metrics; the Analyzer ranks the correct variants by Maintainability/Cyclomati",
+  "candidates": "63",
+  "pass": "63",
+  "analyzer": "maintainability_index:max,cyclomatic:min,nesting:min"
+ },
+ {
+  "id": "model_usecases_run_diff_fuzz_diff_fuzz_",
+  "spec": "model_usecases/run/diff_fuzz/diff_fuzz_run.toml",
+  "title": "Differential fuzzing #4 (RUN) \u2014 correct vs naive evaluator, full Bundle",
+  "blurb": "Slots concatenate into a self-checking .py; FW_VAR=2 marks a precedence divergence.",
+  "candidates": "243",
+  "pass": "207",
+  "analyzer": "divergences:max"
+ },
+ {
+  "id": "model_usecases_run_esoteric_life_esoter",
+  "spec": "model_usecases/run/esoteric_life/esoteric_life_run.toml",
+  "title": "Esoteric #5 (RUN) \u2014 Game of Life seed search, full Bundle",
+  "blurb": "512 self-classifying seeds; Analyzer displacement:max finds the glider, lifespan:max finds the methuselah.",
+  "candidates": "512",
+  "pass": "249",
+  "analyzer": "displacement:max,lifespan:max,max_population:max"
+ },
+ {
+  "id": "landing_py_e2e_harness",
+  "spec": "landing/py_e2e_harness.toml",
+  "title": "Python comprehensive e2e (Combi(1) \u00d7 Permut \u00d7 Subsets; every combo runs)",
+  "blurb": "Decompose-style harness; Core enumerates, Reader reassembles a runnable .py per combo.",
+  "candidates": "72",
+  "pass": "61",
+  "analyzer": ""
+ },
+ {
+  "id": "llm_arch_search_arch_compat_arch_compat",
+  "spec": "llm_arch_search/arch_compat/arch_compat.toml",
+  "title": "LLM-Arch search \u2014 BONDS demo: a compatibility sieve (n_heads must divide d_model)",
+  "blurb": "LLM-Arch search \u2014 BONDS demo: a compatibility sieve (n_heads must divide d_model)",
+  "candidates": "9",
+  "pass": "8",
+  "analyzer": "params:min,latency_ms:min,proxy_gradnorm:max"
+ },
+ {
+  "id": "llm_arch_search_arch_grid_arch_grid",
+  "spec": "llm_arch_search/arch_grid/arch_grid.toml",
+  "title": "LLM-Arch search \u2014 architecture GRID: norm x token-mixer x channel-mixer x residual-policy ",
+  "blurb": "LLM-Arch search \u2014 architecture GRID: norm x token-mixer x channel-mixer x residual-policy ",
+  "candidates": "48",
+  "pass": "48",
+  "analyzer": "params:min,latency_ms:min,proxy_gradnorm:max"
+ },
+ {
+  "id": "llm_arch_search_arch_optional_arch_optio",
+  "spec": "llm_arch_search/arch_optional/arch_optional.toml",
+  "title": "LLM-Arch search \u2014 OPTIONAL plugins: FW_Optional present/absent add-ons over a token-mixer ",
+  "blurb": "LLM-Arch search \u2014 OPTIONAL plugins: FW_Optional present/absent add-ons over a token-mixer ",
+  "candidates": "24",
+  "pass": "24",
+  "analyzer": "params:min,proxy_gradnorm:max"
+ },
+ {
+  "id": "llm_arch_search_arch_order_arch_order",
+  "spec": "llm_arch_search/arch_order/arch_order.toml",
+  "title": "LLM-Arch search \u2014 layer ORDER: FW_Permut over a heterogeneous block alphabet (the T-M-T-M ",
+  "blurb": "LLM-Arch search \u2014 layer ORDER: FW_Permut over a heterogeneous block alphabet (the T-M-T-M ",
+  "candidates": "6",
+  "pass": "6",
+  "analyzer": "params:min,latency_ms:min,proxy_gradnorm:max"
+ },
+ {
+  "id": "llm_loop_optrun_probe_spec_optrun",
+  "spec": "llm_loop/optrun_probe/spec/optrun.toml",
+  "title": "optrun",
+  "blurb": "optrun",
+  "candidates": "2",
+  "pass": "1",
+  "analyzer": ""
+ },
+ {
+  "id": "llm_loop_redteam3_spec_run_adv_run",
+  "spec": "llm_loop/redteam3/spec_run/adv_run.toml",
+  "title": "adv_run \u2014 runnable FW_Optional endpoint red-team vs advanced_surrogate (full Bundle)",
+  "blurb": "Candidates hit the live service; FW_Optional sudden actions enable memory-persistence / training-poison / tool-inject.",
+  "candidates": "64",
+  "pass": "32",
+  "analyzer": ""
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_01_order_reco",
+  "spec": "llm_selfposed_bundle_tasks/01_order_record_clean/scenario.toml",
+  "title": "Record cleaning \u2014 order-sensitive normalize/nullfix/dedup, data-quality oracle",
+  "blurb": "FW_Permut step-order x FW_Combi(1) null-policy/dedup-key; exposes dedupe-before-normalize duplicate leak.",
+  "candidates": "24",
+  "pass": "9",
+  "analyzer": "rows_out:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_02_optional_q",
+  "spec": "llm_selfposed_bundle_tasks/02_optional_queue_saga/scenario.toml",
+  "title": "Queue consumer saga \u2014 FW_Permut step order + FW_Optional sudden actions, invariant oracle",
+  "blurb": "Order-sensitivity + idempotency + delivery faults: fetch/process/ack order x optional redelivery/crash-before-ack.",
+  "candidates": "24",
+  "pass": "2",
+  "analyzer": "process_count:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_03_pareto_cac",
+  "spec": "llm_selfposed_bundle_tasks/03_pareto_cache_design/scenario.toml",
+  "title": "Cache layer design space \u2014 eviction/size/ttl/prefetch, deterministic surrogate, 3-objectiv",
+  "blurb": "FW_Combi(1) over 4 axes; every config valid (FW_VAR=0); Analyzer selects non-dominated over hit_rate/memory/p99.",
+  "candidates": "36",
+  "pass": "36",
+  "analyzer": "hit_rate:max,memory_mb:min,p99_latency_ms:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_04_ml_rerank_",
+  "spec": "llm_selfposed_bundle_tasks/04_ml_rerank_eval/scenario.toml",
+  "title": "Text-classifier outer eval \u2014 preprocessing order x chunk x reranker, surrogate, cost-aware",
+  "blurb": "FW_Permut preprocessing-order x FW_Combi(1) chunk/reranker; LOCAL deterministic surrogate; quality gate + 3-objective Pareto.",
+  "candidates": "36",
+  "pass": "34",
+  "analyzer": "accuracy:max,latency_ms:min,cost_usd:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_05_sieve_depl",
+  "spec": "llm_selfposed_bundle_tasks/05_sieve_deploy_matrix/scenario.toml",
+  "title": "Deployment config matrix \u2014 pre-execution sieve forbids invalid region/tier combos",
+  "blurb": "FW_Combi(1) region x tier x replicas; [[constraints]] sieve removes data-residency-invalid combos BEFORE Executor; oracle flags ent-tier under-replica",
+  "candidates": "36",
+  "pass": "32",
+  "analyzer": "replicas:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_07_constraint",
+  "spec": "llm_selfposed_bundle_tasks/07_constraint_arity/scenario.toml",
+  "title": "Constraint arity \u2014 binary sieve rule applied; ternary rule reported unsupported (sieve v1)",
+  "blurb": "Binary [[constraints]] run in the sieve; a 3-sheet (ternary) bond is reported unsupported by sieve v1 and enforced by the oracle instead. Demonstrates",
+  "candidates": "36",
+  "pass": "34",
+  "analyzer": "replicas:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_08_ci_release",
+  "spec": "llm_selfposed_bundle_tasks/08_ci_release_matrix/scenario.toml",
+  "title": "CI/CD release matrix \u2014 strategy/migration/tests/feature-flag safety tradeoff",
+  "blurb": "Release-engineering scenario: binary [[constraints]] remove structurally unsafe direct+breaking migrations before execution; TAIL oracle flags risky b",
+  "candidates": "108",
+  "pass": "84",
+  "analyzer": "risk_score:min,duration_min:min,rollback_score:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_09_api_compat",
+  "spec": "llm_selfposed_bundle_tasks/09_api_compat_matrix/scenario.toml",
+  "title": "API compatibility matrix \u2014 version/client/auth/payload contract checks",
+  "blurb": "API/platform scenario: binary [[constraints]] remove structurally unsupported client/API pairs before execution; TAIL oracle flags executable but inco",
+  "candidates": "81",
+  "pass": "69",
+  "analyzer": "compat_score:max,latency_ms:min,migration_effort:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_10_feature_fl",
+  "spec": "llm_selfposed_bundle_tasks/10_feature_flag_interaction/scenario.toml",
+  "title": "Feature-flag interaction \u2014 FW_Subsets over flags x rollout, interaction oracle, capability",
+  "blurb": "FW_Subsets (any subset of flags) x FW_Combi(1) rollout; oracle catches a flag dependency and a canary resource conflict. Within-subset bonds go to the",
+  "candidates": "32",
+  "pass": "21",
+  "analyzer": "enabled_flags:max,risk_score:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_11_db_config_",
+  "spec": "llm_selfposed_bundle_tasks/11_db_config_cartes/scenario.toml",
+  "title": "DB config tuning \u2014 FW_Cartes workload matrix x data size, p95/cost/stability Pareto",
+  "blurb": "FW_Cartes(WORKLOAD) crosses each DB config profile with each workload class; DATA_SIZE is a normal FW_Combi(1) axis; TAIL oracle flags config/workload",
+  "candidates": "18",
+  "pass": "12",
+  "analyzer": "p95_ms:min,cost_units:min,stability_score:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_12_fallback_s",
+  "spec": "llm_selfposed_bundle_tasks/12_fallback_sequence_permutr/scenario.toml",
+  "title": "Service fallback sequence \u2014 FW_PermutR repeated probes x request class",
+  "blurb": "FW_PermutR(3) models a 3-step ordered fallback/probe sequence where the same probe can repeat; TAIL oracle checks deployability and Analyzer ranks ava",
+  "candidates": "54",
+  "pass": "32",
+  "analyzer": "availability_score:max,latency_ms:min,cost_units:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_13_resource_m",
+  "spec": "llm_selfposed_bundle_tasks/13_resource_multiset_combir/scenario.toml",
+  "title": "Resource allocation multiset \u2014 FW_CombiR(3) over instance types x workload, resource-mix o",
+  "blurb": "FW_CombiR(3) (3 slots from 3 types, repetition allowed) x FW_Combi(1) workload; oracle flags zero-diversity (single point of failure) and serving-with",
+  "candidates": "20",
+  "pass": "12",
+  "analyzer": "diversity:max,cost_units:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_14_control_pa",
+  "spec": "llm_selfposed_bundle_tasks/14_control_pair_combi2/scenario.toml",
+  "title": "Security control pair selection \u2014 FW_Combi(2) controls x traffic profile",
+  "blurb": "FW_Combi(2) models choosing exactly two distinct controls, order irrelevant; traffic profile is FW_Combi(1); TAIL oracle catches admin-without-WAF and",
+  "candidates": "12",
+  "pass": "8",
+  "analyzer": "coverage_score:max,friction_score:min,cost_units:min"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_15_secondorde",
+  "spec": "llm_selfposed_bundle_tasks/15_secondorder_group_rewrite/scenario.toml",
+  "title": "Second-order tag recombination \u2014 FW_Group + FW_ReplaceRE + FW_Separator (plan + graph only",
+  "blurb": "FW_Subsets tags -> a result db-table; FW_Group GROUPS THE WHOLE RESULT SET of that prior db-table and applies the verb in the NEXT cell of the 'FW_Seq",
+  "candidates": "206",
+  "pass": "206",
+  "analyzer": "groups:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_16_security_r",
+  "spec": "llm_selfposed_bundle_tasks/16_security_redteam_matrix/scenario.toml",
+  "title": "Security red-team matrix \u2014 FW_Permut check order + FW_Optional sudden attacks, breach orac",
+  "blurb": "Interaction/order security testing: authn/authz/ratelimit order x optional token-replay/privilege-escalation. A breach depends on order + attack combi",
+  "candidates": "24",
+  "pass": "7",
+  "analyzer": "breach:max"
+ },
+ {
+  "id": "llm_selfposed_bundle_tasks_17_qa_pub_jok",
+  "spec": "llm_selfposed_bundle_tasks/17_qa_pub_joke_promo/scenario.toml",
+  "title": "QA tester walks into a pub (promo) \u2014 FW_Combi(1) entry/quantity/target x FW_Permut action ",
+  "blurb": "Promo/demo: boundary values (1/0/-1/huge/abcd) and invalid action orders are generated INTENTIONALLY; the oracle separates clean rejection from a cras",
+  "candidates": "270",
+  "pass": "24",
+  "analyzer": "accepted:max"
+ },
+ {
+  "id": "llm_transformer_campaign_faultguards_fau",
+  "spec": "llm_transformer_campaign/faultguards/faultguards.toml",
+  "title": "LLM-Transformer fault guards \u2014 FW_Optional sudden actions vs the ValueError validation gua",
+  "blurb": "LLM-Transformer fault guards \u2014 FW_Optional sudden actions vs the ValueError validation gua",
+  "candidates": "32",
+  "pass": "32",
+  "analyzer": ""
+ },
+ {
+  "id": "llm_transformer_campaign_groupcheck_grou",
+  "spec": "llm_transformer_campaign/groupcheck/groupcheck.toml",
+  "title": "LLM-Transformer group check \u2014 FW_Group (combinations of combinations) + FW_ReplaceRE short",
+  "blurb": "LLM-Transformer group check \u2014 FW_Group (combinations of combinations) + FW_ReplaceRE short",
+  "candidates": "6",
+  "pass": "6",
+  "analyzer": ""
+ },
+ {
+  "id": "llm_transformer_campaign_richverbs_richv",
+  "spec": "llm_transformer_campaign/richverbs/richverbs.toml",
+  "title": "LLM-Transformer rich verbs \u2014 FW_Cartes(SEQLEN) input matrix \u00d7 FW_Subsets_RANGE(1,2) pertur",
+  "blurb": "LLM-Transformer rich verbs \u2014 FW_Cartes(SEQLEN) input matrix \u00d7 FW_Subsets_RANGE(1,2) pertur",
+  "candidates": "36",
+  "pass": "36",
+  "analyzer": ""
+ },
+ {
+  "id": "qa_checkout_spec_checkout_engine",
+  "spec": "qa_checkout/spec/checkout_engine.toml",
+  "title": "checkout_engine \u2014 order-of-operations tax bug (Combi impls \u00d7 Permut order \u00d7 Subsets option",
+  "blurb": "Pure-QA combinatorial test-gen with execution: the engine breeds the step orders that tax a flat fee (overcharge). FW_VAR=1 = customer overcharged vs ",
+  "candidates": "96",
+  "pass": "32",
+  "analyzer": ""
+ },
+ {
+  "id": "qa_testgen_spec_pricing_testgen",
+  "spec": "qa_testgen/spec/pricing_testgen.toml",
+  "title": "pricing_testgen \u2014 combinatorial QA test-gen: author the test UNITS, fixed SUT, breed test ",
+  "blurb": "User-authored test ingredients (input values \u00d7 action order \u00d7 optional conditions) bred into 216 test cases against a FIXED, buggy pricing SUT. FW_VAR",
+  "candidates": "216",
+  "pass": "84",
+  "analyzer": ""
+ },
+ {
+  "id": "transformers_sweep_288_arch_mix_smoke_ar",
+  "spec": "transformers_sweep_288/arch_mix_smoke/arch_mix_smoke.toml",
+  "title": "considerme_as_upgradeMIXtest SMOKE \u2014 real Bundle end-to-end (fwgen->Core->Reader->Executor",
+  "blurb": "considerme_as_upgradeMIXtest SMOKE \u2014 real Bundle end-to-end (fwgen->Core->Reader->Executor",
+  "candidates": "6",
+  "pass": "6",
+  "analyzer": "params:min,latency_ms:min,proxy_gradnorm:max"
+ },
+ {
+  "id": "tryout_own_pricing_pricing",
+  "spec": "tryout_own/pricing/pricing.toml",
+  "title": "Own Bundle input \u2014 checkout pricing red-team (Combi x Subsets x Permut x FW_Optional x sie",
+  "blurb": "Own Bundle input \u2014 checkout pricing red-team (Combi x Subsets x Permut x FW_Optional x sie",
+  "candidates": "288",
+  "pass": "0",
+  "analyzer": "severity:max,latency_ms:min,correct:max"
+ },
+ {
+  "id": "usecases_telemetry_catalog_e2e_lookup",
+  "spec": "usecases/telemetry_catalog_e2e/telemetry_lookup.toml",
+  "title": "Telemetry catalog conditional-constraints e2e",
+  "blurb": "Telemetry catalog conditional-constraints e2e",
+  "candidates": "576",
+  "pass": "300",
+  "analyzer": "valid:max,broken_count:min"
+ },
+ {
+  "id": "usecases_etl_pipeline_etl_pipeline",
+  "spec": "usecases/etl_pipeline/etl_pipeline.toml",
+  "title": "ETL/data-pipeline validation \u2014 order-sensitive transforms, data-quality oracle",
+  "blurb": "FW_Permut transform-order x FW_Combi(1) null-policy/dedup-mode; exposes dedup-before-normalize.",
+  "candidates": "36",
+  "pass": "21",
+  "analyzer": "rows_out:max"
+ },
+ {
+  "id": "usecases_event_order_event_order",
+  "spec": "usecases/event_order/event_order.toml",
+  "title": "Event-order / saga \u2014 FW_Permut step order + FW_Optional sudden actions, invariant oracle",
+  "blurb": "Distributed-workflow interaction testing: order-sensitivity + idempotency + liveness.",
+  "candidates": "24",
+  "pass": "2",
+  "analyzer": "charges:min"
+ },
+ {
+  "id": "usecases_gui_constraints_e2e_gui_checkou",
+  "spec": "usecases/gui_constraints_e2e/gui_checkout.toml",
+  "title": "GUI constraints checkout e2e",
+  "blurb": "Self-contained checkout risk object used by Bundle GUI constraints acceptance tests.",
+  "candidates": "108",
+  "pass": "69",
+  "analyzer": "correct:max,risk_score:min,latency_ms:min"
+ },
+ {
+  "id": "usecases_gui_reactor_e2e_reactor",
+  "spec": "usecases/gui_reactor_e2e/reactor.toml",
+  "title": "GUI constraints reactor-commissioning e2e",
+  "blurb": "GUI constraints reactor-commissioning e2e",
+  "candidates": "36",
+  "pass": "6",
+  "analyzer": "yield_pct:max,hazard_count:min"
+ },
+ {
+  "id": "usecases_ml_eval_ml_eval",
+  "spec": "usecases/ml_eval/ml_eval.toml",
+  "title": "ML/LLM eval \u2014 discrete outer structure, local deterministic surrogate, cost-aware Pareto",
+  "blurb": "FW_Permut preprocessing-order x FW_Combi(1) quant/decode; quality gate + 3-objective Pareto.",
+  "candidates": "54",
+  "pass": "43",
+  "analyzer": "accuracy:max,latency_ms:min,cost_usd:min"
+ },
+ {
+  "id": "usecases_ml_eval_surrogate_ml_eval_surro",
+  "spec": "usecases/ml_eval_surrogate/ml_eval_surrogate.toml",
+  "title": "ML/LLM differential eval \u2014 two real local sklearn surrogates, model A vs B",
+  "blurb": "FW_Combi(1) MODEL/STYLE/TEMP; queries local OpenAI-compatible surrogates; cost-aware Pareto.",
+  "candidates": "12",
+  "pass": "0",
+  "analyzer": "answered:max,latency_ms:min,cost_usd:min"
+ },
+ {
+  "id": "usecases_perf_opt_perf_opt",
+  "spec": "usecases/perf_opt/perf_opt.toml",
+  "title": "Performance optimization \u2014 kernel design space, deterministic surrogate, 3-objective Paret",
+  "blurb": "FW_Combi(1) over algo/threads/batch/cache; all valid; multi-objective selection.",
+  "candidates": "72",
+  "pass": "72",
+  "analyzer": "throughput_rps:max,latency_ms:min,memory_mb:min"
+ }
+]

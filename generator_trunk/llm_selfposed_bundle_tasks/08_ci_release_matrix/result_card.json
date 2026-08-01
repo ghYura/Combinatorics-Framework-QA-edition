@@ -1,0 +1,137 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_08_ci_release_matrix",
+  "category": "CI/CD release matrix",
+  "user_problem": "I run releases across services. I can vary deployment strategy, database migration kind, test scope, and feature flag state. Which combinations are structurally unsafe before execution, and which risky release plans should the oracle catch?",
+  "bundle_offer": "Bundle enumerates the release matrix, applies a binary sieve rule to remove direct deploys with breaking database migrations before execution, runs each surviving release plan through a deterministic safety oracle, and returns a Pareto front over risk, duration, and rollback strength.",
+  "zen_mapping": [
+    {
+      "freedom": "service",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "release strategy",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "database migration kind",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "test scope",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "feature flag state",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "direct deploy with breaking migration is forbidden",
+      "shape": "a binary pre-execution bond",
+      "verb": "[[constraints]] sieve v1",
+      "cardinality": "removes 12"
+    }
+  ],
+  "oracle": "sieve removes direct+breaking migration pre-execution; FW_VAR=2 for breaking migration with smoke tests only; FW_VAR=3 for canary+feature-flag with smoke tests only; FW_VAR=0 accepted release plan",
+  "spec_path": "llm_selfposed_bundle_tasks/08_ci_release_matrix/scenario.toml",
+  "spec_sha256": "eec83225ff3d54155e18fd454add1bb90a190c70dd30e2ddb5284a71e7c3601b",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 0,
+    "mode": "BOUNDED",
+    "reasons": [
+      "each FW_Optional slot independently multiplies the post-sieve candidate space",
+      "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+    ],
+    "upper": 108,
+    "value": 108
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 96,
+  "verdict_distribution": {
+    "PASS (release plan accepted)": 78,
+    "breaking migration released with smoke tests only": 12,
+    "canary with enabled feature flag released with smoke tests only": 6
+  },
+  "goals": [
+    {
+      "key": "risk_score",
+      "dir": "min"
+    },
+    {
+      "key": "duration_min",
+      "dir": "min"
+    },
+    {
+      "key": "rollback_score",
+      "dir": "max"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "100_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "risk_score": 10.0,
+        "duration_min": 50.0,
+        "rollback_score": 8.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 10 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "73_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "risk_score": 19.0,
+        "duration_min": 8.0,
+        "rollback_score": 1.0
+      },
+      "reason_non_dominated": "champion: strictly best minimize duration_min (duration_min=8.000) on the 10-point Pareto front"
+    },
+    {
+      "candidate_id": "74_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "risk_score": 21.0,
+        "duration_min": 12.0,
+        "rollback_score": 3.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 10 front points (better than each on ≥1 objective)"
+    }
+  ],
+  "pareto_front_size": 10,
+  "pareto_front_pass_count": 9,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=ci_release service=frontend strategy=blue_green migration=breaking tests=smoke flag=off risk_score=21 duration_min=46 rollback_score=4 FW_VAR=2",
+    "app=ci_release service=api strategy=canary migration=none tests=smoke flag=on risk_score=18 duration_min=24 rollback_score=7 FW_VAR=3"
+  ],
+  "pass_example": "app=ci_release service=frontend strategy=blue_green migration=none tests=full flag=on risk_score=10 duration_min=50 rollback_score=8 FW_VAR=0",
+  "teaching_summary": "User problem (CI/CD release matrix). Ran 96 candidates: 78x PASS (release plan accepted), 12x breaking migration released with smoke tests only, 6x canary with enabled feature flag released with smoke tests only. Formal Pareto front of 10. Verbs: service -> FW_Combi(1); release strategy -> FW_Combi(1); database migration kind -> FW_Combi(1); test scope -> FW_Combi(1); feature flag state -> FW_Combi(1); direct deploy with breaking migration is forbidden -> [[constraints]] sieve v1. NOTE: 1 of 10 Pareto-front candidates are DOMAIN_FAIL (findings, not deployable): the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy.",
+  "db": "llm_selfposed_08_ci_release",
+  "run_id": "llm-selfposed-08-ci-release-001",
+  "sieve": true,
+  "run_dir": "/tmp/fw_work/llm_selfposed_08_ci_release/runs/llm-selfposed-08-ci-release-001",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

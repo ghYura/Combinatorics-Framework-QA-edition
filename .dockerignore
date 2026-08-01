@@ -1,0 +1,87 @@
+# The only current image build is generator_trunk/deploy/gateway.Dockerfile.
+# Deny the workspace by default, then admit only the trees that Dockerfile copies.
+**
+!generator_trunk/
+!generator_trunk/**
+!Core_trunk/
+!Core_trunk/**
+!Reader_trunk/
+!Reader_trunk/**
+!Executor_trunk/
+!Executor_trunk/**
+!Analyzer_trunk/
+!Analyzer_trunk/**
+
+# VCS, editors, local automation, and host metadata.
+**/.git/
+**/.github/
+**/.idea/
+**/.vscode/
+**/.claude/
+**/.agents/
+**/.automation/
+**/.DS_Store
+**/.directory
+**/*.iml
+**/*.swp
+**/*.swo
+**/*~
+
+# Credentials and operator-owned configuration must never enter an image layer.
+**/.env
+**/.env.*
+!**/.env.example
+!**/.env.template
+**/.bundle-dev-defaults.json
+**/.bundle-gateway-tokens.json
+**/gateway-tokens.json
+**/certs/**
+**/*.pem
+**/*.key
+**/*.p12
+**/*.pfx
+**/*.jks
+
+# Dependency caches, test caches, and local environments.
+**/__pycache__/**
+**/*.py[cod]
+**/.pytest_cache/**
+**/.mypy_cache/**
+**/.ruff_cache/**
+**/.tox/**
+**/.nox/**
+**/.venv/**
+**/*.egg-info/**
+**/.eggs/**
+**/pip-wheel-metadata/**
+**/node_modules/**
+**/.gradle/**
+**/.vite/**
+
+# Runtime state and evidence belong on mounted storage, not in the build context.
+**/runs/**
+**/outputs/**
+**/evidence/**
+**/*_evidence/**
+**/browser_runtime/**
+**/*.log
+**/*.pid
+**/*.tmp
+**/*.bak
+**/*.db
+**/*.sqlite
+**/*.sqlite3
+**/*.pkl
+**/*.pickle
+
+# Ignore arbitrary build products. Admit only the canonical JARs consumed by
+# the gateway after the documented root Maven build.
+**/target/**
+**/build/**
+**/dist/**
+**/*.jar
+**/*.class
+!Core_trunk/target/migrated-project-1.0-SNAPSHOT.jar
+!Reader_trunk/target/CombinatoricsReader-1.0-SNAPSHOT-shaded.jar
+!Executor_trunk/target/Executor-1.0-jar-with-dependencies.jar
+!Analyzer_trunk/target/heuristic-analyzer-flatlaf-1.0.0.jar

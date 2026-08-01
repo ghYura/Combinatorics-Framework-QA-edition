@@ -1,0 +1,82 @@
+# Self-posed scenario 04 — text-classifier outer-structure evaluation (LOCAL surrogate).
+# Category 4 (ML/LLM outer-structure eval), pattern like usecases/ml_eval.
+# 6(PREP=3!) x 3(CHUNK) x 2(RERANK) = 36 configs; local deterministic surrogate; trusted-local; formal Pareto.
+title = "Text-classifier outer eval — preprocessing order x chunk x reranker, surrogate, cost-aware Pareto"
+note  = "FW_Permut preprocessing-order x FW_Combi(1) chunk/reranker; LOCAL deterministic surrogate; quality gate + 3-objective Pareto."
+args  = ["mode=rerank_eval"]
+
+[[goals]]
+key = "accuracy"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "cost_usd"
+dir = "min"
+
+[[slots]]   # HEAD: LOCAL seeded deterministic surrogate (stands in for a model server) + cost model
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''SEED = 20260617
+CHUNK = "256"
+RERANK = "off"
+PREP = []
+
+def _prep_score(order):
+    # robustness depends on ORDER: strip_punct must precede lowercase; stem must be last.
+    bonus = 0.0
+    if order.index("strip_punct") < order.index("lowercase"):
+        bonus += 0.05
+    if order.index("stem") == len(order) - 1:
+        bonus += 0.04
+    return bonus
+
+def _surrogate(prep_order, chunk, rerank):
+    base = {"128": 0.74, "256": 0.80, "512": 0.83}[chunk]
+    rr = 0.05 if rerank == "on" else 0.0
+    acc = round(min(1.0, base + rr + _prep_score(prep_order)), 4)
+    lat = {"128": 18.0, "256": 30.0, "512": 55.0}[chunk] * (1.6 if rerank == "on" else 1.0)
+    cost = round(lat * 0.0008, 5)
+    return acc, round(lat, 2), cost
+''']
+
+[[slots]]   # retrieval chunk size
+sheet  = "CHUNK"
+key    = "chunk"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["CHUNK = \"128\"\n", "CHUNK = \"256\"\n", "CHUNK = \"512\"\n"]
+
+[[slots]]   # reranker toggle
+sheet  = "RERANK"
+key    = "rerank"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["RERANK = \"off\"\n", "RERANK = \"on\"\n"]
+
+[[slots]]   # ORDER-sensitive preprocessing pipeline -> permutations
+sheet  = "PREP"
+key    = "prep"
+verb   = "FW_Permut"
+raw    = true
+values = ["PREP.append(\"strip_punct\")\n", "PREP.append(\"lowercase\")\n", "PREP.append(\"stem\")\n"]
+
+[[slots]]   # TAIL: evaluate surrogate, quality-gate verdict, emit metrics
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_acc, _lat, _cost = _surrogate(PREP, CHUNK, RERANK)
+FW_VAR = 0 if _acc >= 0.75 else 4
+FW_CUSTOM_VAR = FW_VAR
+print("app=rerank_eval prep=%s chunk=%s rerank=%s "
+      "accuracy=%.4f latency_ms=%.2f cost_usd=%.5f FW_VAR=%d"
+      % (">".join(PREP), CHUNK, RERANK, _acc, _lat, _cost, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 4
+msg = "below quality gate (accuracy < 0.75)"

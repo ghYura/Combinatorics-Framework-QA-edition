@@ -1,0 +1,84 @@
+// ── 5.txt — initial implementation of isShellCommandComplete(String) ─
+// Contract:
+//   in   String text  (one or more newline-joined physical lines)
+//   out  true iff the text would be accepted as a complete shell
+//        command — no unclosed quotes, parens, braces, brackets,
+//        heredocs, or trailing continuation operators (\ && || | &
+//        ( {), and no open if/for/while/case scriptDepth.
+//
+// Original AnalyzerCore.java: full hand-written state machine.
+// (Body abridged here for the demo — the engine pastes the full
+// 100-line state machine when this variant is chosen.)
+
+    private static boolean isShellCommandComplete(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p5_invocations++;
+        Metrics.p5_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null) return false;
+            String normalized = text.replace("\r", "");
+            if (normalized.trim().isEmpty()) return false;
+
+            boolean singleQuote = false, doubleQuote = false, backtick = false;
+            int parenDepth = 0, braceDepth = 0, bracketDepth = 0, scriptDepth = 0;
+            boolean continuation = false;
+            List<String> heredocs = new ArrayList<>();
+
+            for (String line : normalized.split("\\n", -1)) {
+                if (!heredocs.isEmpty()) {
+                    String t = line.trim(), term = heredocs.get(0);
+                    if (t.equals(term) || t.equals("-" + term)) heredocs.remove(0);
+                    continuation = false;
+                    continue;
+                }
+                boolean escaped = false;
+                for (int i = 0; i < line.length(); i++) {
+                    char ch = line.charAt(i);
+                    if (singleQuote) { if (ch == '\'') singleQuote = false; continue; }
+                    if (doubleQuote) {
+                        if (escaped) { escaped = false; continue; }
+                        if (ch == '\\') { escaped = true; continue; }
+                        if (ch == '"') doubleQuote = false;
+                        continue;
+                    }
+                    if (backtick) { if (ch == '`') backtick = false; continue; }
+                    if (ch == '\\') { escaped = !escaped; continue; }
+                    if (ch == '\'') { singleQuote = true; continue; }
+                    if (ch == '"') { doubleQuote = true; continue; }
+                    if (ch == '`') { backtick = true; continue; }
+                    if (ch == '(') { parenDepth++; continue; }
+                    if (ch == ')' && parenDepth > 0) { parenDepth--; continue; }
+                    if (ch == '{') { braceDepth++; continue; }
+                    if (ch == '}' && braceDepth > 0) { braceDepth--; continue; }
+                    if (ch == '[') { bracketDepth++; continue; }
+                    if (ch == ']' && bracketDepth > 0) { bracketDepth--; continue; }
+                    if (ch == '<' && i + 1 < line.length() && line.charAt(i + 1) == '<') {
+                        int j = i + 2;
+                        if (j < line.length() && line.charAt(j) == '-') j++;
+                        while (j < line.length() && Character.isWhitespace(line.charAt(j))) j++;
+                        int start = j;
+                        while (j < line.length()) {
+                            char c = line.charAt(j);
+                            if (Character.isLetterOrDigit(c) || c == '_' || c == '-') j++;
+                            else break;
+                        }
+                        if (j > start) { heredocs.add(line.substring(start, j)); i = j - 1; }
+                    }
+                }
+                String t = line.trim();
+                if (!singleQuote && !doubleQuote && !backtick) {
+                    if (t.matches("(?i)^(if|for|while|until|select|case)\\b.*")) scriptDepth++;
+                    if (t.matches("(?i)^(fi|done|esac)\\b.*")) scriptDepth = Math.max(0, scriptDepth - 1);
+                    continuation = t.endsWith("\\") || t.endsWith("&&") || t.endsWith("||")
+                            || t.endsWith("|") || t.endsWith("|&") || t.endsWith("(") || t.endsWith("{");
+                } else continuation = true;
+            }
+            boolean ok = !singleQuote && !doubleQuote && !backtick
+                    && parenDepth == 0 && braceDepth == 0 && bracketDepth == 0
+                    && heredocs.isEmpty() && scriptDepth == 0 && !continuation;
+            if (ok) Metrics.p5_completed_count++;
+            return ok;
+        } finally {
+            Metrics.p5_duration_ns += System.nanoTime() - __t0;
+        }
+    }

@@ -1,0 +1,17 @@
+-- Template for assembled result tables (fw_final, fw_opt, etc.).
+-- Placeholders: BASE_NAME, SUFFIX, COLUMNS, TABLESPACE, PK_SUFFIX
+--
+-- COLUMNS is replaced with one line per sheet key:
+--   "combosN_SheetName" int2[], ...
+CREATE UNLOGGED TABLE public.${BASE_NAME}${SUFFIX}
+(
+    combi_id BIGSERIAL NOT NULL,
+${COLUMNS}
+    CONSTRAINT ${BASE_NAME}${SUFFIX}${PK_SUFFIX} PRIMARY KEY (combi_id)
+        USING INDEX TABLESPACE "${TABLESPACE}"
+)
+WITH (OIDS = FALSE)
+TABLESPACE "${TABLESPACE}";
+
+ALTER TABLE public.${BASE_NAME}${SUFFIX} OWNER TO postgres;
+ALTER TABLE public.${BASE_NAME}${SUFFIX} SET (autovacuum_enabled = false);

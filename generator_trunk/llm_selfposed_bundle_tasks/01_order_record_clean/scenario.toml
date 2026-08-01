@@ -1,0 +1,101 @@
+# Self-posed scenario 01 — order-sensitive record cleaning.
+# Category 1 (order-sensitive pipeline), pattern like usecases/etl_pipeline.
+# 2(NULLPOLICY) x 2(DEDUP) x 6(ORDER=3!) = 24 candidates; trusted-local, self-contained.
+title = "Record cleaning — order-sensitive normalize/nullfix/dedup, data-quality oracle"
+note  = "FW_Permut step-order x FW_Combi(1) null-policy/dedup-key; exposes dedupe-before-normalize duplicate leak."
+args  = ["mode=record_clean"]
+
+[[goals]]
+key = "rows_out"
+dir = "max"
+
+[[slots]]   # HEAD: fixed messy dataset + transforms + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''RAW = [
+    {"id": "1", "email": "Alice@Example.com"},
+    {"id": " 1 ", "email": " alice@example.com "},
+    {"id": "2", "email": None},
+    {"id": "2", "email": "bob@example.com"},
+    {"id": "3", "email": "carol@example.com"},
+]
+NULLPOLICY = "keep"
+DEDUP = "by_id"
+ORDER = []
+
+def _normalize(rows):
+    out = []
+    for r in rows:
+        em = r["email"]
+        em = em.strip().lower() if isinstance(em, str) else em
+        out.append({"id": r["id"].strip(), "email": em})
+    return out
+
+def _nullfix(rows):
+    if NULLPOLICY == "drop":
+        return [r for r in rows if r["email"] is not None]
+    return rows
+
+def _dedup(rows):
+    seen = set(); out = []
+    for r in rows:
+        key = r["id"] if DEDUP == "by_id" else r["email"]
+        if key in seen:
+            continue
+        seen.add(key); out.append(r)
+    return out
+
+_T = {"normalize": _normalize, "nullfix": _nullfix, "dedup": _dedup}
+''']
+
+[[slots]]   # null-email policy (cartesian leaf)
+sheet  = "NULLPOLICY"
+key    = "nullpolicy"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["NULLPOLICY = \"drop\"\n", "NULLPOLICY = \"keep\"\n"]
+
+[[slots]]   # dedupe key (cartesian leaf)
+sheet  = "DEDUP"
+key    = "dedup"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["DEDUP = \"by_id\"\n", "DEDUP = \"by_email\"\n"]
+
+[[slots]]   # ORDER-sensitive cleaning sequence -> permutations
+sheet  = "ORDER"
+key    = "order"
+verb   = "FW_Permut"
+raw    = true
+values = ["ORDER.append(\"normalize\")\n", "ORDER.append(\"nullfix\")\n", "ORDER.append(\"dedup\")\n"]
+
+[[slots]]   # TAIL: apply pipeline in ORDER, evaluate the data-quality oracle
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''rows = list(RAW)
+for _t in ORDER:
+    rows = _T[_t](rows)
+_ids = [r["id"] for r in rows]
+_dup_id = int(len(_ids) != len(set(_ids)))
+_null_leak = int(any(r["email"] is None for r in rows))
+if _dup_id:
+    FW_VAR = 2
+elif _null_leak and NULLPOLICY != "keep":
+    FW_VAR = 3
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=record_clean order=%s nullpolicy=%s dedup=%s rows_out=%d dup_id=%d null_leak=%d FW_VAR=%d"
+      % (">".join(ORDER), NULLPOLICY, DEDUP, len(rows), _dup_id, _null_leak, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "duplicate id survived (dedupe ran before normalize)"
+[[custom_vars]]
+code = 3
+msg = "null email leaked despite a non-keep policy"

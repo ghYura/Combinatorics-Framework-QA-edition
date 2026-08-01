@@ -1,0 +1,78 @@
+# Java e2e fixture for the BundleSeed feedback loop.
+# 4 THREADS x 4 BATCH x 3 CACHE = 48 candidates. Unlike janino_max, the TAIL
+# writes the Analyzer K=V line to the Java Executor's injected fw.metrics.out
+# sink, so bundle iterate can consume a non-empty metrics.kv without host reruns.
+title = "Java E2E seedloop (metrics sink writer; 48 candidates)"
+note  = "Small Java fixture for BundleSeed -> seed-bias iteration; TAIL writes fw.metrics.out."
+args  = ["mode=seedloop_e2e"]
+
+[[goals]]
+key = "latency_ms"
+dir = "min"
+
+[[goals]]
+key = "throughput_rps"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''public class Candidate {
+    public static int FW_VAR = 0;
+    static int threads = 1;
+    static int batch = 16;
+    static int cache = 0;
+    public static void main(String[] args) throws Exception {
+''']
+
+[[slots]]
+sheet = "THREADS"
+key = "threads"
+verb = "FW_Combi(1)"
+raw = true
+values = ["        threads = 1;\n", "        threads = 2;\n", "        threads = 8;\n", "        threads = 4;\n"]
+
+[[slots]]
+sheet = "BATCH"
+key = "batch"
+verb = "FW_Combi(1)"
+raw = true
+values = ["        batch = 16;\n", "        batch = 32;\n", "        batch = 64;\n", "        batch = 128;\n"]
+
+[[slots]]
+sheet = "CACHE"
+key = "cache"
+verb = "FW_Combi(1)"
+raw = true
+values = ["        cache = 0;\n", "        cache = 1;\n", "        cache = 2;\n"]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''        int latency = (220 / threads) + (batch / 4) - (cache * 18);
+        int throughput = (threads * batch * 3) + (cache * 75);
+        int memory = 32 + (batch / 2) + (cache * 64) + (threads * 3);
+        int risk = (cache == 0 ? 30 : (cache == 1 ? 8 : 16)) + (threads > 4 ? 4 : 0);
+        int code = (latency <= 95 && risk <= 20) ? 0 : 1;
+        FW_VAR = code;
+        String line = "app=seedloop_e2e threads=" + threads
+                + " batch=" + batch
+                + " cache=" + cache
+                + " latency_ms=" + latency
+                + " throughput_rps=" + throughput
+                + " memory_mb=" + memory
+                + " risk=" + risk
+                + " FW_VAR=" + code;
+        String sink = System.getProperty("fw.metrics.out");
+        if (sink != null && sink.length() > 0) {
+            java.nio.file.Files.write(java.nio.file.Paths.get(sink),
+                    (line + System.lineSeparator()).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+        }
+        System.out.println(line);
+    }
+}
+''']

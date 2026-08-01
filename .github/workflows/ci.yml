@@ -1,0 +1,446 @@
+name: CI
+
+# Tiered release pipeline (Prompt 03 Part C). The tiers exist so that a change
+# gets fast, honest feedback without a per-change job pretending to be release
+# evidence:
+#
+#   Tier 1  every push/PR      — source hygiene, deterministic units, no database
+#   Tier 2  every push/PR      — critical integration against isolated PostgreSQL
+#   Tier 3  scheduled/manual   — clean-room bootstrap, canonical SUTs, SBOM
+#
+# ACTION PINNING: every `uses:` ref below is an immutable full commit SHA; the
+# trailing comment preserves the reviewed major tag. Refresh only through the
+# evidence procedure in docs/34_RELEASE_REPRODUCIBILITY.md.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"        # Tier 3, weekly
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  PYTHONDONTWRITEBYTECODE: "1"
+
+jobs:
+  # ------------------------------------------------------------ TIER 1 -------
+  tier1-hygiene:
+    name: "Tier 1 · source, artifact and secret hygiene"
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+
+      - name: Refuse runtime artifacts in tracked source
+        run: |
+          if git ls-files | grep -E '(^|/)(target|__pycache__|runs|campaign_results|browser_runtime|node_modules)/'; then
+            echo "::error::runtime artifacts are tracked as source"; exit 1
+          fi
+          git diff --check
+
+      - name: Refuse credentials and machine-specific paths
+        run: |
+          if git grep -InE '/home/[a-z]' -- '*.py' '*.md' '*.json' '*.toml' '*.properties'; then
+            echo "::error::machine-specific absolute path in tracked source"; exit 1
+          fi
+          if git ls-files | grep -E '(^|/)\.env$'; then
+            echo "::error::a .env file is tracked"; exit 1
+          fi
+
+  tier1-contracts:
+    name: "Tier 1 · deterministic contracts and generated-artifact freshness"
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install focused test dependencies
+        run: python -m pip install -e '.[test]'
+
+      - name: Architecture boundary gate
+        run: python generator_trunk/bundle_run.py architecture --json /tmp/architecture.json
+
+      - name: Capability matrix freshness
+        # The checked-in table is GENERATED. If it drifts from the registry, one
+        # of them is lying to a reader; fail rather than pick a winner.
+        run: python generator_trunk/bundle_run.py capabilities --check docs/33_CAPABILITY_MATRIX.md
+
+      - name: Canonical SUT manifests validate
+        run: python generator_trunk/bundle_run.py sut-manifests --json /tmp/sut-manifests.json
+
+      - name: Reference-coverage audit
+        run: python generator_trunk/bundle_run.py coverage --json /tmp/coverage.json
+
+      - name: Deterministic unit and contract tests
+        run: |
+          python -m pytest -q -ra \
+            generator_trunk/test_bundle_architecture.py \
+            generator_trunk/test_bundle_capabilities.py \
+            generator_trunk/test_bundle_coverage.py \
+            generator_trunk/test_bundle_execution_safety.py \
+            generator_trunk/test_bundle_optional_contract.py \
+            generator_trunk/test_bundle_release.py \
+            generator_trunk/test_bundle_sut_manifests.py \
+            generator_trunk/test_bundle_grpc_bind.py \
+            generator_trunk/test_bundle_doctor.py \
+            generator_trunk/test_bundle_counts.py \
+            generator_trunk/test_fwgen_aliases.py \
+            generator_trunk/engine_demo/test_engine_demo.py \
+            2>&1 | tee /tmp/tier1-pytest.txt
+
+      - name: No unclassified skips
+        # An unclassified skip is how a gate turns green without running.
+        run: python generator_trunk/bundle_run.py release --pytest-output /tmp/tier1-pytest.txt
+
+      - name: No unexpected test collection changes
+        run: |
+          python -m pytest -q --collect-only --continue-on-collection-errors 2>&1 | tee /tmp/collect.txt
+          if grep -q "^ERROR " /tmp/collect.txt; then
+            echo "::error::a test module failed to collect; a missing OPTIONAL dependency must be a classified skip, not a collection error"
+            exit 1
+          fi
+
+      - name: Exact 24-case plan without a database
+        run: |
+          python generator_trunk/bundle_run.py plan \
+            generator_trunk/usecases/event_order --out /tmp/framework-plan
+          python - <<'PY'
+          import json, pathlib
+          plan = json.loads(pathlib.Path("/tmp/framework-plan/plan.json").read_text())
+          final = plan["cardinality"]["final"]
+          assert final["mode"] == "EXACT" and final["value"] == 24, final
+          contract = plan["optional_table_contract"]
+          assert contract["produced_sizes"] == contract["consumed_sizes"] == [1, 2], contract
+          assert contract["expected_multiplier"] == 4, contract
+          PY
+
+  tier1-java:
+    name: "Tier 1 · Maven reactor and Analyzer verifier"
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: Install Analyzer science dependencies
+        run: python -m pip install -e '.[science]'
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Build the Maven reactor
+        run: mvn -B --no-transfer-progress clean package
+      - name: Canonical Analyzer verifier suite
+        run: bash Analyzer_trunk/run-tests.sh
+
+  # ------------------------------------------------------------ TIER 2 -------
+  tier2-integration:
+    name: "Tier 2 · critical integration against isolated PostgreSQL"
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    needs: [tier1-contracts, tier1-java]
+    services:
+      main-db:
+        image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_USER: postgres
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+      results-db:
+        image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_USER: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+    env:
+      # Isolated, CI-only credentials for throwaway containers. Never a real secret.
+      BUNDLE_MAIN_DB_HOST: 127.0.0.1
+      BUNDLE_RESULTS_DB_HOST: 127.0.0.1
+      BUNDLE_MAIN_DB_PORT: "5433"
+      BUNDLE_RESULTS_DB_PORT: "5432"
+      BUNDLE_MAIN_DB_USER: postgres
+      BUNDLE_RESULTS_DB_USER: postgres
+      BUNDLE_MAIN_DB_PASSWORD: ci-local-only
+      BUNDLE_RESULTS_DB_PASSWORD: ci-local-only
+      BUNDLE_SUT_ROOT: ${{ github.workspace }}/SUT
+      PYTHONPATH: ${{ github.workspace }}/SUT/automation-scheme-studio/src
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - name: Check out the exact canonical sibling SUT revision
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ghYura/SUT
+          ref: db1ac787d07fe4ea16b084b551576c1da1a055fd
+          path: SUT
+          persist-credentials: false
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+      - name: Keep the nested SUT checkout outside Framework source identity
+        run: echo /SUT/ >> .git/info/exclude
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "25"
+          cache: maven
+      - name: Install from the resolved release lock
+        run: |
+          python -m pip install -r requirements-release.lock
+          python -m pip install -e '.[test,science,deploy]'
+      - name: Build the Maven reactor
+        run: mvn -B --no-transfer-progress clean package -DskipTests
+
+      - name: Doctor
+        run: python generator_trunk/bundle_run.py doctor
+
+      - name: "[canonical-sut-engine-demo] Python full-chain direct engine demonstration"
+        run: |
+          python generator_trunk/engine_demo/run_direct_engine_smoke.py run \
+            --db ci_engine_demo_${{ github.run_id }} \
+            --run-id ci-eds-${{ github.run_id }}
+
+      - name: "[canonical-sut-java-compiler-routing] Java full-chain and compiler routing"
+        run: |
+          python -m pytest -q generator_trunk/test_java_e2e_specs.py
+          python generator_trunk/bundle_run.py generator_trunk/java_e2e/janino_max \
+            --db ci_java_${{ github.run_id }} --run-id ci-java-${{ github.run_id }} \
+            --lang java --execution-policy-profile trusted-local \
+            --candidate-origin reviewed-checked-in \
+            --acknowledge-trusted-local "reviewed checked-in java_e2e fixture in CI"
+
+      - name: "[canonical-sut-automation] Automation oracle and bounded full-chain smoke"
+        run: |
+          python -m pytest -q \
+            generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/test_advanced_feedback.py
+          python generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/run_advanced_campaign.py \
+            smoke --spec 00_smoke --workers 2 \
+            --runs-root /tmp/fw_work --output-dir /tmp/automation-canonical-results
+
+      - name: "[reference-sut-telemetry] Telemetry oracle/live-service/full-pipeline checks"
+        # Reference evidence only: these tests do not yet qualify the manifest's
+        # exact networked-api-probe container-policy capability row.
+        run: |
+          python -m pytest -q \
+            generator_trunk/test_telemetry_catalog_e2e.py \
+            generator_trunk/test_telemetry_catalog_full_e2e.py
+
+      - name: "Multi-optional contract smoke (Core produces == Reader consumes)"
+        run: |
+          python generator_trunk/bundle_run.py generator_trunk/usecases/event_order \
+            --db ci_event_order_${{ github.run_id }} \
+            --run-id ci-eo-${{ github.run_id }} --lang py \
+            --execution-policy-profile trusted-local \
+            --candidate-origin reviewed-checked-in \
+            --acknowledge-trusted-local "reviewed checked-in usecase scenario in CI" \
+            --analyzer 'charges:min' --analysis-mode formal
+
+      - name: "generated-default fails closed without a container backend"
+        # The security property that matters most: a secure profile must never
+        # fall back to host execution. GitHub's runner has no rootless Docker for
+        # the sandbox, so this asserts the REFUSAL, which is the fail-closed path.
+        run: |
+          set +e
+          DOCKER_HOST=unix:///tmp/bundle-ci-deliberately-missing-docker.sock \
+          python generator_trunk/bundle_run.py generator_trunk/usecases/event_order \
+            --db ci_failclosed_${{ github.run_id }} \
+            --run-id ci-fc-${{ github.run_id }} --lang py \
+            --execution-policy-profile generated-default > /tmp/failclosed.txt 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::a secure profile completed without a sandbox backend"; cat /tmp/failclosed.txt; exit 1
+          fi
+          grep -Eq "requires the 'container' sandbox backend|refusing to run generated candidates unsandboxed" \
+            /tmp/failclosed.txt || {
+              echo "::error::command failed, but not for the expected fail-closed sandbox reason";
+              cat /tmp/failclosed.txt; exit 1; }
+          echo "secure profile refused as expected (exit $rc)"
+
+      - name: "Execution policy is required (no implicit trust)"
+        run: |
+          set +e
+          python generator_trunk/bundle_run.py generator_trunk/usecases/event_order \
+            --db ci_nopolicy_${{ github.run_id }} --run-id ci-np-${{ github.run_id }} \
+            > /tmp/nopolicy.txt 2>&1
+          rc=$?
+          set -e
+          if [ "$rc" -eq 0 ]; then
+            echo "::error::a run without an execution policy returned success"; cat /tmp/nopolicy.txt; exit 1
+          fi
+          grep -q "no execution policy selected" /tmp/nopolicy.txt || {
+            echo "::error::a run without an execution policy was not refused"; cat /tmp/nopolicy.txt; exit 1; }
+
+      - name: Resume, cancel and cleanup boundaries
+        run: |
+          python -m pytest -q -ra \
+            generator_trunk/test_bundle_resume.py \
+            generator_trunk/test_bundle_cancel.py \
+            generator_trunk/test_bundle_cleanup.py \
+            generator_trunk/test_bundle_runs.py \
+            generator_trunk/test_bundle_schema_capability.py \
+            2>&1 | tee /tmp/tier2-pytest.txt
+
+      - name: Classify Tier 2 skips
+        run: python generator_trunk/bundle_run.py release --pytest-output /tmp/tier2-pytest.txt
+
+      - name: Upload Tier 2 evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: tier2-evidence
+          path: |
+            /tmp/tier2-pytest.txt
+            /tmp/failclosed.txt
+            /tmp/nopolicy.txt
+          retention-days: 14
+
+  # ------------------------------------------------------------ TIER 3 -------
+  tier3-release-evidence:
+    name: "Tier 3 · clean-room full suite and SBOM"
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    needs: [tier2-integration]
+    services:
+      main-db:
+        image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_USER: postgres
+        ports: ["5433:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+      results-db:
+        image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+        env:
+          POSTGRES_PASSWORD: ci-local-only
+          POSTGRES_USER: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+    env:
+      BUNDLE_MAIN_DB_HOST: 127.0.0.1
+      BUNDLE_RESULTS_DB_HOST: 127.0.0.1
+      BUNDLE_MAIN_DB_PORT: "5433"
+      BUNDLE_RESULTS_DB_PORT: "5432"
+      BUNDLE_MAIN_DB_USER: postgres
+      BUNDLE_RESULTS_DB_USER: postgres
+      BUNDLE_MAIN_DB_PASSWORD: ci-local-only
+      BUNDLE_RESULTS_DB_PASSWORD: ci-local-only
+      BUNDLE_SUT_ROOT: ${{ github.workspace }}/SUT
+      PYTHONPATH: ${{ github.workspace }}/SUT/automation-scheme-studio/src
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Check out the exact sibling SUT revision for release evidence
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: ghYura/SUT
+          ref: db1ac787d07fe4ea16b084b551576c1da1a055fd
+          path: SUT
+          persist-credentials: false
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+      - name: Keep the nested SUT checkout outside Framework source identity
+        run: echo /SUT/ >> .git/info/exclude
+
+      - name: Clean-room bootstrap from a fresh checkout
+        # No cached pip/Maven: a release must be reproducible from source alone.
+        run: |
+          python3 -m venv .venv
+          . .venv/bin/activate
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-release.lock
+          python -m pip install -e '.[test,science,deploy]'
+
+      - uses: actions/setup-java@d7793b545071e98d581d3bf084a51c3213318a07 # v4
+        with:
+          distribution: temurin
+          java-version: "25"
+
+      - name: Build the reactor from a clean state
+        run: mvn -B --no-transfer-progress clean package
+
+      - name: Full suite with classified skips
+        # Deliberately continue to the release step so a failed run still emits
+        # inspectable evidence. `bundle release --pytest-output` parses the final
+        # summary and FAILS the job for any failed/error/truncated run; `|| true`
+        # is therefore artifact preservation, not failure suppression.
+        run: |
+          . .venv/bin/activate
+          # Review item A.4: `| tee` makes $? the exit code of tee, not pytest,
+          # so a crashed run could look green to anything reading only the log.
+          # Capture pytest's REAL code via PIPESTATUS and append it as a marker
+          # the release gate honours over the parsed summary text.
+          set +e
+          python -m pytest -q -ra 2>&1 | tee /tmp/tier3-pytest.txt
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "BUNDLE_PYTEST_EXIT_CODE=${rc}" >> /tmp/tier3-pytest.txt
+          echo "pytest exited ${rc}; the release step is the authoritative gate"
+
+      - name: Release manifest, SBOM and skip classification
+        run: |
+          . .venv/bin/activate
+          python generator_trunk/bundle_run.py release \
+            --out /tmp/release-manifest.json \
+            --sbom /tmp/sbom.cyclonedx.json \
+            --pytest-output /tmp/tier3-pytest.txt
+
+      - name: Generated capability matrix and CI cases
+        run: |
+          . .venv/bin/activate
+          python generator_trunk/bundle_run.py capabilities \
+            --json /tmp/capability-matrix.json --ci-cases /tmp/ci-cases.json
+
+      - name: Upload release evidence
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          # Generated instances are ARTIFACTS, never source. Nothing here is
+          # committed; the generators and their tests are.
+          name: release-evidence
+          path: |
+            /tmp/release-manifest.json
+            /tmp/sbom.cyclonedx.json
+            /tmp/capability-matrix.json
+            /tmp/ci-cases.json
+            /tmp/tier3-pytest.txt
+          retention-days: 90

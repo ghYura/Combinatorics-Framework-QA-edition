@@ -1,0 +1,145 @@
+spec_version = "1"
+title = "LLM-Arch search — architecture GRID: norm x token-mixer x channel-mixer x residual-policy x depth"
+note = """GENERATIVE architecture search (not fixed-model testing). Each candidate COMPOSES a brand-new
+TinyLM from interchangeable arch_zoo components, builds it, runs a forward + a backward, and emits zero-cost
+proxies (params, median latency, trainability grad-norm). The verdict CONVICTS a non-runnable architecture:
+code1 wrong logit shape, code2 non-finite logits, code3 non-finite/absent gradient (untrainable),
+code4 causal leak, code5 non-deterministic output, code6 optimizer step failed to reduce the same-batch objective,
+code8 = an INCOMPATIBLE genotype/config caught fail-loud (the sieve should have pruned it),
+code9 unexpected crash. FW_VAR=0 = a valid, runnable, trainable architecture.
+Freedom->verb: every axis here is 'exactly one of a set' -> FW_Combi(1). NORM(2) x TOKENMIX(3) x
+CHANMIX(2) x NORMPOS(2) x DEPTH(2) = 48 architectures (EXACT). The Analyzer then surfaces the Pareto
+front over params:min x latency_ms:min x proxy_gradnorm:max — the smallest/fastest/most-trainable shapes.
+This is the safe counter-design to the 'universal polymorphic constructor': fail-loud typed components +
+Bundle combinatorics, not silent auto-projection."""
+args = ["mode=arch_grid"]
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "llm_arch_search"))
+import arch_zoo
+geno = dict(vocab=64, d_model=64, n_heads=4, d_ffn=128, num_experts=4, top_k=2,
+            max_seq_len=64, n_layers=2, prenorm=True, norm="rmsnorm",
+            token_mixer="mhsa", channel_mixer="swiglu")
+desc = dict(norm="rmsnorm", tokmix="mhsa", chanmix="swiglu", norm_pos="pre", depth=2)
+''']
+
+[[slots]]
+sheet = "NORM"
+key   = "norm"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["norm"] = "rmsnorm"; desc["norm"] = "rmsnorm"
+''', '''
+geno["norm"] = "layernorm"; desc["norm"] = "layernorm"
+''']
+
+[[slots]]
+sheet = "TOKENMIX"
+key   = "tokenmix"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["token_mixer"] = "mhsa"; desc["tokmix"] = "mhsa"
+''', '''
+geno["token_mixer"] = "swa"; desc["tokmix"] = "swa"
+''', '''
+geno["token_mixer"] = "linattn"; desc["tokmix"] = "linattn"
+''']
+
+[[slots]]
+sheet = "CHANMIX"
+key   = "chanmix"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["channel_mixer"] = "swiglu"; desc["chanmix"] = "swiglu"
+''', '''
+geno["channel_mixer"] = "moe"; desc["chanmix"] = "moe"
+''']
+
+[[slots]]
+sheet = "NORMPOS"
+key   = "normpos"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["prenorm"] = True; desc["norm_pos"] = "pre"
+''', '''
+geno["prenorm"] = False; desc["norm_pos"] = "post"
+''']
+
+[[slots]]
+sheet = "DEPTH"
+key   = "depth"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["n_layers"] = 2; desc["depth"] = 2
+''', '''
+geno["n_layers"] = 3; desc["depth"] = 3
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = arch_zoo.evaluate(geno, batch=2, seq=16, benchmark_threads=1)
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_grid norm=%s tokmix=%s chanmix=%s norm_pos=%s depth=%d "
+      "params=%d model_bytes=%d latency_ms=%.3f eval_ms=%.1f tokens_per_s=%.1f "
+      "loss=%.4f out_std=%.4f proxy_gradnorm=%.4f grad_coverage=%.4f step_delta=%.8f loss_after_step=%.6f loss_improvement=%.8f nonzero_grad_coverage=%.4f causal_checks=%d benchmark_threads=%d "
+      "causal_ok=%d deterministic_ok=%d aux=%.4f code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % (desc["norm"], desc["tokmix"], desc["chanmix"], desc["norm_pos"], desc["depth"],
+         _m["params"], _m["model_bytes"], _m["latency_ms"], _m["eval_ms"], _m["tokens_per_s"],
+         _m["loss"], _m["out_std"], _m["proxy_gradnorm"], _m["grad_coverage"], _m["step_delta"], _m["loss_after_step"], _m["loss_improvement"],
+         _m["nonzero_grad_coverage"], _m["causal_checks"], _m["benchmark_threads"],
+         _m["causal_ok"], _m["deterministic_ok"], _m["aux"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: composed architecture produced the wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: composed architecture produced non-finite logits"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: composed architecture is untrainable (non-finite/absent gradient)"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: composed architecture leaks future-token information"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: composed architecture is non-deterministic in evaluation mode"
+[[custom_vars]]
+code = 6
+msg  = "DEFECT: optimizer step failed to reduce the same-batch objective"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible genotype caught fail-loud (should be sieve-pruned upstream)"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: composed architecture crashed unexpectedly"

@@ -1,0 +1,316 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 0,
+      "mode": "BOUNDED",
+      "reasons": [
+        "each FW_Optional slot independently multiplies the post-sieve candidate space",
+        "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+      ],
+      "upper": 36,
+      "value": 36
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+      "lower": 36,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 36,
+      "value": 36
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "REGION": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=4",
+        "lower": 4,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 4,
+        "value": 4
+      },
+      "REPLICAS": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "TIER": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "[0, mandatory] (sieve predicate selectivity not evaluated)",
+      "lower": 0,
+      "mode": "BOUNDED",
+      "reasons": [
+        "2 constraint(s) declared; the sieve can remove anywhere from none to all mandatory rows depending on runtime data — only the conservative range is provable without running it"
+      ],
+      "upper": 36,
+      "value": 36
+    },
+    "raw_values": {
+      "HEAD": 1,
+      "REGION": 4,
+      "REPLICAS": 3,
+      "TAIL": 1,
+      "TIER": 3
+    }
+  },
+  "constraints_present": 2,
+  "dependency_graph": {
+    "graph": {
+      "edges": [],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 4,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "REGION",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "REPLICAS",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TIER",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:afc896febf3a603c101f6aaeaa82cfbaad9bbf593f6689bd0e343ae5138cc2bd",
+    "warnings": []
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [0, 36] × 500-5000 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 180000,
+      "value": 99000
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [36, 36] × 200-2000 per unit",
+      "lower": 7200,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 72000,
+      "value": 39600
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (99000) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ final candidates count [0, 36] × 0.05-2 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 72,
+      "value": 36
+    },
+    "final_count": 36,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [0, 36] × 1 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 36,
+      "value": 36
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ final candidates count [0, 36] × 1 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 36,
+      "value": 36
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ final candidates count [0, 36] × 150-1500 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 54000,
+      "value": 29700
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 0,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 4,
+      "sheet": "REGION",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "TIER",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "REPLICAS",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "scenario",
+  "spec_path": "llm_selfposed_bundle_tasks/07_constraint_arity/scenario.toml",
+  "spec_sha256": "338fca11842530f49f01558f315dee499ce7b32c7796c3594fbb77bea2360614",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)",
+    "2 constraint(s) declared — post-sieve count is only bounded [0, 36], not predicted exactly (sieve selectivity is not evaluated without running it)",
+    "final candidate count is BOUNDED [0, 36], not an exact prediction — treat 36 as an upper-bound planning figure"
+  ]
+}

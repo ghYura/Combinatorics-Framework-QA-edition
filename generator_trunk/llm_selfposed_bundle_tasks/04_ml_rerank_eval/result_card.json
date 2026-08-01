@@ -1,0 +1,114 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_04_ml_rerank_eval",
+  "category": "ML/LLM outer-structure evaluation",
+  "user_problem": "For a text classifier I can vary the preprocessing order, the retrieval chunk size, and whether to use a reranker. Which outer structures clear my quality bar, and what do they cost?",
+  "bundle_offer": "Bundle treats the discrete OUTER structure as the freedom (preprocessing order is a permutation; chunk and reranker are exactly-one choices), evaluates each with a LOCAL deterministic surrogate, applies a quality-gate oracle, and Pareto-ranks accuracy vs latency vs cost.",
+  "zen_mapping": [
+    {
+      "freedom": "preprocessing order",
+      "shape": "an ordering",
+      "verb": "FW_Permut",
+      "cardinality": "3! = 6"
+    },
+    {
+      "freedom": "retrieval chunk size",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "reranker on/off",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    }
+  ],
+  "oracle": "FW_VAR=4 below the 0.75 quality gate (DOMAIN_FAIL); FW_VAR=0 passes",
+  "spec_path": "llm_selfposed_bundle_tasks/04_ml_rerank_eval/scenario.toml",
+  "spec_sha256": "605c6b8bd726b0e57be67462cb1a057541e9852ed0a501d4edced3598e6a8cba",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 36,
+    "mode": "EXACT",
+    "reasons": [],
+    "upper": 36,
+    "value": 36
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 36,
+  "verdict_distribution": {
+    "PASS (>= quality gate)": 34,
+    "below quality gate (accuracy < 0.75)": 2
+  },
+  "goals": [
+    {
+      "key": "accuracy",
+      "dir": "max"
+    },
+    {
+      "key": "latency_ms",
+      "dir": "min"
+    },
+    {
+      "key": "cost_usd",
+      "dir": "min"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "13_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "accuracy": 0.89,
+        "latency_ms": 30.0,
+        "cost_usd": 0.024
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 5 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "19_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "accuracy": 0.94,
+        "latency_ms": 48.0,
+        "cost_usd": 0.0384
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 5 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "1_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "accuracy": 0.83,
+        "latency_ms": 18.0,
+        "cost_usd": 0.0144
+      },
+      "reason_non_dominated": "champion: strictly best minimize latency_ms (latency_ms=18.00) on the 5-point Pareto front"
+    }
+  ],
+  "pareto_front_size": 5,
+  "pareto_front_pass_count": 5,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=rerank_eval prep=lowercase>stem>strip_punct chunk=128 rerank=off accuracy=0.7400 latency_ms=18.00 cost_usd=0.01440 FW_VAR=4"
+  ],
+  "pass_example": "app=rerank_eval prep=lowercase>stem>strip_punct chunk=128 rerank=on accuracy=0.7900 latency_ms=28.80 cost_usd=0.02304 FW_VAR=0",
+  "teaching_summary": "User problem (ML/LLM outer-structure evaluation). Ran 36 candidates: 34x PASS (>= quality gate), 2x below quality gate (accuracy < 0.75). Formal Pareto front of 5. Verbs: preprocessing order -> FW_Permut; retrieval chunk size -> FW_Combi(1); reranker on/off -> FW_Combi(1).",
+  "db": "llm_selfposed_04_rerank",
+  "run_id": "llm-selfposed-04-rerank-001",
+  "sieve": false,
+  "run_dir": "/tmp/fw_work/llm_selfposed_04_rerank/runs/llm-selfposed-04-rerank-001",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

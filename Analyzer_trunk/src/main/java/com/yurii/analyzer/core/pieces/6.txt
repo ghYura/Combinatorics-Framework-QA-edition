@@ -1,0 +1,25 @@
+// ── 6.txt — initial: tokenLowers(List<String>)  (HOT) ────────────────
+// Hot path: called once per analysed line inside extractFeatures.
+// Lower-cases every extracted token using Locale.ROOT to keep behaviour
+// stable across users of non-Turkish locales (where 'I'.toLower() ≠ 'i').
+// Contract:
+//   in   List<String> tokens
+//   out  same-size list, each element t.toLowerCase(Locale.ROOT)
+//
+// Original AnalyzerCore.java realisation: stream + map + Locale.ROOT.
+
+    public static List<String> tokenLowers(List<String> tokens) {
+        long __t0 = System.nanoTime();
+        Metrics.p6_invocations++;
+        Metrics.p6_total_input_size += (tokens == null ? 0 : tokens.size());
+        try {
+            if (tokens == null || tokens.isEmpty()) return List.of();
+            List<String> out = tokens.stream()
+                                     .map(t -> t.toLowerCase(Locale.ROOT))
+                                     .toList();
+            for (String s : out) Metrics.p6_total_output_chars += s.length();
+            return out;
+        } finally {
+            Metrics.p6_duration_ns += System.nanoTime() - __t0;
+        }
+    }

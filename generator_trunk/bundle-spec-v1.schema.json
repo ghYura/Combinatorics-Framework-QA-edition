@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bundle-spec-v1.schema.json",
+  "title": "Bundle authoring spec (bundle.spec/v1)",
+  "description": "Public authoring contract for fwgen spec files (.toml/.json/.yaml) loaded by fwgen.parse_spec / fwgen.load_spec. Specs without `spec_version` are interpreted as `legacy` and normalized to this same internal model (STEP 8) — this schema documents that normalized shape, it does not change accepted input.",
+  "type": "object",
+  "required": ["slots"],
+  "properties": {
+    "spec_version": {
+      "type": "string",
+      "description": "Authoring contract version. Omit for legacy interpretation (default); \"1\" selects this schema explicitly. Both normalize to the same internal model.",
+      "enum": ["1", "legacy"]
+    },
+    "title": { "type": "string", "description": "Human-readable spec title; defaults to the file stem." },
+    "note": { "type": "string", "description": "Free-text author note; defaults to \"\"." },
+    "args": {
+      "type": "array",
+      "items": { "type": "string" },
+      "description": "Candidate program argument tokens; defaults to [\"noargs\"]."
+    },
+    "runme": {
+      "type": "string",
+      "description": "Java RunMeFirstOnce source override; defaults to an auto-generated stub."
+    },
+    "slots": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Per-sheet combination axes (the ONLY required field). Each becomes one Core FW_Seq row.",
+      "items": { "$ref": "#/$defs/slot" }
+    },
+    "goals": {
+      "type": "array",
+      "description": "Analyzer Pareto objectives. Either bare metric-name strings (direction auto-inferred) or {key, dir} objects.",
+      "items": {
+        "oneOf": [
+          { "type": "string" },
+          {
+            "type": "object",
+            "required": ["key"],
+            "properties": {
+              "key": { "type": "string" },
+              "dir": { "type": "string", "enum": ["min", "max", "target"] },
+              "direction": { "type": "string", "enum": ["min", "max", "target"] }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "custom_vars": {
+      "type": "array",
+      "description": "Explicit FW_CUSTOM_VAR verdict codes/messages; defaults to a single generic code-2 verdict.",
+      "items": {
+        "type": "object",
+        "required": ["code", "msg"],
+        "properties": {
+          "code": { "type": "integer" },
+          "msg": { "type": "string" }
+        },
+        "additionalProperties": false
+      }
+    },
+    "params": {
+      "type": "array",
+      "description": "Constraint-sidecar value attributes: rows of {sheet, value, <attr>: <val>, ...}. Referenced sheets must be declared slots.",
+      "items": {
+        "type": "object",
+        "required": ["sheet", "value"],
+        "properties": {
+          "sheet": { "type": "string" },
+          "value": {}
+        }
+      }
+    },
+    "constraints": {
+      "type": "array",
+      "description": "Allowed/forbidden bond rules enforced by constraints/sieve.py between Core and Reader (NOT the Core DSL). Each needs `pairs` or `when`; referenced sheets must be declared slots.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string" },
+          "sheets": { "type": "array", "items": { "type": "string" } },
+          "pairs": { "type": "array" },
+          "when": {},
+          "gate": { "type": "string" },
+          "polarity": { "type": "string" },
+          "desc": { "type": "string" }
+        }
+      }
+    },
+    "seq_extra": {
+      "type": "array",
+      "description": "Raw advanced FW_Seq rows (brace joiners FW_(...), multi-verb, nested constructs) the per-slot model can't express directly. Each row is a list of cell strings; referenced sheets must be declared slots and brace operands must carry FW_Exclude/FW_Heading.",
+      "items": {
+        "type": "array",
+        "items": { "type": "string" }
+      }
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "slot": {
+      "type": "object",
+      "required": ["sheet", "values"],
+      "properties": {
+        "sheet": {
+          "type": "string",
+          "description": "Data-sheet name; must NOT start with FW_ (reserved for control sheets)."
+        },
+        "key": { "type": "string", "description": "Token key used in the assembled cell ('key=value'); defaults to sheet.lower()." },
+        "values": {
+          "type": "array",
+          "minItems": 1,
+          "description": "Candidate values for this slot; row 0 is the baseline. Supports ${a|b} expansion unless raw=true."
+        },
+        "verb": {
+          "type": "string",
+          "description": "Core FW_Seq combination verb, e.g. FW_Combi(2), FW_CombiR(2), FW_Permut, FW_PermutR(2), FW_Subsets, FW_Subsets_EXACT(2), FW_Cartes(OTHER), FW_Group. Defaults to the standard cartesian verb. Mutually exclusive with `alias`."
+        },
+        "alias": {
+          "type": "string",
+          "description": "STEP 36: opt-in domain-level authoring alias that compiles to a raw `verb` (+flags): choose_one->FW_Combi(1); choose_k(k)->FW_Combi(k); permute[(k)]->FW_Permut[(k)]; feature_subset[(k)]->FW_Subsets[(k)]; optional_action->FW_Combi(1)+FW_Optional. Mutually exclusive with `verb` (a slot uses one or the other).",
+          "pattern": "^(choose_one|optional_action|choose_k\\(\\d+\\)|permute(\\(\\d+\\))?|feature_subset(\\(\\d+\\))?)$"
+        },
+        "flags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Extra FW_Seq flags, e.g. FW_Optional, FW_Exclude, FW_Heading."
+        },
+        "raw": {
+          "type": "boolean",
+          "default": false,
+          "description": "Emit values verbatim (no 'key=' prefix, no ${} expansion) — for code pieces."
+        },
+        "prefix": { "type": "string", "description": "FW_SheetNames prefix wrapper applied Core-side." },
+        "ending": { "type": "string", "description": "FW_SheetNames ending wrapper applied Core-side." },
+        "separator": {
+          "type": "string",
+          "description": "FW_Separator(<sheet>) operand: must name another declared slot."
+        },
+        "group_replace": {
+          "type": "array",
+          "description": "FW_Group FW_ReplaceRE rewrites: list of [pattern, replacement] pairs.",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 2
+          }
+        }
+      },
+      "not": {
+        "required": ["alias", "verb"],
+        "description": "A slot may carry EITHER a domain `alias` OR a raw `verb`, never both (STEP 36 conflict rule)."
+      },
+      "additionalProperties": false
+    }
+  }
+}

@@ -1,0 +1,340 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 270,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 270,
+      "value": 270
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+      "lower": 270,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 270,
+      "value": 270
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "ACTION": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Permut over n=3",
+        "lower": 6,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 6,
+        "value": 6
+      },
+      "ENTRY": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "ORDER_TARGET": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "QUANTITY": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=5",
+        "lower": 5,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 5,
+        "value": 5
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": 270,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 270,
+      "value": 270
+    },
+    "raw_values": {
+      "ACTION": 3,
+      "ENTRY": 3,
+      "HEAD": 1,
+      "ORDER_TARGET": 3,
+      "QUANTITY": 5,
+      "TAIL": 1
+    }
+  },
+  "constraints_present": 0,
+  "dependency_graph": {
+    "graph": {
+      "edges": [],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Permut"
+          },
+          "id": "ACTION",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "ENTRY",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "ORDER_TARGET",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 5,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "QUANTITY",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:7bc356ead12929c6f37933b1e6071019f1e88d72c3780729b52bbd75e9da6769",
+    "warnings": []
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [270, 270] × 500-5000 per unit",
+      "lower": 135000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 1350000,
+      "value": 742500
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [270, 270] × 200-2000 per unit",
+      "lower": 54000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 540000,
+      "value": 297000
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (742500) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ final candidates count [270, 270] × 0.05-2 per unit",
+      "lower": 13,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 540,
+      "value": 276
+    },
+    "final_count": 270,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [270, 270] × 1 per unit",
+      "lower": 270,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 270,
+      "value": 270
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ final candidates count [270, 270] × 1 per unit",
+      "lower": 270,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 270,
+      "value": 270
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ final candidates count [270, 270] × 150-1500 per unit",
+      "lower": 40500,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 405000,
+      "value": 222750
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 0,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "ENTRY",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "ACTION",
+      "verb": "FW_Permut"
+    },
+    {
+      "flags": [],
+      "n": 5,
+      "sheet": "QUANTITY",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "ORDER_TARGET",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "scenario",
+  "spec_path": "llm_selfposed_bundle_tasks/17_qa_pub_joke_promo/scenario.toml",
+  "spec_sha256": "cbb0800b8872e7c8ad87eba236313db33ca6228cc3121b2ea6d2cf580cab03af",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)"
+  ]
+}

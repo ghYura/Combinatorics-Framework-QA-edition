@@ -1,0 +1,72 @@
+# Self-posed scenario 06 — second-order composition (the brace), pattern like brace_demo.
+# Category 6 (second-order). A = FW_Combi(2) over 3 steps -> result table of 3 pairs;
+# B = FW_Combi(1) over 2 regions -> 2 rows; the brace JOINS those PRIOR RESULT tables (M:N) -> 6 plans.
+# Cardinality is UNKNOWN to the planner (a 2nd-order join is not foldable into an exact product) -> class X.
+# Per TZ this scenario is PLAN + GRAPH only (no --allow-extreme / --override-budget / --unleash).
+title = "Second-order release composition — build migration-step pairs, then JOIN each pair with a region (brace M:N)"
+note  = "A = FW_Combi(2) over 3 migration steps -> fw_A (3 pairs); B = FW_Combi(1) over 2 regions -> fw_B (2). The brace joins the RESULT TABLES (not raw sheets), M:N -> 3*2 = 6 composed plans. A,B carry FW_Exclude so they appear only via the join. UNKNOWN cardinality -> class X by design."
+args  = ["mode=release_join"]
+
+# Brace row — TOP-LEVEL key: in TOML it MUST precede every [[slots]]/[[goals]] table,
+# else it binds to the last table and is silently dropped from FW_Seq. 9 fields:
+# FW_(start,_,E1,rel,E2,_,end,sep,mult) -- here E1=A, E2=B, mult=M:N.
+seq_extra = [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]]
+
+[[goals]]
+key = "steps"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+plan = []
+''']
+
+[[slots]]   # operand A: choose 2 of 3 migration steps -> its RESULT table is 3 pairs (FW_Exclude'd)
+sheet = "A"
+key   = "a"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+plan.append("schema_migrate")
+''', '''
+plan.append("backfill")
+''', '''
+plan.append("reindex")
+''']
+
+[[slots]]   # operand B: choose 1 of 2 regions -> its RESULT table is 2 rows (FW_Exclude'd)
+sheet = "B"
+key   = "b"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+plan.append("region:eu")
+''', '''
+plan.append("region:us")
+''']
+
+[[slots]]   # brace TARGET: a declared slot (placeholder) the brace overwrites with the A x B join
+sheet = "JOINED"
+key   = "joined"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+pass  # placeholder; the brace (seq_extra) overwrites this sheet's rows with the A x B join
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_n = len(plan)
+FW_VAR = 0
+print("app=release_join plan=%s steps=%d FW_VAR=%d" % ("|".join(plan), _n, FW_VAR))
+''']

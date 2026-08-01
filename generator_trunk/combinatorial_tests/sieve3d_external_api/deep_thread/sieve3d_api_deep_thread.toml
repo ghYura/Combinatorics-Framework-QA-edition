@@ -1,0 +1,265 @@
+spec_version = "1"
+title = "sieve3d external API deep thread challenge - plasticine hook through arch"
+note = "Uses recording and FW_PermutR(2) tactic sequences to compare direct drop, bounded wiggle, and iterative thread for the plasticine hook."
+args = ["mode=sieve3d_api_deep_thread"]
+
+[[goals]]
+key = "passed_volume_pct"
+dir = "max"
+[[goals]]
+key = "effort"
+dir = "min"
+[[goals]]
+key = "thread_success"
+dir = "max"
+[[goals]]
+key = "record_steps"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import json, os, sys, tempfile, time
+from pathlib import Path
+
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+SIEVE3D_ROOT = os.environ.get("SIEVE3D_ROOT", str((_sut_root / "3Dprofile-VS-2Dsieve").resolve()))
+if SIEVE3D_ROOT not in sys.path:
+    sys.path.insert(0, SIEVE3D_ROOT)
+
+from sieve3d import api_v1
+from sieve3d.api import Scene as ApiScene
+from sieve3d.scene import SceneData, preset
+from sieve3d.experiment import Experiment
+from sieve3d.store import StateStore
+from sieve3d.recorder import Recorder, V1_MUT
+
+BODY = "hook"
+HOLE = "arch"
+POSE = {"spin": 90, "tilt": 20, "turn": -90, "dx": 0, "dy": 0}
+TACTICS = []
+PREPARED = False
+EXPERIMENT_EFFORT_ACCOUNTED = 0.0
+EXPECTED_DOMAIN_ERRORS = {"collision", "conflict"}
+METRICS = {"passed_volume_pct": 0.0, "effort": 0.0, "thread_success": 0,
+           "actions": 0, "domain_errors": 0, "api_errors": 0,
+           "record_steps": 0}
+REC_FILE = "none"
+REC_JSON = "none"
+LAST_ERROR = "none"
+CRITERIA_PROFILE = "sieve3d_api_deep_thread_v2"
+CRITERIA_METRICS = {
+    # Analyzer-facing contract: TAIL must print these exact numeric keys.
+    "passed_volume_pct": {"dir": "max", "meaning": "exact or thread-result volume percent below the sieve"},
+    "effort": {"dir": "min", "meaning": "cumulative experiment effort deltas plus every thread attempt's keyframes"},
+    "thread_success": {"dir": "max", "meaning": "whether iterative threading found a valid passage"},
+    "record_steps": {"dir": "max", "meaning": "mutating API calls captured in the saved .rec trace"},
+}
+CRITERIA_METRIC_TOKEN = ",".join("%s:%s" % (k, v["dir"]) for k, v in CRITERIA_METRICS.items())
+
+class ApiHarness:
+    def __init__(self):
+        self.scene = ApiScene(preset("plasticine_lab"))
+        self.store = StateStore()
+        self.experiment = Experiment(self.scene, self.store)
+        self.results_cache = None
+        self.workers = 0
+        self.recorder = Recorder(self.store, Path(tempfile.mkdtemp(prefix="sieve3d-rec-")))
+
+    def initial_snapshot(self):
+        return {"scene": self.scene.data.to_dict(), "experiment": self.experiment.snapshot()["bodies"], "versions": dict(self.store.versions)}
+
+    def replace_scene(self, newdata):
+        self.scene = ApiScene(newdata if isinstance(newdata, SceneData) else SceneData.from_dict(newdata))
+        self.after_scene_mutation("replaced")
+
+    def after_scene_mutation(self, etype, name=None):
+        self.results_cache = None
+        self.experiment.scene = self.scene
+        self.experiment.sync_scene(reset=(etype == "replaced"))
+        self.store.bump("scene", etype, {"name": name} if name else None)
+
+    def get_job(self, jid=None):
+        return None
+
+_state = ApiHarness()
+
+def _safe_token(text):
+    return "".join(ch if ch.isalnum() or ch in "._-" else "_" for ch in str(text))[:180] or "case"
+
+def _call(method, path, fn, state, payload):
+    started = time.monotonic()
+    try:
+        data = fn(state, payload)
+        elapsed = (time.monotonic() - started) * 1000.0
+        api_v1.envelope(state.store, data, elapsed_ms=elapsed)
+        state.store.record_call("%s %s" % (method, path), elapsed, True)
+        if method == "POST" and path in V1_MUT:
+            state.recorder.log("v1", method, path, payload or {})
+        return data
+    except api_v1.ApiError as exc:
+        elapsed = (time.monotonic() - started) * 1000.0
+        api_v1.envelope(state.store, error=exc, elapsed_ms=elapsed)
+        state.store.record_call("%s %s" % (method, path), elapsed, False)
+        raise
+
+def _start_recording():
+    return _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "action"})
+
+def _finish_recording(label):
+    global REC_FILE, REC_JSON
+    try:
+        _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "cut"})
+    except api_v1.ApiError as exc:
+        if exc.code != "conflict":
+            raise
+    info = _call("POST", "/api/v1/record", api_v1.h_record, _state, {"cmd": "retrieve_last_record"})
+    METRICS["record_steps"] = int(info.get("steps_count", 0))
+    out_dir = Path(os.environ.get("SIEVE3D_REC_OUT_DIR", os.getcwd())) / "sieve3d_rec_results"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    stem = "%s_%s_%d_%d" % (CRITERIA_PROFILE, _safe_token(label), os.getpid(), int(time.time() * 1000))
+    rec_path = out_dir / (stem + ".rec")
+    json_path = out_dir / (stem + ".json")
+    records = info.get("records") or []
+    rec_path.write_text("\n".join(json.dumps(r, ensure_ascii=True) for r in records) + "\n", encoding="utf-8")
+    json_path.write_text(json.dumps({"file": info.get("file"), "steps_count": info.get("steps_count"), "saved_rec": str(rec_path), "source_path": info.get("path")}, sort_keys=True), encoding="utf-8")
+    REC_FILE = str(rec_path)
+    REC_JSON = str(json_path)
+    return info
+
+def _prepare():
+    global PREPARED
+    if PREPARED:
+        return
+    _call("POST", "/api/v1/scene/preset", api_v1.h_scene_preset, _state, {"name": "plasticine_lab"})
+    _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "assign", "params": {"hole": HOLE}})
+    _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "set_pose", "params": POSE})
+    PREPARED = True
+
+def _snapshot_metrics():
+    global EXPERIMENT_EFFORT_ACCOUNTED
+    m = _call("GET", "/api/v1/metrics", api_v1.h_metrics, _state, {})
+    exp = m["experiment"]
+    METRICS["passed_volume_pct"] = max(METRICS["passed_volume_pct"], float(exp["passed_volume_pct"]))
+    METRICS["actions"] = int(exp["total_actions"])
+    total_effort = float(exp["total_effort"])
+    METRICS["effort"] += max(0.0, total_effort - EXPERIMENT_EFFORT_ACCOUNTED)
+    EXPERIMENT_EFFORT_ACCOUNTED = total_effort
+
+def _run_direct():
+    try:
+        _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "drop", "params": {"max_dz": 220}})
+    finally:
+        _snapshot_metrics()
+    return "none"
+
+def _run_wiggle():
+    try:
+        for _i in range(5):
+            _call("POST", "/api/v1/experiment/action", api_v1.h_exp_action, _state, {"body": BODY, "action": "wiggle", "params": {"dz": 1.0, "evals": 40}})
+    finally:
+        _snapshot_metrics()
+    return "none"
+
+def _run_thread():
+    _snapshot_metrics()
+    res = _call("POST", "/api/v1/thread", api_v1.h_thread, _state, {"body": BODY, "hole": HOLE, "pose": POSE, "wait": True, "frames": 24})
+    METRICS["thread_success"] = max(METRICS["thread_success"], int(bool(res.get("success"))))
+    METRICS["passed_volume_pct"] = max(METRICS["passed_volume_pct"], 100.0 if res.get("success") else 0.0)
+    METRICS["effort"] += float(res.get("keyframes") or len(res.get("frames") or []) or 0)
+    if not res.get("success"):
+        METRICS["domain_errors"] += 1
+    return "none" if res.get("success") else "thread_failed"
+
+def _run_tactic(name):
+    global LAST_ERROR
+    TACTICS.append(name)
+    try:
+        _prepare()
+        if name == "direct_drop":
+            LAST_ERROR = _run_direct()
+        elif name == "wiggle":
+            LAST_ERROR = _run_wiggle()
+        elif name == "thread":
+            LAST_ERROR = _run_thread()
+        else:
+            raise RuntimeError("unknown tactic " + name)
+    except api_v1.ApiError as exc:
+        if exc.code in EXPECTED_DOMAIN_ERRORS:
+            METRICS["domain_errors"] += 1
+            LAST_ERROR = "domain_" + exc.code
+        else:
+            METRICS["api_errors"] += 1
+            LAST_ERROR = "api_" + exc.code
+    except Exception as exc:
+        METRICS["api_errors"] += 1
+        LAST_ERROR = type(exc).__name__ + ":" + str(exc).replace(" ", "_")
+
+# Required by the SUT recorder contract: start through API at the very end of HEAD.
+_start_recording()
+''']
+
+[[slots]]
+sheet = "START_POSE"
+key = "start_pose"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'POSE={"spin":90,"tilt":20,"turn":-90,"dx":0,"dy":0};',
+  'POSE={"spin":0,"tilt":0,"turn":0,"dx":0,"dy":0};',
+]
+
+[[slots]]
+sheet = "TACTIC"
+key = "tactic"
+verb = "FW_PermutR(2)"
+raw = true
+values = [
+  '_run_tactic("direct_drop");',
+  '_run_tactic("wiggle");',
+  '_run_tactic("thread");',
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_REC_INFO = _finish_recording("%s_%s" % ("-".join(TACTICS), "spin%.1f_tilt%.1f_turn%.1f" % (POSE["spin"], POSE["tilt"], POSE["turn"])))
+try:
+    if METRICS["api_errors"]:
+        FW_VAR = 6
+    elif METRICS["record_steps"] <= 0:
+        FW_VAR = 6
+    elif "thread" in TACTICS:
+        FW_VAR = 0 if METRICS["thread_success"] else 3
+    elif METRICS["passed_volume_pct"] >= 95.0:
+        FW_VAR = 0
+    else:
+        FW_VAR = 3
+except Exception as _exc:
+    LAST_ERROR = type(_exc).__name__ + ":" + str(_exc).replace(" ", "_")
+    FW_VAR = 6
+FW_CUSTOM_VAR = FW_VAR
+print("app=sieve3d_api_deep_thread criteria_profile=%s criteria_metrics=%s body=%s hole=%s tactics=%s pose=spin%.1f_tilt%.1f_turn%.1f "
+      "passed_volume_pct=%.2f actions=%d effort=%.1f thread_success=%d domain_errors=%d api_errors=%d record_file=%s record_json=%s record_steps=%d last_error=%s FW_VAR=%d"
+      % (CRITERIA_PROFILE, CRITERIA_METRIC_TOKEN, BODY, HOLE, ">".join(TACTICS), POSE["spin"], POSE["tilt"], POSE["turn"],
+         METRICS["passed_volume_pct"], METRICS["actions"], METRICS["effort"],
+         METRICS["thread_success"], METRICS["domain_errors"], METRICS["api_errors"], _safe_token(REC_FILE), _safe_token(REC_JSON),
+         METRICS["record_steps"], LAST_ERROR, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 3
+msg = "tactic sequence did not pass the plasticine hook through the arch"
+[[custom_vars]]
+code = 6
+msg = "recording was not captured/saved or candidate infrastructure failed"

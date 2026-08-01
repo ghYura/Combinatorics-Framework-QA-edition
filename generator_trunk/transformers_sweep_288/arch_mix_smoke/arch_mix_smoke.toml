@@ -1,0 +1,114 @@
+spec_version = "1"
+title = "considerme_as_upgradeMIXtest SMOKE — real Bundle end-to-end (fwgen->Core->Reader->Executor)"
+note = """Small slice of arch_mix for the GENUINE Bundle transport (Postgres + Java Core + Reader +
+py_executor), kept tiny because the executor runs every candidate as its own subprocess (weak PC).
+Fixed norm=rmsnorm, chan=moe_shared_top1, pos=pre, med=vectorized; vary TOKENMIX (FW_Combi(1), 3) and
+add the OPT_CONVQ sudden action (FW_Optional, present(+)absent) -> 3 x 2 = 6 candidates EXACT. Proves
+FW_RunMeFirstOnce bootstrap, HEAD, FW_Combi(1), FW_Optional, and the TAIL FW_VAR oracle run through the
+real pipeline. The full 288-architecture synthesis runs DB-free in _selfcheck.py."""
+args = ["mode=arch_mix_smoke"]
+
+runme = '''
+# class RunMeFirstOnce { public static String FW_ARGS = ""; }  // satisfies Core WorkbookParser.validateRunMeFirstOnce (no-op Python comment)
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "transformers_sweep_288"))
+import mix_arch
+_boot = mix_arch.bootstrap(threads=4, compile_kernel=True)
+print("FW_RunMeFirstOnce[BOOTSTRAP] kernel_backend=%s smoke_code=%d" % (_boot["kernel_backend"], _boot["smoke_code"]))
+'''
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "transformers_sweep_288"))
+import mix_arch
+geno = mix_arch.default_geno(channel_mixer="moe_shared_top1", load_balance=True)
+desc = dict(norm="rmsnorm", chan="moe_shared_top1", pos="pre", med="vectorized", opt=[])
+''']
+
+[[slots]]
+sheet = "TOKENMIX"
+key   = "tokenmix"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["token_mixer"] = "lin_cumsum"; desc["tok"] = "lin_cumsum"
+''', '''
+geno["token_mixer"] = "lin_fused_qkvg"; desc["tok"] = "lin_fused_qkvg"
+''', '''
+geno["token_mixer"] = "lin_decay"; desc["tok"] = "lin_decay"
+''']
+
+[[slots]]
+sheet = "OPT_CONVQ"
+key   = "opt_convq"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["conv_q"] = True; desc["opt"].append("convq")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = mix_arch.evaluate(geno, batch=2, seq=10)
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_mix_smoke tok=%s opt=%s params=%d latency_ms=%.3f loss_improvement=%.8f "
+      "proxy_gradnorm=%.4f recur_delta=%.3e recur_ok=%d causal_ok=%d int8_ok=%d code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % (desc["tok"], ("+".join(desc["opt"]) if desc["opt"] else "none"),
+         _m["params"], _m["latency_ms"], _m["loss_improvement"], _m["proxy_gradnorm"],
+         max(_m["recur_delta"], 0.0), _m["recur_ok"], _m["causal_ok"], _m["int8_ok"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: non-finite output/loss"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: untrainable gradient"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: causal leak"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: non-deterministic eval"
+[[custom_vars]]
+code = 6
+msg  = "WEAK: optimizer did not reduce same-batch loss in one step"
+[[custom_vars]]
+code = 7
+msg  = "DEFECT: recurrence cache inexact"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible genotype"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: crashed"

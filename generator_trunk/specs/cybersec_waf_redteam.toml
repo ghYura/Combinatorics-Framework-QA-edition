@@ -1,0 +1,39 @@
+title = "CyberSec — authorized WAF red-team (test your OWN WAF config)"
+note  = "Authorized testing against your OWN WAF (staging). Payloads are canonical textbook examples."
+goals = ["bypass_success_rate", "payload_length"]
+args  = ["target=staging_waf_only", "authorized=true"]
+
+[[slots]]
+sheet = "SQLI"
+key   = "sqli_core"
+values = ["' OR 1=1--", "UNION SELECT null,null", "' AND SLEEP(5)--"]
+
+[[slots]]
+sheet = "ENCODING"
+key   = "encoding"
+values = ["plain", "url_encode", "double_url_encode", "hex", "base64"]
+
+[[slots]]
+sheet = "PADDING"
+key   = "padding"
+values = ["/*comment*/", "%00_null_byte", "crlf"]
+
+[[slots]]
+sheet = "METHOD"
+key   = "http_method"
+values = ["GET", "POST", "PUT", "OPTIONS"]
+
+[[slots]]
+sheet = "HEADER"
+key   = "header_spoof"
+values = ["ua_googlebot", "xff_127.0.0.1"]
+
+[[custom_vars]]
+code = 2
+msg  = "WAF blocked the request (HTTP 403) — payload rejected"
+[[custom_vars]]
+code = 3
+msg  = "request malformed (HTTP 400)"
+[[custom_vars]]
+code = 4
+msg  = "target unreachable / timeout"

@@ -1,0 +1,41 @@
+title = "Code variedness #6 — equivalent implementations ranked by software metrics"
+note  = "Same logical block (sum of squares of evens) bred many ways: FW_Combi(1) over STYLE x EVEN x SQ. Oracle FW_VAR=0 iff the variant matches the reference; Analyzer ranks the CORRECT variants by Cyclomatic/Nesting/Halstead/Maintainability. Model #6, measured."
+# directions overridden — these metric names are not in the MIN/MAX lexicon
+args  = ["block=sum_of_squares_of_evens", "lang=python"]
+[[goals]]
+key = "cyclomatic"
+dir = "min"
+[[goals]]
+key = "nesting"
+dir = "min"
+[[goals]]
+key = "halstead_volume"
+dir = "min"
+[[goals]]
+key = "maintainability_index"
+dir = "max"
+[[goals]]
+key = "sloc"
+dir = "min"
+
+[[slots]]
+sheet = "STYLE"
+key = "style"
+verb = "FW_Combi(1)"
+values = ["for_nested_if", "for_guard_continue", "while_loop", "comprehension", "listcomp", "filter_map_reduce", "recursion"]
+
+[[slots]]
+sheet = "EVEN"
+key = "even"
+verb = "FW_Combi(1)"
+values = ["mod", "bitand", "notmod"]
+
+[[slots]]
+sheet = "SQ"
+key = "sq"
+verb = "FW_Combi(1)"
+values = ["mul", "pow_op", "pow_fn"]
+
+[[custom_vars]]
+code = 2
+msg  = "variant is NOT equivalent (failed the oracle)"

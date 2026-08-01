@@ -1,0 +1,15 @@
+-- Template for fw_${KEY} (first-pass combinatorics table).
+-- Placeholders: ${KEY}, ${TABLESPACE}
+CREATE UNLOGGED TABLE public.fw_${KEY}
+(
+    combi_id    bigint  NOT NULL,
+    combo_txt   text    COLLATE pg_catalog."default",
+    combos      integer[],
+    CONSTRAINT fw_${KEY}_pkey PRIMARY KEY (combi_id)
+        USING INDEX TABLESPACE "${TABLESPACE}"
+)
+WITH (OIDS = FALSE)
+TABLESPACE "${TABLESPACE}";
+
+ALTER TABLE public.fw_${KEY} OWNER TO postgres;
+ALTER TABLE public.fw_${KEY} SET (autovacuum_enabled = false);

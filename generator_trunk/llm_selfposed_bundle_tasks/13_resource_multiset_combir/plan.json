@@ -1,0 +1,278 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 20,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 20,
+      "value": 20
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+      "lower": 20,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 20,
+      "value": 20
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "INSTANCES": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_CombiR(3) over n=3",
+        "lower": 10,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 10,
+        "value": 10
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "WORKLOAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=2",
+        "lower": 2,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 2,
+        "value": 2
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": 20,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 20,
+      "value": 20
+    },
+    "raw_values": {
+      "HEAD": 1,
+      "INSTANCES": 3,
+      "TAIL": 1,
+      "WORKLOAD": 2
+    }
+  },
+  "constraints_present": 0,
+  "dependency_graph": {
+    "graph": {
+      "edges": [],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_CombiR(3)"
+          },
+          "id": "INSTANCES",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 2,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "WORKLOAD",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:b0e5f355c6fd6261dc59f81b65a955ece1eca8b57a0b4b2ad6fce91c128764ba",
+    "warnings": []
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [20, 20] × 500-5000 per unit",
+      "lower": 10000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 100000,
+      "value": 55000
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [20, 20] × 200-2000 per unit",
+      "lower": 4000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 40000,
+      "value": 22000
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (55000) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ final candidates count [20, 20] × 0.05-2 per unit",
+      "lower": 1,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 40,
+      "value": 20
+    },
+    "final_count": 20,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [20, 20] × 1 per unit",
+      "lower": 20,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 20,
+      "value": 20
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ final candidates count [20, 20] × 1 per unit",
+      "lower": 20,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 20,
+      "value": 20
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ final candidates count [20, 20] × 150-1500 per unit",
+      "lower": 3000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 30000,
+      "value": 16500
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 0,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "INSTANCES",
+      "verb": "FW_CombiR(3)"
+    },
+    {
+      "flags": [],
+      "n": 2,
+      "sheet": "WORKLOAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "scenario",
+  "spec_path": "llm_selfposed_bundle_tasks/13_resource_multiset_combir/scenario.toml",
+  "spec_sha256": "80a7913b1af55109bbbf9b88ad63fb2265d0763aeebd1f3ccf0252a12695d885",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)"
+  ]
+}

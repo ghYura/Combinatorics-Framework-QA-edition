@@ -1,0 +1,118 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_12_fallback_sequence_permutr",
+  "category": "service fallback sequence (FW_PermutR)",
+  "user_problem": "I design a service fallback strategy with three ordered probe slots. Each slot can probe cache, replica, or primary, and repeats are allowed. I need to know which repeated sequences are deployable for interactive and critical traffic, and compare availability, latency, and cost.",
+  "bundle_offer": "Bundle models the fallback probe sequence as FW_PermutR(3): an ordered length-3 sequence where the same probe may repeat. It crosses the repeated sequence with request class, runs a TAIL oracle for deployability, and returns an availability/latency/cost Pareto front with PASS-aware front annotations.",
+  "zen_mapping": [
+    {
+      "freedom": "three-step fallback probe sequence",
+      "shape": "a sequence with repetition",
+      "verb": "FW_PermutR(3)",
+      "cardinality": "3^3 = 27"
+    },
+    {
+      "freedom": "request class",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "fallback deployability policy",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "oracle": "FW_VAR=2 critical sequence never probes primary; FW_VAR=3 interactive sequence starts with expensive primary; FW_VAR=4 sequence has no diversity or exceeds latency budget; FW_VAR=0 deployable",
+  "spec_path": "llm_selfposed_bundle_tasks/12_fallback_sequence_permutr/scenario.toml",
+  "spec_sha256": "890714e3ac04f1be0414060b36a060d60d4e1ac8ee079d948711214f80194da5",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 54,
+    "mode": "EXACT",
+    "reasons": [],
+    "upper": 54,
+    "value": 54
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 54,
+  "verdict_distribution": {
+    "PASS (deployable fallback sequence)": 32,
+    "critical request sequence never probes primary": 8,
+    "interactive request sequence starts with expensive primary probe": 9,
+    "fallback sequence policy violation: no diversity or latency budget exceeded": 5
+  },
+  "goals": [
+    {
+      "key": "availability_score",
+      "dir": "max"
+    },
+    {
+      "key": "latency_ms",
+      "dir": "min"
+    },
+    {
+      "key": "cost_units",
+      "dir": "min"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "11_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "availability_score": 67.0,
+        "latency_ms": 34.0,
+        "cost_units": 7.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 31 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "13_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "availability_score": 67.0,
+        "latency_ms": 34.0,
+        "cost_units": 7.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 31 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "17_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "availability_score": 78.0,
+        "latency_ms": 40.0,
+        "cost_units": 8.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 31 front points (better than each on ≥1 objective)"
+    }
+  ],
+  "pareto_front_size": 31,
+  "pareto_front_pass_count": 24,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=fallback_seq request_class=critical sequence=replica-cache-cache availability_score=36 latency_ms=26 cost_units=5 FW_VAR=2",
+    "app=fallback_seq request_class=interactive sequence=replica-replica-replica availability_score=65 latency_ms=42 cost_units=9 FW_VAR=4",
+    "app=fallback_seq request_class=interactive sequence=primary-cache-cache availability_score=78 latency_ms=40 cost_units=8 FW_VAR=3"
+  ],
+  "pass_example": "app=fallback_seq request_class=interactive sequence=replica-cache-replica availability_score=67 latency_ms=34 cost_units=7 FW_VAR=0",
+  "teaching_summary": "User problem (service fallback sequence (FW_PermutR)). Ran 54 candidates: 32x PASS (deployable fallback sequence), 8x critical request sequence never probes primary, 9x interactive request sequence starts with expensive primary probe, 5x fallback sequence policy violation: no diversity or latency budget exceeded. Formal Pareto front of 31. Verbs: three-step fallback probe sequence -> FW_PermutR(3); request class -> FW_Combi(1); fallback deployability policy -> TAIL oracle (FW_VAR). NOTE: 7 of 31 Pareto-front candidates are DOMAIN_FAIL (findings, not deployable): the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy.",
+  "db": "llm_selfposed_12_permutr_v2",
+  "run_id": "llm-selfposed-12-permutr-002",
+  "sieve": false,
+  "run_dir": "/tmp/fw_work/llm_selfposed_12_permutr_v2/runs/llm-selfposed-12-permutr-002",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

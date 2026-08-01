@@ -1,0 +1,44 @@
+title = "RAG pipeline optimization (Retrieval-Augmented Generation)"
+goals = ["answer_relevance", "latency_ms", "cost_cents"]
+args  = ["gold_set=500_questions", "judge=llm_as_judge"]
+
+[[slots]]
+sheet = "CHUNK"
+key   = "chunk_tokens"
+values = ["1024", "512", "256"]
+
+[[slots]]
+sheet = "EMBED"
+key   = "embed_model"
+values = ["text-embedding-3-small", "bge-m3", "cohere-multilingual"]
+
+[[slots]]
+sheet = "TOPK"
+key   = "top_k"
+values = ["3", "5", "15"]
+
+[[slots]]
+sheet = "RERANK"
+key   = "reranker"
+values = ["none", "cross_encoder", "cohere_rerank"]
+
+[[slots]]
+sheet = "INJECT"
+key   = "inject_format"
+values = ["plain_text_list", "xml_context_nodes", "json_array"]
+
+[[custom_vars]]
+code = 2
+msg  = "answer_relevance below threshold (LLM judge)"
+[[custom_vars]]
+code = 3
+msg  = "retrieval returned 0 chunks"
+[[custom_vars]]
+code = 4
+msg  = "assembled context exceeded model window"
+[[custom_vars]]
+code = 5
+msg  = "pipeline latency above SLA"
+[[custom_vars]]
+code = 6
+msg  = "cost above budget"

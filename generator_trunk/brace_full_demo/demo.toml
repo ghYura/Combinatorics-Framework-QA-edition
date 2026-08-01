@@ -1,0 +1,101 @@
+title = "Full brace demo — FW_(START,,A,REL,B,,END,SEP,1:N): beginning, relation, separator, ending"
+note  = "The brace is more than E1/E2/mult: FW_(start,_,E1,rel,E2,_,end,sep,mult). A=FW_Combi(2) over 3 (pairs) joined 1:N with B=FW_Combi(1) over 2, weaving REL between an A-element and B, SEP between the per-element groups, and wrapping each row with START..END. Proves all four formatting fields. START/REL/SEP/END are non-excluded 1-value helper sheets (declared last) whose FIRST value the brace reads; A,B are FW_Exclude'd operands."
+args = ["mode=brace_full_demo"]
+
+# full-field brace (top-level key, before tables)
+seq_extra = [["J", "FW_Reuse", "FW_(START,,A,REL,B,,END,SEP,1:N)"]]
+
+[[goals]]
+key = "n"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts = []
+''']
+
+[[slots]]
+sheet = "A"
+key   = "a"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+parts.append("a1")
+''', '''
+parts.append("a2")
+''', '''
+parts.append("a3")
+''']
+
+[[slots]]
+sheet = "B"
+key   = "b"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+parts.append("b1")
+''', '''
+parts.append("b2")
+''']
+
+[[slots]]
+sheet = "J"
+key   = "j"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+pass  # brace overwrites this sheet with the A x B join
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_n = len(parts)
+FW_VAR = 0
+print("app=fb plan=%s n=%d FW_VAR=%d" % ("|".join(parts), _n, FW_VAR))
+''']
+
+[[slots]]
+sheet = "START"
+key   = "start"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts.append("<<")
+''']
+
+[[slots]]
+sheet = "REL"
+key   = "rel"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts.append("->")
+''']
+
+[[slots]]
+sheet = "SEP"
+key   = "sep"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts.append("|")
+''']
+
+[[slots]]
+sheet = "END"
+key   = "end"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts.append(">>")
+''']

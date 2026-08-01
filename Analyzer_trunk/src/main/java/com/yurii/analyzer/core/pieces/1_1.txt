@@ -1,0 +1,29 @@
+// ── 1_1.txt — variant 1 of mean: Kahan-Babuška compensated summation ─
+// Same contract; numerically stable for very large or mixed-magnitude
+// series. Slightly slower in raw cycles but avoids ULP drift.
+//
+// Reference: Kahan 1965, Babuška 1968 ("Neumaier's variant")
+
+    public static double mean(List<Double> values) {
+        long __t0 = System.nanoTime();
+        Metrics.p1_invocations++;
+        Metrics.p1_total_input_size += (values == null ? 0 : values.size());
+        try {
+            if (values == null || values.isEmpty()) return 0.0;
+            double sum = 0.0;
+            double comp = 0.0;          // running compensation
+            for (double v : values) {
+                double t = sum + v;
+                if (Math.abs(sum) >= Math.abs(v))
+                    comp += (sum - t) + v;   // lost low-order bits
+                else
+                    comp += (v - t) + sum;
+                sum = t;
+            }
+            double out = (sum + comp) / values.size();
+            Metrics.p1_sum_of_outputs += out;
+            return out;
+        } finally {
+            Metrics.p1_duration_ns += System.nanoTime() - __t0;
+        }
+    }

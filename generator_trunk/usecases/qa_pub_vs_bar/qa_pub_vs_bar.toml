@@ -1,0 +1,118 @@
+# "Tester vs Pub" — the QA sweep drives a REAL fallible bar simulator and catches its bugs.
+# The combinatorial tester feeds adequate & inadequate orders to tester_vs_pub.Pub (barmen +
+# clients whose outputs range from adequate to inadequate: crash on junk, overflow on huge,
+# serve a lizard, wrong change, silent-drop…). The oracle compares the bar's ACTUAL response
+# to the ground truth (tester_vs_pub.adjudicate) and CONVICTS the bar when it misbehaves.
+#   ACTION P(3)=6 × QUANTITY 5 × TARGET 3 × GARNISH Subsets(1)=2 = 180 × (1+LAST_CALL) = 360.
+# Multiple combo-verbs (FW_Permut × FW_Combi × FW_Subsets) + FW_Optional. Deterministic per
+# candidate (stable crc32 seed), so each order reproducibly triggers the same bar behaviour.
+# Needs tester_vs_pub under BUNDLE_SUT_ROOT (stdlib-only). trusted-local.
+title = "Tester vs Pub — QA sweep drives the tester_vs_pub bar simulator, oracle convicts inadequate outputs"
+note  = "The bar (barmen+clients) answers adequately or inadequately, at random-but-reproducible, for adequate and inadequate inputs. FW_VAR=0 the bar behaved; 2 the bar CRASHED; 3 the bar produced a wrong output (served invalid / wrong price / silent). Goal caught:max = surface the most bar defects."
+args  = ["mode=qa_pub_vs_bar"]
+
+[[goals]]
+key = "caught"
+dir = "max"
+
+[[slots]]   # HEAD — bring up the fallible bar simulator + the order the tester will assemble
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import sys, zlib
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str(_sut_root.resolve()))
+from tester_vs_pub import Pub, adjudicate, Order
+PUB = Pub(seed=20250707, reliability=0.5)          # a middling bar: some barmen fumble edge cases
+ACTIONS = []
+GARNISH = []
+EVENTS = set()
+QTY = "1"
+TARGET = "beer"
+''']
+
+[[slots]]   # ACTION — FW_Permut: enter/sit/order in every order (the bar must require entering first)
+sheet  = "ACTION"
+key    = "action"
+verb   = "FW_Permut"
+raw    = true
+values = ['''ACTIONS.append("enter")
+''', '''ACTIONS.append("sit")
+''', '''ACTIONS.append("order")
+''']
+
+[[slots]]   # QUANTITY — FW_Combi(1): boundary/type/domain/capacity abuse
+sheet  = "QUANTITY"
+key    = "quantity"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''QTY = "1"
+''', '''QTY = "0"
+''', '''QTY = "-1"
+''', '''QTY = "999999999"
+''', '''QTY = "abcd"
+''']
+
+[[slots]]   # TARGET — FW_Combi(1): on-menu vs off-menu (a lizard is not a drink)
+sheet  = "TARGET"
+key    = "target"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''TARGET = "beer"
+''', '''TARGET = "water"
+''', '''TARGET = "lizard"
+''']
+
+[[slots]]   # GARNISH — FW_Subsets: with or without ice (present/absent → 2)
+sheet  = "GARNISH"
+key    = "garnish"
+verb   = "FW_Subsets"
+raw    = true
+values = ['''GARNISH.append("ice")
+''']
+
+[[slots]]   # LAST_CALL — FW_Optional sudden event: the bar is closing (present OR absent)
+sheet  = "LAST_CALL"
+key    = "last_call"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ['''EVENTS.add("last_call")
+''']
+
+[[slots]]   # TAIL — drive the bar, compare its output to ground truth, convict misbehaviour
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''order = Order(ACTIONS, QTY, TARGET, GARNISH, EVENTS)
+expected = adjudicate(order)                       # what an ADEQUATE bar must do
+# stable per-candidate seed (crc32, not hash() which is per-process randomized) so the bar's
+# random behaviour is REPRODUCIBLE — one fixed verdict per input combination.
+_key = "|".join([">".join(ACTIONS), QTY, TARGET, ",".join(sorted(GARNISH)), ",".join(sorted(EVENTS))])
+_seed = zlib.crc32(_key.encode()) & 0xffffffff
+resp = PUB.serve(ACTIONS, QTY, TARGET, GARNISH, EVENTS, seed=_seed)   # never raises (crash captured)
+caught = int(resp.crashed or not resp.adequate)    # did the tester surface a bar defect?
+if resp.crashed:
+    FW_VAR = 2                                      # the bar CRASHED on this order (must never happen)
+elif not resp.adequate:
+    FW_VAR = 3                                      # the bar produced a WRONG output
+else:
+    FW_VAR = 0                                      # the bar behaved adequately
+FW_CUSTOM_VAR = FW_VAR
+print("app=qa_pub_vs_bar barman=%s expected=%s got=%s deviation=%s caught=%d FW_VAR=%d"
+      % (resp.barman, "serve" if expected.served else "reject", resp.status,
+         resp.deviation or "none", caught, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "the bar CRASHED on this order (an adequate bar rejects cleanly, never raises/overflows)"
+[[custom_vars]]
+code = 3
+msg = "the bar produced a WRONG output (served an invalid order, wrong price/change, or silently dropped it)"

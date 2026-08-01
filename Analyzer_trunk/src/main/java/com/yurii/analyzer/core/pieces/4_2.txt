@@ -1,0 +1,27 @@
+// ── 4_2.txt — variant 2: cached DecimalFormat (Locale.ROOT) ──────────
+// Same contract. DecimalFormat is mutable so we keep a per-thread
+// instance via ThreadLocal — eliminates the String.format reformatting
+// cost for hot loops, at the cost of per-thread state.
+
+    private static final ThreadLocal<DecimalFormat> FMT3 = ThreadLocal.withInitial(() -> {
+        DecimalFormat df = new DecimalFormat("0.000", DecimalFormatSymbols.getInstance(Locale.ROOT));
+        df.setRoundingMode(RoundingMode.HALF_UP);
+        return df;
+    });
+
+    public static String canonicalNumber(double n) {
+        long __t0 = System.nanoTime();
+        Metrics.p4_invocations++;
+        Metrics.p4_sum_of_inputs += n;
+        try {
+            String out;
+            if (Math.abs(n - Math.rint(n)) < 1e-9)
+                out = String.valueOf((long) Math.round(n));
+            else
+                out = FMT3.get().format(n);
+            Metrics.p4_total_output_chars += out.length();
+            return out;
+        } finally {
+            Metrics.p4_duration_ns += System.nanoTime() - __t0;
+        }
+    }

@@ -1,0 +1,22 @@
+// ── 6_1.txt — variant 1: ArrayList loop (avoid Stream overhead) ──────
+// Same contract. Useful for small lists (the common case: ~1-30
+// tokens per line). Skips the Stream pipeline allocation cost.
+
+    public static List<String> tokenLowers(List<String> tokens) {
+        long __t0 = System.nanoTime();
+        Metrics.p6_invocations++;
+        Metrics.p6_total_input_size += (tokens == null ? 0 : tokens.size());
+        try {
+            if (tokens == null || tokens.isEmpty()) return List.of();
+            int n = tokens.size();
+            ArrayList<String> out = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                String s = tokens.get(i).toLowerCase(Locale.ROOT);
+                out.add(s);
+                Metrics.p6_total_output_chars += s.length();
+            }
+            return out;
+        } finally {
+            Metrics.p6_duration_ns += System.nanoTime() - __t0;
+        }
+    }

@@ -1,0 +1,125 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_11_db_config_cartes",
+  "category": "DB-config tuning / FW_Cartes workload matrix",
+  "user_problem": "I tune PostgreSQL-like database configs across workload classes and data sizes. I need to cross config profiles with OLTP/analytics/mixed workloads, catch under-provisioned combinations, and compare p95 latency, cost, and stability.",
+  "bundle_offer": "Bundle models DB config profile as FW_Cartes(WORKLOAD), crossing each config profile with each workload class, then crosses that matrix with data size. The TAIL oracle catches workload-specific under-provisioning and the Analyzer exposes p95/cost/stability trade-offs.",
+  "zen_mapping": [
+    {
+      "freedom": "DB config profile crossed with workload class",
+      "shape": "cross another sheet",
+      "verb": "FW_Cartes(WORKLOAD)",
+      "cardinality": "3 x 3 = 9 matrix cells"
+    },
+    {
+      "freedom": "workload class operand",
+      "shape": "exactly one of a set, set aside as the Cartes operand",
+      "verb": "FW_Combi(1) + FW_Exclude",
+      "cardinality": "3 operand values"
+    },
+    {
+      "freedom": "data size",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "workload/config compatibility",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "oracle": "FW_VAR=2 analytics workload under-provisioned when work_mem < 64 MB; FW_VAR=3 OLTP workload under-provisioned when pool_size < 32; FW_VAR=0 acceptable",
+  "spec_path": "llm_selfposed_bundle_tasks/11_db_config_cartes/scenario.toml",
+  "spec_sha256": "7c6da133027de97a80065137d843f16b793a9c35d52b48703e43dce64a7c8ad6",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 6,
+    "mode": "BOUNDED",
+    "reasons": [
+      "each FW_Optional slot independently multiplies the post-sieve candidate space",
+      "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+    ],
+    "upper": 18,
+    "value": 18
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 18,
+  "verdict_distribution": {
+    "PASS (config/workload/data-size combination accepted)": 12,
+    "analytics workload under-provisioned: work_mem below 64 MB": 2,
+    "OLTP workload under-provisioned: pool_size below 32": 4
+  },
+  "goals": [
+    {
+      "key": "p95_ms",
+      "dir": "min"
+    },
+    {
+      "key": "cost_units",
+      "dir": "min"
+    },
+    {
+      "key": "stability_score",
+      "dir": "max"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "13_0_0",
+      "outcome": "DOMAIN_FAIL",
+      "fw_var": 3,
+      "objectives": {
+        "p95_ms": 1.0,
+        "cost_units": 9.5,
+        "stability_score": 6.0
+      },
+      "reason_non_dominated": "champion: strictly best minimize p95_ms (p95_ms=1.000) on the 3-point Pareto front"
+    },
+    {
+      "candidate_id": "1_0_0",
+      "outcome": "DOMAIN_FAIL",
+      "fw_var": 3,
+      "objectives": {
+        "p95_ms": 21.0,
+        "cost_units": 2.25,
+        "stability_score": 7.0
+      },
+      "reason_non_dominated": "champion: strictly best minimize cost_units (cost_units=2.250) on the 3-point Pareto front"
+    },
+    {
+      "candidate_id": "7_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "p95_ms": 3.0,
+        "cost_units": 6.0,
+        "stability_score": 9.0
+      },
+      "reason_non_dominated": "champion: strictly best maximize stability_score (stability_score=9.000) on the 3-point Pareto front"
+    }
+  ],
+  "pareto_front_size": 3,
+  "pareto_front_pass_count": 1,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=db_config config=analytics_heavy workload=oltp data_size=small p95_ms=1.00 cost_units=9.50 stability_score=6 FW_VAR=3",
+    "app=db_config config=low_mem workload=analytics data_size=small p95_ms=95.45 cost_units=2.25 stability_score=7 FW_VAR=2"
+  ],
+  "pass_example": "app=db_config config=balanced workload=analytics data_size=large p95_ms=130.41 cost_units=8.40 stability_score=9 FW_VAR=0",
+  "teaching_summary": "User problem (DB-config tuning / FW_Cartes workload matrix). Ran 18 candidates: 12x PASS (config/workload/data-size combination accepted), 2x analytics workload under-provisioned: work_mem below 64 MB, 4x OLTP workload under-provisioned: pool_size below 32. Formal Pareto front of 3. Verbs: DB config profile crossed with workload class -> FW_Cartes(WORKLOAD); workload class operand -> FW_Combi(1) + FW_Exclude; data size -> FW_Combi(1); workload/config compatibility -> TAIL oracle (FW_VAR). NOTE: 2 of 3 Pareto-front candidates are DOMAIN_FAIL (findings, not deployable): the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy.",
+  "db": "llm_selfposed_11_db_cartes",
+  "run_id": "llm-selfposed-11-db-cartes-001",
+  "sieve": false,
+  "run_dir": "/tmp/fw_work/llm_selfposed_11_db_cartes/runs/llm-selfposed-11-db-cartes-001",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

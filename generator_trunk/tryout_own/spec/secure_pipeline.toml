@@ -1,0 +1,208 @@
+title = "Own Bundle tryout - secure document pipeline"
+note = "Bounded Core space with permutation, subsets, predicate sieve, optional sudden actions, live HTTP SUT, independent oracle, and Analyzer metrics."
+args = ["mode=secure_pipeline_tryout"]
+
+[[goals]]
+key = "security_failures"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "correct"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import hashlib, json, os, re, time, unicodedata, urllib.error, urllib.request, uuid
+BASE = os.environ.get("TRYOUT_URL", "http://127.0.0.1:8025")
+SID = "bundle-" + uuid.uuid4().hex
+MODE = "strict"
+ORDER = []
+FEATURES = set()
+PAYLOAD_KIND = "ascii"
+ROTATED = 0
+POISONED = 0
+KEYS = {1: "bundle-key-v1", 2: "bundle-key-v2"}
+SECRET_RE = re.compile(r"SECRET-[A-Za-z0-9]+")
+
+def _post(path, payload):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=8) as response:
+        return response.status, json.loads(response.read().decode("utf-8"))
+
+def _correct_text(text, order):
+    for operation in order:
+        if operation == "normalize":
+            text = unicodedata.normalize("NFKC", text)
+        elif operation == "redact":
+            text = SECRET_RE.sub("[REDACTED]", unicodedata.normalize("NFKC", text))
+        elif operation == "tag":
+            text += "|TAG"
+    return text
+''']
+
+[[slots]]
+sheet = "MODE"
+key = "mode"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+MODE = "strict"
+''', '''
+MODE = "legacy"
+''']
+
+[[slots]]
+sheet = "ORDER"
+key = "order"
+verb = "FW_Permut"
+raw = true
+values = ['''
+ORDER.append("normalize")
+''', '''
+ORDER.append("redact")
+''', '''
+ORDER.append("tag")
+''']
+
+[[slots]]
+sheet = "FEATURES"
+key = "features"
+verb = "FW_Subsets"
+raw = true
+values = ['''
+FEATURES.add("cache")
+''', '''
+FEATURES.add("audit")
+''']
+
+[[slots]]
+sheet = "PAYLOAD"
+key = "payload"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+PAYLOAD_KIND = "ascii"
+''', '''
+PAYLOAD_KIND = "unicode"
+''']
+
+[[slots]]
+sheet = "OPT_ROTATE"
+key = "opt_rotate"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''
+_post("/scenario/" + SID + "/rotate-key", {})
+ROTATED = 1
+''']
+
+[[slots]]
+sheet = "OPT_POISON"
+key = "opt_poison"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''
+_post("/scenario/" + SID + "/poison-cache", {})
+POISONED = 1
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_payloads = {
+    "ascii": "Invoice SECRET-42 amount=7",
+    "unicode": "Invoice ＳＥＣＲＥＴ－42 amount=7",
+}
+_text = _payloads[PAYLOAD_KIND]
+_expected_text = _correct_text(_text, ORDER)
+_expected_key = 2 if ROTATED else 1
+_expected_digest = hashlib.sha256((KEYS[_expected_key] + "|" + _expected_text).encode("utf-8")).hexdigest()
+_started = time.monotonic()
+_error = ""
+try:
+    _status, _body = _post("/process", {
+        "scenario_id": SID,
+        "mode": MODE,
+        "order": ORDER,
+        "features": sorted(FEATURES),
+        "text": _text,
+    })
+except Exception as _exc:
+    _status, _body, _error = 0, {}, type(_exc).__name__
+_latency = (time.monotonic() - _started) * 1000.0
+_actual_text = str(_body.get("text", ""))
+_normalized_actual = unicodedata.normalize("NFKC", _actual_text)
+_leak = int("SECRET-42" in _normalized_actual)
+_stale_key = int(_body.get("key_version") != _expected_key)
+_digest_bad = int(_body.get("digest") != _expected_digest)
+_text_bad = int(_actual_text != _expected_text)
+if _status != 200 or not _body.get("ok"):
+    FW_VAR = 5
+elif _leak:
+    FW_VAR = 2
+elif _stale_key:
+    FW_VAR = 3
+elif _digest_bad:
+    FW_VAR = 4
+elif _text_bad:
+    FW_VAR = 5
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+_security_failures = _leak + _stale_key + _digest_bad
+print("app=secure_pipeline mode=%s order=%s features=%s payload=%s rotated=%d poisoned=%d "
+      "leak=%d stale_key=%d digest_bad=%d text_bad=%d security_failures=%d correct=%d "
+      "latency_ms=%.3f error=%s FW_VAR=%d"
+      % (MODE, ">".join(ORDER), "+".join(sorted(FEATURES)) or "none", PAYLOAD_KIND,
+         ROTATED, POISONED, _leak, _stale_key, _digest_bad, _text_bad,
+         _security_failures, int(FW_VAR == 0), _latency, _error or "none", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "privacy leak: normalized secret remained visible"
+[[custom_vars]]
+code = 3
+msg = "stale key used after rotation"
+[[custom_vars]]
+code = 4
+msg = "digest mismatch or poisoned cache accepted"
+[[custom_vars]]
+code = 5
+msg = "protocol failure or incorrect transformed text"
+
+[[params]]
+sheet = "MODE"
+value = 'MODE = "strict"'
+tier = 2
+[[params]]
+sheet = "MODE"
+value = 'MODE = "legacy"'
+tier = 1
+[[params]]
+sheet = "PAYLOAD"
+value = 'PAYLOAD_KIND = "ascii"'
+unicode = 0
+[[params]]
+sheet = "PAYLOAD"
+value = 'PAYLOAD_KIND = "unicode"'
+unicode = 1
+
+[[constraints]]
+id = "strict_ascii_ingress_policy"
+sheets = ["MODE", "PAYLOAD"]
+when = "MODE.tier == 2 and PAYLOAD.unicode == 1"
+gate = {}
+desc = "strict ingress policy excludes Unicode payloads before expensive execution"

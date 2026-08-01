@@ -1,0 +1,108 @@
+# ============================================================================
+# USE-CASE #6 — ETL / data-pipeline validation.
+#
+# A fixed tiny dataset (with whitespace/case variants, a null, and id-duplicates)
+# is run through three transforms in EVERY order (FW_Permut: normalize / nullfix /
+# dedup), under a null policy (drop/zero/keep) and a dedup mode (by_id/by_full).
+# The oracle checks data-quality INVARIANTS on the output (no duplicate id, no
+# leaked null when the policy forbids it). The point: transform ORDER changes
+# correctness -- the classic "dedup before normalize" bug leaks duplicates that
+# only collapse after normalization; by_full vs by_id changes which dupes survive.
+#
+# Self-contained Python compute (no SUT/network/Docker) -> trusted-local.
+# 3(NULLPOLICY) x 2(DEDUP) x 6(ORDER=3!) = 36 candidates; deterministic mix of
+# PASS (clean table) and DOMAIN_FAIL (FW_VAR=2 dup-id leak / 3 null leak).
+# ============================================================================
+title = "ETL/data-pipeline validation — order-sensitive transforms, data-quality oracle"
+note  = "FW_Permut transform-order x FW_Combi(1) null-policy/dedup-mode; exposes dedup-before-normalize."
+args  = ["mode=etl_pipeline"]
+
+[[goals]]
+key = "rows_out"
+dir = "max"
+
+[[slots]]   # invariant frame: fixed dataset + transforms + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''RAW = [
+    {"id": "1", "name": "Alice"},
+    {"id": "1", "name": " alice "},
+    {"id": "2", "name": None},
+    {"id": "2", "name": "Bob"},
+    {"id": "3", "name": "Carol"},
+]
+NULLPOLICY = "keep"
+DEDUP = "by_id"
+ORDER = []
+
+def _normalize(rows):
+    out = []
+    for r in rows:
+        nm = r["name"]
+        nm = nm.strip().lower() if isinstance(nm, str) else nm
+        out.append({"id": r["id"].strip(), "name": nm})
+    return out
+
+def _nullfix(rows):
+    if NULLPOLICY == "drop":
+        return [r for r in rows if r["name"] is not None]
+    if NULLPOLICY == "zero":
+        return [{"id": r["id"], "name": (r["name"] if r["name"] is not None else "")} for r in rows]
+    return rows
+
+def _dedup(rows):
+    seen = set(); out = []
+    for r in rows:
+        key = r["id"] if DEDUP == "by_id" else (r["id"], r["name"])
+        if key in seen:
+            continue
+        seen.add(key); out.append(r)
+    return out
+
+_T = {"normalize": _normalize, "nullfix": _nullfix, "dedup": _dedup}
+''']
+
+[[slots]]   # null policy (cartesian leaf)
+sheet  = "NULLPOLICY"
+key    = "nullpolicy"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["NULLPOLICY = \"drop\"\n", "NULLPOLICY = \"zero\"\n", "NULLPOLICY = \"keep\"\n"]
+
+[[slots]]   # dedup mode (cartesian leaf)
+sheet  = "DEDUP"
+key    = "dedup"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["DEDUP = \"by_id\"\n", "DEDUP = \"by_full\"\n"]
+
+[[slots]]   # ORDER-sensitive transform sequence -> permutations (correctness depends on order)
+sheet  = "ORDER"
+key    = "order"
+verb   = "FW_Permut"
+raw    = true
+values = ["ORDER.append(\"normalize\")\n", "ORDER.append(\"nullfix\")\n", "ORDER.append(\"dedup\")\n"]
+
+[[slots]]   # invariant frame: apply pipeline in ORDER, evaluate the data-quality oracle, verdict
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''rows = list(RAW)
+for _t in ORDER:
+    rows = _T[_t](rows)
+_ids = [r["id"] for r in rows]
+_dup_id = int(len(_ids) != len(set(_ids)))
+_null_leak = int(any(r["name"] is None for r in rows))
+if _dup_id:
+    FW_VAR = 2          # duplicate id survived (e.g. dedup ran before normalize, or by_full split a dup)
+elif _null_leak and NULLPOLICY != "keep":
+    FW_VAR = 3          # a null leaked despite a non-keep policy (nullfix ran too late)
+else:
+    FW_VAR = 0          # clean, deduped, policy-consistent table
+FW_CUSTOM_VAR = FW_VAR
+print("app=etl_pipeline order=%s nullpolicy=%s dedup=%s rows_out=%d dup_id=%d null_leak=%d FW_VAR=%d"
+      % (">".join(ORDER), NULLPOLICY, DEDUP, len(rows), _dup_id, _null_leak, FW_VAR))
+''']

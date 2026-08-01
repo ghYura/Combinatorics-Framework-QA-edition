@@ -1,0 +1,63 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_12_fallback_sequence_permutr",
+  "category": "service fallback sequence (FW_PermutR)",
+  "user_problem": "I design a service fallback strategy with three ordered probe slots. Each slot can probe cache, replica, or primary, and repeats are allowed. I need to know which repeated sequences are deployable for interactive and critical traffic, and compare availability, latency, and cost.",
+  "bundle_offer": "Bundle models the fallback probe sequence as FW_PermutR(3): an ordered length-3 sequence where the same probe may repeat. It crosses the repeated sequence with request class, runs a TAIL oracle for deployability, and returns an availability/latency/cost Pareto front with PASS-aware front annotations.",
+  "hypothesis": "Three probes over three positions produce 3^3 = 27 ordered sequences with repetition; crossing two request classes produces 54 candidates. Critical traffic fails without a primary probe, interactive traffic fails when it starts with primary, and all-identical or over-budget sequences fail policy.",
+  "zen_mapping": [
+    {
+      "freedom": "three-step fallback probe sequence",
+      "shape": "a sequence with repetition",
+      "verb": "FW_PermutR(3)",
+      "cardinality": "3^3 = 27"
+    },
+    {
+      "freedom": "request class",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "fallback deployability policy",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_PermutR",
+      "FW_Combi",
+      "TAIL oracle ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "availability_score",
+        "dir": "max"
+      },
+      {
+        "key": "latency_ms",
+        "dir": "min"
+      },
+      {
+        "key": "cost_units",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=2 critical sequence never probes primary; FW_VAR=3 interactive sequence starts with expensive primary; FW_VAR=4 sequence has no diversity or exceeds latency budget; FW_VAR=0 deployable"
+  },
+  "pattern": "service fallback repeated sequence",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/service fallback repeated sequence"
+    }
+  ]
+}

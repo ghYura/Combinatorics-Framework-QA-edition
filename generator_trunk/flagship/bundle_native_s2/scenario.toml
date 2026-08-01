@@ -1,0 +1,309 @@
+spec_version = "1"
+title = "Flagship S2 — Bundle-native construction of the transactional-store factor space"
+note = "The SECOND SUT through the same engine. Identical brace chain to bundle_native_l2 — FW_Group, FW_PermutR(2), FW_Optional and five nested links with FW_() in both operand positions — but the scopes it composes are TRANSACTIONS, not pipeline stages. The engine never learns the difference, which is the point. 128 mandatory rows x 2 optional = 256 candidates, the same 2^8 space the in-process study enumerates."
+args = ["suite=flagship", "tier=bundle-native-s2"]
+
+# The chain shape is deliberately byte-for-byte the same problem as L2's: if the
+# engine's composition were somehow specific to the record pipeline, swapping the
+# domain adapter underneath an unchanged chain would expose it.
+#
+#   SEQ_RESULT    = seq_open . group(bundle) . permutR2(motif) . seq_close
+#   TXN_RESULT    = txn_open(commit|rollback) . SEQ_RESULT . txn_close
+#   BRANCH_RESULT = br_open . TXN_RESULT . side_op . br_close
+#   NEST_RESULT   = nest_open(block|repeat x2) . BRANCH_RESULT . nest_close
+#   ROOT_RESULT   = root_open . NEST_RESULT . final_op . root_close
+#
+# `side_op` sits inside the repeated scope but OUTSIDE the transaction. That
+# placement is the experiment: it is the write a stale-savepoint defect loses,
+# and only a repeated scope re-enters the transaction after it.
+seq_extra = [
+  ["SEQ_RESULT",    "FW_Reuse", "FW_(SEQ_OPEN,,GROUPED_OPS,,REPEATED_MOTIF,,SEQ_CLOSE,,M:N)"],
+  ["TXN_RESULT",    "FW_Reuse", "FW_(NOP,,TXN_OPEN,,FW_(),,TXN_CLOSE,,M:N)"],
+  ["BRANCH_RESULT", "FW_Reuse", "FW_(BR_OPEN,,FW_(),,SIDE_OP,,BR_CLOSE,,M:N)"],
+  ["NEST_RESULT",   "FW_Reuse", "FW_(NOP,,NEST_OPEN,,FW_(),,NEST_CLOSE,,M:N)"],
+  ["ROOT_RESULT",   "FW_Reuse", "FW_(ROOT_OPEN,,FW_(),,FINAL_OP,,ROOT_CLOSE,,M:N)"],
+]
+
+# Same Analyzer goals as the first flagship: `txn_store.Result.metrics_line`
+# emits the same keys with the same directions, so one configuration serves both
+# SUTs. Correctness is NOT an objective — a non-zero FW_VAR removes a candidate
+# from formal eligibility entirely.
+[[goals]]
+key = "stages"
+dir = "max"
+[[goals]]
+key = "retained"
+dir = "max"
+[[goals]]
+key = "ops"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.engine_demo.txn_store import (
+    bundle, emit_close, emit_node, emit_op, emit_open
+)
+from generator_trunk.flagship.store_flagship import evaluate_stream_under
+STREAM = []
+SUDDEN = 0
+SUDDEN_DONE = 0
+''']
+
+# FW_Optional — a transient double increment inside the transaction. Core routes
+# it out of the mandatory Cartesian into fw_opt and multiplies the space by
+# 1 + C(1,1) = 2.
+[[slots]]
+sheet = "SUDDEN_EVENT"
+key = "sudden_event"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''SUDDEN = 1
+''']
+
+# FW_Group over named operation bundles — the same operator that recombined
+# pipeline templates, applied to transaction fragments.
+[[slots]]
+sheet = "GROUPED_OPS"
+key = "grouped_ops"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_node(STREAM, bundle("seed"))
+''',
+'''emit_node(STREAM, bundle("shuffle"))
+''',
+]
+
+# FW_PermutR(2): 2^2 = 4 ordered pairs with repetition. `put` and `bump` do not
+# commute on the same key, so operation order is an exactly decidable axis.
+[[slots]]
+sheet = "REPEATED_MOTIF"
+key = "repeated_motif"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_op(STREAM, "put", key=1, value=9)
+''',
+'''emit_op(STREAM, "bump", key=1, delta=4)
+''',
+]
+
+# The transaction outcome is a brace OPERAND, not a helper: helpers are read
+# first-value only (Core safeFirst), so a two-level axis must enter through E1/E2.
+[[slots]]
+sheet = "TXN_OPEN"
+key = "txn_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 2, "txn", commit=1)
+''',
+'''emit_open(STREAM, 2, "txn", commit=0)
+''',
+]
+
+# Write vs read between the two scope entries. A read must not arm the
+# copy-on-write savepoint, which is what makes this a genuine third condition
+# for the interaction defect rather than a constant.
+[[slots]]
+sheet = "SIDE_OP"
+key = "side_op"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_op(STREAM, "put", key=3, value=11)
+''',
+'''emit_op(STREAM, "read", key=3)
+''',
+]
+
+# The nesting axis. A single-child `block` scope is semantically transparent, so
+# "flat" really is the unrepeated tree while the emitted stream still carries a
+# scope the parser must handle either way.
+[[slots]]
+sheet = "NEST_OPEN"
+key = "nest_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 4, "block")
+''',
+'''emit_open(STREAM, 4, "repeat", count=2)
+''',
+]
+
+[[slots]]
+sheet = "FINAL_OP"
+key = "final_op"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_op(STREAM, "purge", value=5)
+''',
+'''emit_op(STREAM, "delete", key=2)
+''',
+]
+
+# Intermediate brace targets are assembly temporaries. Without FW_Exclude each
+# would ALSO multiply into fw_final instead of composing into it.
+[[slots]]
+sheet = "SEQ_RESULT"
+key = "seq_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "TXN_RESULT"
+key = "txn_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "BRANCH_RESULT"
+key = "branch_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "NEST_RESULT"
+key = "nest_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+# The highest-order root is the ONLY brace target that enters the final product.
+[[slots]]
+sheet = "ROOT_RESULT"
+key = "root_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+# Helper sheets, declared AFTER the root so Core's ordinary re-emission of them
+# lands after the assembled structure, where the parser drops it as debris.
+[[slots]]
+sheet = "SEQ_OPEN"
+key = "seq_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 1, "block")
+''']
+
+# The optional burst is spliced in here, at the END of the transaction body,
+# where it is structurally meaningful. SUDDEN_DONE makes the debris copy of this
+# fragment a no-op: the brace weaves this sheet once per candidate, and Core
+# re-emits it once more as an ordinary column.
+[[slots]]
+sheet = "SEQ_CLOSE"
+key = "seq_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+if SUDDEN and not SUDDEN_DONE:
+    SUDDEN_DONE = 1
+    emit_open(STREAM, 5, "repeat", count=2)
+    emit_op(STREAM, "bump", key=2, delta=1)
+    emit_close(STREAM, 5)
+emit_close(STREAM, 1)
+''']
+
+[[slots]]
+sheet = "TXN_CLOSE"
+key = "txn_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 2)
+''']
+
+[[slots]]
+sheet = "BR_OPEN"
+key = "br_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 6, "block")
+''']
+
+[[slots]]
+sheet = "BR_CLOSE"
+key = "br_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 6)
+''']
+
+[[slots]]
+sheet = "NEST_CLOSE"
+key = "nest_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 4)
+''']
+
+[[slots]]
+sheet = "ROOT_OPEN"
+key = "root_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 3, "block")
+''']
+
+[[slots]]
+sheet = "ROOT_CLOSE"
+key = "root_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 3)
+''']
+
+# A brace's start/end fields must name a sheet. Links 2 and 4 need no wrapper, so
+# they point at this no-op rather than at a marker they would emit twice.
+[[slots]]
+sheet = "NOP"
+key = "nop"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = evaluate_stream_under(STREAM)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction/compile/validation failure"
+[[custom_vars]]
+code = 3
+msg = "transaction execution failure"
+[[custom_vars]]
+code = 4
+msg = "independent oracle disagreement (index, rollback, replay or bound)"
+[[custom_vars]]
+code = 5
+msg = "store service contract violated"

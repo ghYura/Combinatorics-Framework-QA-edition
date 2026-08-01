@@ -1,0 +1,212 @@
+title = "Own Bundle input — checkout pricing red-team (Combi x Subsets x Permut x FW_Optional x sieve)"
+note = """Models a checkout-pricing SUT's REAL degrees of freedom, each mapped to its ZEN-forced verb:
+MODE = exactly one of {strict,fast,legacy} -> FW_Combi(1); COUPONS = any subset of {SUMMER,LOYALTY} ->
+FW_Subsets; STAGES = an ordering of the pipeline [discount,tax,round] -> FW_Permut (order IS the bug);
+REGION = exactly one of {us,eu} -> FW_Combi(1); OPT_RETRY = a duplicate request that may or may not
+arrive -> FW_Optional (sudden action). The 'bonds' layer: legacy is not EU-VAT-certified, so the
+constraint sieve forbids legacy x eu BEFORE execution. strict is the order-independent, idempotent
+reference; an independent oracle in the TAIL recomputes the canonical price + idempotent ledger and
+catches: pipeline-order defects (FW_VAR=2), idempotency double-charge (FW_VAR=3), protocol (FW_VAR=5).
+Mandatory = 3*4*6*2 = 144; sieve removes legacy x eu (24) -> 120; x (OPT_RETRY +1) = 240 candidates."""
+args = ["mode=pricing_tryout"]
+
+[[goals]]
+key = "severity"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "correct"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import json, os, time, uuid, urllib.error, urllib.request
+BASE = os.environ.get("PRICING_URL", "http://127.0.0.1:8027")
+SID = "bundle-" + uuid.uuid4().hex
+MODE = "strict"
+REGION = "us"
+COUPONS = []
+STAGES = []
+RETRY = 0
+PCT_COUPONS = {"SUMMER": 0.20}
+FIXED_COUPONS = {"LOYALTY": 10.00}
+TAX = {"us": 0.0825, "eu": 0.20}
+LEGACY_FLAT_TAX = 0.0825
+
+def _post(path, payload):
+    data = json.dumps(payload).encode("utf-8")
+    req = urllib.request.Request(BASE + path, data=data, headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=8) as response:
+        return response.status, json.loads(response.read().decode("utf-8"))
+
+def _discount(price, coupons):
+    price -= sum(FIXED_COUPONS[c] for c in coupons if c in FIXED_COUPONS)
+    for c in coupons:
+        if c in PCT_COUPONS:
+            price *= (1 - PCT_COUPONS[c])
+    return price
+
+def _canonical(coupons, region):
+    return round(_discount(100.00, coupons) * (1 + TAX[region]), 2)
+
+def _literal(coupons, region, stages, mode):
+    p = 100.00
+    tax = LEGACY_FLAT_TAX if mode == "legacy" else TAX[region]
+    for st in stages:
+        if st == "discount":
+            p = _discount(p, coupons)
+        elif st == "tax":
+            p *= (1 + tax)
+        elif st == "round":
+            p = round(p, 2)
+    return round(p, 2)
+''']
+
+[[slots]]
+sheet = "MODE"
+key = "mode"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+MODE = "strict"
+''', '''
+MODE = "fast"
+''', '''
+MODE = "legacy"
+''']
+
+[[slots]]
+sheet = "COUPONS"
+key = "coupons"
+verb = "FW_Subsets"
+raw = true
+values = ['''
+COUPONS.append("SUMMER")
+''', '''
+COUPONS.append("LOYALTY")
+''']
+
+[[slots]]
+sheet = "STAGES"
+key = "stages"
+verb = "FW_Permut"
+raw = true
+values = ['''
+STAGES.append("discount")
+''', '''
+STAGES.append("tax")
+''', '''
+STAGES.append("round")
+''']
+
+[[slots]]
+sheet = "REGION"
+key = "region"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+REGION = "us"
+''', '''
+REGION = "eu"
+''']
+
+[[slots]]
+sheet = "OPT_RETRY"
+key = "opt_retry"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''
+RETRY = 1
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_canon = _canonical(COUPONS, REGION)
+_idem = "k1"
+_started = time.monotonic()
+_error = ""
+_status, _body = 0, {}
+try:
+    _status, _body = _post("/checkout", {"scenario_id": SID, "idem_key": _idem, "mode": MODE,
+                                         "region": REGION, "coupons": COUPONS, "stages": STAGES})
+    if RETRY:
+        _status, _body = _post("/checkout", {"scenario_id": SID, "idem_key": _idem, "mode": MODE,
+                                             "region": REGION, "coupons": COUPONS, "stages": STAGES})
+except Exception as _exc:
+    _status, _body, _error = 0, {}, type(_exc).__name__
+_latency = (time.monotonic() - _started) * 1000.0
+_price = float(_body.get("price", -1)) if _body else -1.0
+_ledger = float(_body.get("ledger_total", -1)) if _body else -1.0
+_expected_ledger = _canon
+_lit = _literal(COUPONS, REGION, STAGES, MODE)
+_price_bad = int(abs(_price - _canon) > 0.005)
+_order_defect = int(_price_bad and abs(_price - _lit) <= 0.005)
+_idem_defect = int((not _price_bad) and abs(_ledger - _expected_ledger) > 0.005)
+if _status != 200 or not _body.get("ok"):
+    FW_VAR = 5
+elif _price_bad:
+    FW_VAR = 2 if _order_defect else 5
+elif _idem_defect:
+    FW_VAR = 3
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+_price_err_cents = round(abs(_price - _canon) * 100) if _price >= 0 else -1
+_overcharge_cents = round((_ledger - _expected_ledger) * 100) if _ledger >= 0 else -1
+_severity = min(8 * _idem_defect + 6 * _order_defect + (10 if FW_VAR == 5 else 0), 10)
+print("app=pricing mode=%s region=%s coupons=%s stages=%s retry=%d "
+      "price=%.2f canonical=%.2f literal=%.2f ledger=%.2f overcharge_cents=%d price_err_cents=%d "
+      "order_defect=%d idem_defect=%d severity=%d correct=%d latency_ms=%.3f error=%s FW_VAR=%d"
+      % (MODE, REGION, "+".join(COUPONS) or "none", ">".join(STAGES), RETRY,
+         _price, _canon, _lit, _ledger, _overcharge_cents, _price_err_cents,
+         _order_defect, _idem_defect, _severity, int(FW_VAR == 0), _latency, _error or "none", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "pipeline-order defect: taxed a fixed coupon / rounded mid-pipeline (price != canonical)"
+[[custom_vars]]
+code = 3
+msg = "idempotency defect: duplicate idem_key double-charged the ledger"
+[[custom_vars]]
+code = 5
+msg = "protocol failure or unexplained price"
+
+[[params]]
+sheet = "MODE"
+value = 'MODE = "strict"'
+certified_eu = 1
+[[params]]
+sheet = "MODE"
+value = 'MODE = "fast"'
+certified_eu = 1
+[[params]]
+sheet = "MODE"
+value = 'MODE = "legacy"'
+certified_eu = 0
+[[params]]
+sheet = "REGION"
+value = 'REGION = "us"'
+vat = 0
+[[params]]
+sheet = "REGION"
+value = 'REGION = "eu"'
+vat = 1
+
+[[constraints]]
+id = "legacy_not_eu_certified"
+sheets = ["MODE", "REGION"]
+when = "MODE.certified_eu == 0 and REGION.vat == 1"
+gate = {}
+desc = "legacy pricing is not certified for EU VAT — forbid legacy x eu before execution"

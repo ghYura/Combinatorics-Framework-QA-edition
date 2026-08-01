@@ -1,0 +1,150 @@
+spec_version = "1"
+title = "Automation Studio redundant multiset branches — FW_CombiR(3)"
+note = "Repeated controller branches model redundant controller voting/blending, crossed with ordered two-stage post-processing."
+args = ["sut=automation_scheme_studio", "tier=screen", "verb=FW_CombiR"]
+
+[[goals]]
+key = "control_score"
+dir = "max"
+[[goals]]
+key = "robustness_score"
+dir = "max"
+[[goals]]
+key = "stability_score"
+dir = "max"
+[[goals]]
+key = "settling_time_s"
+dir = "min"
+[[goals]]
+key = "worst_error"
+dir = "min"
+[[goals]]
+key = "overshoot_pct"
+dir = "min"
+[[goals]]
+key = "control_effort"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''from generator_trunk.scenarios.automation_scheme_studio.bootstrap import initialize_candidate
+PLAN, INITIAL_COMPONENT_PARAMETERS, MEASUREMENT_TERMINALS = initialize_candidate(
+    family="03_redundant_multiset", battery="screen", duration=1.8, dt=0.06
+)
+'''
+]
+
+[[slots]]
+sheet = "BRANCH_MULTISET"
+key = "branch_multiset"
+verb = "FW_CombiR(3)"
+raw = true
+values = [
+'''PLAN.add_branch("p")
+''',
+'''PLAN.add_branch("pi")
+''',
+'''PLAN.add_branch("pid")
+''',
+'''PLAN.add_branch("relay")
+'''
+]
+
+[[slots]]
+sheet = "ARCH"
+key = "architecture"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.architecture = "parallel_sum"
+''',
+'''PLAN.architecture = "relay_switch"
+'''
+]
+
+[[slots]]
+sheet = "INNER_LOOP"
+key = "inner_loop"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Optional"]
+values = [
+'''PLAN.add_loop("relay_filter")
+'''
+]
+
+[[slots]]
+sheet = "POST_CHAIN"
+key = "post_chain"
+verb = "FW_Permut(2)"
+raw = true
+values = [
+'''PLAN.add_stage("gain")
+''',
+'''PLAN.add_stage("low_pass")
+''',
+'''PLAN.add_stage("limiter")
+''',
+'''PLAN.add_stage("unit_delay")
+'''
+]
+
+[[slots]]
+sheet = "PLANT"
+key = "plant"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.plant = "first_order"
+''',
+'''PLAN.plant = "second_order"
+'''
+]
+
+[[slots]]
+sheet = "PROFILE"
+key = "profile"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.apply_profile("conservative")
+''',
+'''PLAN.apply_profile("balanced")
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''from generator_trunk.scenarios.automation_scheme_studio.bootstrap import finish_candidate
+_RESULT = finish_candidate(PLAN, MEASUREMENT_TERMINALS)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line(
+    initial_parameters=INITIAL_COMPONENT_PARAMETERS,
+    include_terminals=True,
+    include_parameters=True,
+))
+'''
+]
+
+
+[[custom_vars]]
+code = 2
+msg = "circuit validation/build/compile failure"
+[[custom_vars]]
+code = 3
+msg = "simulation runtime or non-finite signal failure"
+[[custom_vars]]
+code = 4
+msg = "unstable excitation response or internal tester terminal"
+[[custom_vars]]
+code = 5
+msg = "tracking/convergence acceptance limit exceeded"

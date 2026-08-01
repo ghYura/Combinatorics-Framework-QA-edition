@@ -1,0 +1,139 @@
+package com.company.dao;
+
+import com.company.models.FW;
+import com.company.utils.CustomInterceptor2;
+import com.company.utils.HibernateSessionFactoryUtil;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
+import org.hibernate.query.Query;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class FWDaoImpl implements FWDao {
+
+private static final Logger log = LogManager.getLogger(FWDaoImpl.class);
+private SessionFactory sessionFactory;
+
+@Deprecated
+public List<FW> getAllFW() {
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions()
+.statementInspector(new CustomInterceptor2()).openSession()) {
+Query<FW> query = session.createQuery("from FW", FW.class);
+return query.list();
+}
+}
+
+@Override
+public void update(FW fw) {
+
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+Transaction tx = session.beginTransaction();
+session.merge(fw);
+tx.commit();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in update", e);
+}
+}
+
+@Override
+public void add(FW fw) {
+
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+Transaction tx = session.beginTransaction();
+session.persist(fw);
+tx.commit();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in add", e);
+}
+}
+
+@Override
+public void addLots(List<FW> fwList) {
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+Transaction tx = session.beginTransaction();
+for (int i = 0; i < fwList.size(); i++) {
+session.persist(fwList.get(i));
+if (i % 500 == 0) {
+session.flush();
+session.clear();
+}
+}
+tx.commit();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in addLots", e);
+}
+}
+
+@Override
+public void delete(FW fw) {
+
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+Transaction tx = session.beginTransaction();
+session.remove(fw);
+tx.commit();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in delete", e);
+}
+}
+
+@Override
+public FW get(long id) {
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+return session.get(FW.class, id);
+}
+}
+
+@Override
+public List<FW> getListOf() {
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory().withOptions().statementInspector(new CustomInterceptor2()).openSession()) {
+CriteriaBuilder builder = session.getCriteriaBuilder();
+CriteriaQuery<FW> criteria = builder.createQuery(FW.class);
+Root<FW> root = criteria.from(FW.class);
+criteria.select(root);
+return session.createQuery(criteria).getResultList();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in getListOf", e);
+return new ArrayList<>();
+}
+}
+
+
+@Override
+public List<FW> getListOf(List<Predicate> predicateList1, List<Predicate> predicateList2) {
+
+try (Session session = HibernateSessionFactoryUtil.getSessionFactory()
+.withOptions()
+.statementInspector(new CustomInterceptor2())
+.openSession()) {
+
+CriteriaBuilder builder = session.getCriteriaBuilder();
+CriteriaQuery<FW> criteria = builder.createQuery(FW.class);
+Root<FW> root = criteria.from(FW.class);
+
+List<Predicate> combined = new ArrayList<>();
+if (predicateList1 != null) combined.addAll(predicateList1);
+if (predicateList2 != null) combined.addAll(predicateList2);
+
+if (!combined.isEmpty()) {
+criteria.where(combined.toArray(new Predicate[0]));
+}
+
+return session.createQuery(criteria).getResultList();
+} catch (Exception e) {
+log.error("[REFACTOR9] Exception in filtered getListOf with Interceptor", e);
+return new ArrayList<>();
+}
+}
+
+public String getFriendlyName() {
+return "FW";
+}
+}

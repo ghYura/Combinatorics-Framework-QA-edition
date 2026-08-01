@@ -1,0 +1,81 @@
+# Self-posed scenario 03 — cache-layer design-space optimization.
+# Category 3 (design-space / Pareto), pattern like usecases/perf_opt.
+# 3(EVICT) x 3(SIZE) x 2(TTL) x 2(PREFETCH) = 36 configs; all valid; trusted-local; formal Pareto.
+title = "Cache layer design space — eviction/size/ttl/prefetch, deterministic surrogate, 3-objective Pareto"
+note  = "FW_Combi(1) over 4 axes; every config valid (FW_VAR=0); Analyzer selects non-dominated over hit_rate/memory/p99."
+args  = ["mode=cache_design"]
+
+[[goals]]
+key = "hit_rate"
+dir = "max"
+[[goals]]
+key = "memory_mb"
+dir = "min"
+[[goals]]
+key = "p99_latency_ms"
+dir = "min"
+
+[[slots]]   # HEAD: shared config + DETERMINISTIC surrogate cost model (no wall-clock noise)
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''EVICT = "lru"
+SIZE = "small"
+TTL = "short"
+PREFETCH = "off"
+
+def _model(evict, size, ttl, prefetch):
+    base_hit = {"lru": 0.72, "lfu": 0.78, "fifo": 0.60}[evict]
+    size_bonus = {"small": 0.0, "medium": 0.08, "large": 0.14}[size]
+    ttl_bonus = {"short": 0.0, "long": 0.05}[ttl]
+    pf_bonus = 0.04 if prefetch == "on" else 0.0
+    hit = round(min(0.99, base_hit + size_bonus + ttl_bonus + pf_bonus), 4)
+    memory = (16.0 + {"small": 8.0, "medium": 32.0, "large": 96.0}[size]
+              + (12.0 if prefetch == "on" else 0.0)
+              + {"lru": 4.0, "lfu": 8.0, "fifo": 2.0}[evict])
+    miss = 1.0 - hit
+    p99 = 2.0 + miss * 40.0 + (3.0 if prefetch == "on" else 0.0) + {"short": 1.0, "long": 0.5}[ttl]
+    return hit, round(memory, 1), round(p99, 3)
+''']
+
+[[slots]]   # eviction policy
+sheet  = "EVICT"
+key    = "evict"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["EVICT = \"lru\"\n", "EVICT = \"lfu\"\n", "EVICT = \"fifo\"\n"]
+
+[[slots]]   # cache size
+sheet  = "SIZE"
+key    = "size"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["SIZE = \"small\"\n", "SIZE = \"medium\"\n", "SIZE = \"large\"\n"]
+
+[[slots]]   # entry TTL
+sheet  = "TTL"
+key    = "ttl"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TTL = \"short\"\n", "TTL = \"long\"\n"]
+
+[[slots]]   # prefetch toggle
+sheet  = "PREFETCH"
+key    = "prefetch"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["PREFETCH = \"off\"\n", "PREFETCH = \"on\"\n"]
+
+[[slots]]   # TAIL: evaluate the model, emit metrics, mark valid (optimization, not pass/fail)
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_hit, _mem, _p99 = _model(EVICT, SIZE, TTL, PREFETCH)
+FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=cache_design evict=%s size=%s ttl=%s prefetch=%s "
+      "hit_rate=%.4f memory_mb=%.1f p99_latency_ms=%.3f FW_VAR=%d"
+      % (EVICT, SIZE, TTL, PREFETCH, _hit, _mem, _p99, FW_VAR))
+''']

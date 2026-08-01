@@ -1,0 +1,85 @@
+<?xml version = "1.0" encoding = "utf-8"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping>
+    <class name = "com.company.models.NumberToValue1" table = "NumberToValue1">
+
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+
+        <id name="key" type="short" column="bigint"/><!-- type="long" retained: hbm2ddl.auto=validate; actual DB column is BIGINT; Java field is short — cast handled in NumberToValue1DaoImpl.get(short) via (long) -->
+            <!--generator class="native"/>
+        </id-->
+        <property name="value" column="value" type="String"/>
+        <property name="optional" column="optional" type="boolean"/>
+        <property name="refined" column="refined" type="Boolean"/><!--20072020-->
+
+    </class>
+
+    <class name = "com.company.models.ComboKey2SheetOptional" table = "combokeys2sheetsoptional">
+
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+
+        <id name="combiId" type="long" column="combi_id">
+            <generator class="native"/>
+        </id>
+        <property name="comboString" column="combo_txt" type="String"/>
+        <property name="combo" column="combos" type="int[]"/>
+
+    </class>
+
+    <class name = "com.company.models.SheetName" table = "names"><!--10092020-->
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+        <id name="sheet" type="String" column="sheet"/>
+        <property name="name" type="String" column="name"/>
+    </class>
+
+    <class name = "com.company.models.FW_CUSTOM_VAR" table = "customvar"><!--26012021-->
+        <id name="fwCustomVar" type="Integer" column="fw_custom_var"/>
+        <property name="message" type="String" column="message"/>
+    </class>
+
+    <class name = "com.company.models.SheetFW_EXIT_CODE" table = "ColumnsContainFwExitCode"><!--25112020-->
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+        <id name="sheet" type="String" column="sheet"/>
+        <property name="FW_EXIT_CODE" type="Integer" column="fw_exit_code"/>
+        <property name="FW_VAR_and_FW_EXIT_CODEperSheetCounter" type="Integer" column="count_per_sheet"/>
+    </class>
+
+    <class name = "com.company.models.FW" table = "fw">
+
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+
+        <id name="combiId" type="long" column="combi_id">
+            <!--generator class="native"/-->
+        </id>
+        <property name="comboString" column="combo_txt" type="String"/>
+        <property name="combo" column="combos" type="int[]"/>
+
+    </class>
+
+    <class name = "com.company.models.FW2" table = "fw2">
+
+        <!--meta attribute = "class-description">
+            This class contains the employee detail.
+        </meta-->
+
+        <id name="combiId" type="long" column="combi_id">
+            <!--generator class="native"/-->
+        </id>
+        <property name="fCombiId" column="fcombi_id" type="long"/>
+        <property name="combo" column="combos" type="short[]"/>
+
+    </class>
+</hibernate-mapping>

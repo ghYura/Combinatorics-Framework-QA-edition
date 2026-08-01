@@ -1,0 +1,63 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_04_ml_rerank_eval",
+  "category": "ML/LLM outer-structure evaluation",
+  "user_problem": "For a text classifier I can vary the preprocessing order, the retrieval chunk size, and whether to use a reranker. Which outer structures clear my quality bar, and what do they cost?",
+  "bundle_offer": "Bundle treats the discrete OUTER structure as the freedom (preprocessing order is a permutation; chunk and reranker are exactly-one choices), evaluates each with a LOCAL deterministic surrogate, applies a quality-gate oracle, and Pareto-ranks accuracy vs latency vs cost.",
+  "hypothesis": "Some preprocessing orders and the smallest chunk without a reranker fall below the 0.75 accuracy gate (DOMAIN_FAIL).",
+  "zen_mapping": [
+    {
+      "freedom": "preprocessing order",
+      "shape": "an ordering",
+      "verb": "FW_Permut",
+      "cardinality": "3! = 6"
+    },
+    {
+      "freedom": "retrieval chunk size",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "reranker on/off",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Permut",
+      "FW_Combi",
+      "FW_Combi",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "accuracy",
+        "dir": "max"
+      },
+      {
+        "key": "latency_ms",
+        "dir": "min"
+      },
+      {
+        "key": "cost_usd",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=4 below the 0.75 quality gate (DOMAIN_FAIL); FW_VAR=0 passes"
+  },
+  "pattern": "usecases/ml_eval",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/usecases/ml_eval"
+    }
+  ]
+}

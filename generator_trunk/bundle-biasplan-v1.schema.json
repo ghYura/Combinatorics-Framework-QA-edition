@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Bundle Seed Bias Plan v1",
+  "type": "object",
+  "required": ["schema", "source_seed_sha256", "exploration_floor"],
+  "properties": {
+    "schema": { "const": "bundle.biasplan/v1" },
+    "source_run_id": { "type": "string" },
+    "source_seed_sha256": { "type": "string" },
+    "per_sheet": { "type": "object" },
+    "derived_constraints": { "type": "array" },
+    "exploration_floor": { "type": "number", "exclusiveMinimum": 0, "maximum": 1 },
+    "est_keep_fraction": { "type": "number", "minimum": 0, "maximum": 1 },
+    "full_space_estimate": { "type": "integer", "minimum": 0 },
+    "est_post_bias_candidates": { "type": "integer", "minimum": 0 },
+    "status": { "type": "string" },
+    "reason": { "type": "string" }
+  },
+  "additionalProperties": true
+}

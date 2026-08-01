@@ -1,0 +1,93 @@
+# STEP 41 — reproducible LOCAL dev database stack for the Bundle.
+#
+# LOCAL-ONLY (hard rule): every published port binds 127.0.0.1 — never 0.0.0.0.
+# These containers must never be reachable from the LAN/Internet. See the repo's
+# Docker restrictions notice. `bundle deploy validate` fails closed if any port
+# is not 127.0.0.1-bound.
+#
+# Tags document reviewed versions; immutable multi-platform manifest digests pin
+# the exact registry content. Refresh through docs/34_RELEASE_REPRODUCIBILITY.md.
+# Secrets and checkout-scoped engine volume names come from .env (render it
+# from .env.template — NEVER commit a real .env).
+# Bundle JARs/scripts stay HOST-built for now; this stack provides only the DBs
+# (+ optional monitoring), on ports that do NOT clash with a host PostgreSQL
+# (defaults 15433/15432, vs the host's usual 5433/5432) — so an existing host
+# DB setup keeps working untouched.
+#
+# Usage WITHOUT the compose plugin (the supported path):
+#   python3 bundle_run.py deploy up        # start main+results DB, wait for health
+#   python3 bundle_run.py deploy status
+#   python3 bundle_run.py deploy down       # stop containers, KEEP data (volumes)
+#   python3 bundle_run.py deploy down --volumes   # also delete data (explicit)
+# Or, if you have `docker compose`: `docker compose --env-file .env up -d`.
+services:
+  main-db:
+    image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+    container_name: fwbundle-main-db
+    labels:
+      com.ghyura.fwbundle.managed: "true"
+      com.ghyura.fwbundle.service: main-db
+      com.ghyura.fwbundle.main-volume: ${BUNDLE_MAIN_DB_VOLUME:-fwbundle_main_data}
+      com.ghyura.fwbundle.results-volume: ${BUNDLE_RESULTS_DB_VOLUME:-fwbundle_results_data}
+    env_file: [.env]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:${BUNDLE_MAIN_DB_HOST_PORT:-15433}:5432"
+    volumes:
+      - fwbundle_main_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  results-db:
+    image: postgres:16.9-alpine@sha256:7c688148e5e156d0e86df7ba8ae5a05a2386aaec1e2ad8e6d11bdf10504b1fb7
+    container_name: fwbundle-results-db
+    labels:
+      com.ghyura.fwbundle.managed: "true"
+      com.ghyura.fwbundle.service: results-db
+      com.ghyura.fwbundle.main-volume: ${BUNDLE_MAIN_DB_VOLUME:-fwbundle_main_data}
+      com.ghyura.fwbundle.results-volume: ${BUNDLE_RESULTS_DB_VOLUME:-fwbundle_results_data}
+    env_file: [.env]
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:${BUNDLE_RESULTS_DB_HOST_PORT:-15432}:5432"
+    volumes:
+      - fwbundle_results_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  # Optional monitoring — only started with `deploy up --monitoring`.
+  monitoring:
+    image: adminer:4.8.1@sha256:34d37131366c5aa84e1693dbed48593ed6f95fb450b576c1a7a59d3a9c9e8802
+    container_name: fwbundle-adminer
+    labels:
+      com.ghyura.fwbundle.managed: "true"
+      com.ghyura.fwbundle.service: monitoring
+      com.ghyura.fwbundle.main-volume: ${BUNDLE_MAIN_DB_VOLUME:-fwbundle_main_data}
+      com.ghyura.fwbundle.results-volume: ${BUNDLE_RESULTS_DB_VOLUME:-fwbundle_results_data}
+    profiles: ["monitoring"]
+    ports:
+      - "127.0.0.1:${BUNDLE_MONITORING_HOST_PORT:-18080}:8080"
+    restart: unless-stopped
+
+volumes:
+  # Service mounts use stable Compose keys; `name` gives each freshly rendered
+  # .env its own engine volumes. Defaults preserve compatibility with an older
+  # .env that predates checkout-scoped names.
+  fwbundle_main_data:
+    name: ${BUNDLE_MAIN_DB_VOLUME:-fwbundle_main_data}
+  fwbundle_results_data:
+    name: ${BUNDLE_RESULTS_DB_VOLUME:-fwbundle_results_data}

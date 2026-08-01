@@ -1,0 +1,105 @@
+# Self-posed scenario 02 — message-queue consumer saga with optional sudden actions.
+# Category 2 (optional sudden actions), pattern like usecases/event_order.
+# 6(STEP=3!) x 2(OPT_DUP) x 2(OPT_CRASH) = 24 candidates (mandatory 6 x optional x4); trusted-local.
+title = "Queue consumer saga — FW_Permut step order + FW_Optional sudden actions, invariant oracle"
+note  = "Order-sensitivity + idempotency + delivery faults: fetch/process/ack order x optional redelivery/crash-before-ack."
+args  = ["mode=queue_saga"]
+
+[[goals]]
+key = "process_count"
+dir = "min"
+
+[[slots]]   # HEAD: consumer state machine + step impl + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''STATE = {"fetched": False, "processed": False, "acked": False, "process_count": 0}
+DUP = 0
+CRASH = 0
+ORDER = []
+
+def _do(step):
+    if step == "fetch":
+        STATE["fetched"] = True
+        return ""
+    if step == "process":
+        if not STATE["fetched"]:
+            return "process_before_fetch"
+        STATE["processed"] = True
+        STATE["process_count"] += 1
+        return ""
+    if step == "ack":
+        if not STATE["processed"]:
+            return "ack_before_process"
+        STATE["acked"] = True
+        return ""
+    return ""
+''']
+
+[[slots]]   # ORDER-sensitive consumer step sequence -> permutations (only fetch<process<ack is valid)
+sheet  = "STEP"
+key    = "step"
+verb   = "FW_Permut"
+raw    = true
+values = ["ORDER.append(\"fetch\")\n", "ORDER.append(\"process\")\n", "ORDER.append(\"ack\")\n"]
+
+[[slots]]   # sudden action: redelivery of the same message (may or may not fire)
+sheet  = "OPT_DUP"
+key    = "opt_dup"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["DUP = 1\n"]
+
+[[slots]]   # sudden action: consumer crash before ack (may or may not fire)
+sheet  = "OPT_CRASH"
+key    = "opt_crash"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["CRASH = 1\n"]
+
+[[slots]]   # TAIL: run consumer in ORDER, apply sudden actions, evaluate invariants
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_breach = ""
+for _s in ORDER:
+    _r = _do(_s)
+    if _r and not _breach:
+        _breach = _r
+# redelivery WITHOUT an idempotency key reprocesses an already-processed job
+if DUP and STATE["processed"]:
+    STATE["process_count"] += 1
+# a crash before ack leaves the job unacknowledged
+if CRASH:
+    STATE["acked"] = False
+if _breach == "process_before_fetch":
+    FW_VAR = 3
+elif _breach == "ack_before_process":
+    FW_VAR = 2
+elif STATE["process_count"] > 1:
+    FW_VAR = 4
+elif not STATE["acked"] and not CRASH:
+    FW_VAR = 5
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=queue_saga order=%s dup=%d crash=%d process_count=%d acked=%d breach=%s FW_VAR=%d"
+      % (">".join(ORDER), DUP, CRASH, STATE["process_count"], int(STATE["acked"]), _breach or "none", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "ack before process (order violation)"
+[[custom_vars]]
+code = 3
+msg = "process before fetch (order violation)"
+[[custom_vars]]
+code = 4
+msg = "double process (idempotency violation on redelivery)"
+[[custom_vars]]
+code = 5
+msg = "not acknowledged without a crash cause (liveness violation)"

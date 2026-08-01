@@ -1,0 +1,101 @@
+[build-system]
+requires = ["setuptools==83.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "framework-bundle-workspace"
+version = "0.0.0"
+description = "Dependency manifest for the non-installable Framework Bundle workspace"
+requires-python = ">=3.11"
+dependencies = [
+  "openpyxl>=3.1",
+  "pg8000>=1.30",
+]
+
+[project.optional-dependencies]
+test = [
+  "pytest>=7.4",
+]
+test-full = [
+  "pytest>=7.4",
+  "nicegui>=2.0",
+  "PyQt6>=6.5",
+  "fastapi>=0.110",
+  "grpcio>=1.82.1,<2",
+  "grpcio-tools==1.82.1",
+  "httpx>=0.27",
+  "protobuf>=7.35.1,<8",
+  "pydantic>=2.6",
+  "uvicorn[standard]>=0.29",
+  "PyYAML>=6.0",
+  "numpy>=1.24",
+  "shapely>=2.0",
+  "scikit-learn>=1.3",
+  "torch>=2.1",
+  "selenium>=4.15",
+]
+
+ui = [
+  "nicegui>=2.0",
+  "PyQt6>=6.5",
+]
+gateway = [
+  "fastapi>=0.110",
+  "grpcio>=1.82.1,<2",
+  "grpcio-tools==1.82.1",
+  "httpx>=0.27",
+  "protobuf>=7.35.1,<8",
+  "pydantic>=2.6",
+  "uvicorn[standard]>=0.29",
+]
+deploy = [
+  "PyYAML>=6.0",
+]
+science = [
+  "numpy>=1.24",
+  "scipy>=1.11",
+  "shapely>=2.0",
+]
+ml = [
+  "numpy>=1.24",
+  "scikit-learn>=1.3",
+  "torch>=2.1",
+]
+browser = [
+  "selenium>=4.15",
+]
+
+# This repository is a runnable workspace, not a Python distribution. Keep both
+# lists explicit so setuptools never auto-discovers the many source/test trees.
+[tool.setuptools]
+packages = []
+py-modules = []
+include-package-data = false
+
+[tool.pytest.ini_options]
+minversion = "7.4"
+testpaths = [
+  "generator_trunk",
+  "Executor_trunk",
+]
+pythonpath = [
+  "generator_trunk",
+  "Executor_trunk",
+]
+python_files = ["test_*.py"]
+addopts = [
+  "-ra",
+  "--strict-config",
+  "--strict-markers",
+  "-p",
+  "no:cacheprovider",
+]
+norecursedirs = [
+  ".*",
+  "__pycache__",
+  "build",
+  "dist",
+  "*evidence*",
+  "*output*",
+  "*backup*",
+]

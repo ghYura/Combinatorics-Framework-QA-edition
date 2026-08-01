@@ -1,0 +1,132 @@
+title = "GUI constraints checkout e2e"
+note = "Self-contained checkout risk object used by Bundle GUI constraints acceptance tests."
+
+[[goals]]
+key = "correct"
+dir = "max"
+
+[[goals]]
+key = "risk_score"
+dir = "min"
+
+[[goals]]
+key = "latency_ms"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+raw = true
+values = [
+'''import time
+
+CHANNEL = PAYMENT = REGION = SHIPPING = REVIEW = None
+
+
+class CheckoutRiskEngine:
+    payment_risk = {"card": 0, "invoice": 1, "wire": 2}
+    review_risk = {"none": 0, "auto": 1, "manual": 2}
+    region_risk = {"us": 0, "eu": 1}
+    channel_risk = {"web": 0, "ivr": 1, "partner": 2}
+
+    @staticmethod
+    def structural_violations(channel, payment, region, shipping, review):
+        violations = []
+        if channel == "partner" and payment == "invoice":
+            violations.append("partner_invoice")
+        if payment in {"invoice", "wire"} and region == "eu" and shipping == "express":
+            violations.append("eu_express_invoice_or_wire")
+        if payment == "wire" and review == "manual":
+            violations.append("wire_manual_review")
+        if channel == "ivr" and payment == "wire" and review == "auto":
+            violations.append("ivr_wire_auto")
+        return violations
+
+    def evaluate(self, channel, payment, region, shipping, review):
+        violations = self.structural_violations(channel, payment, region, shipping, review)
+        risk = (
+            self.payment_risk[payment]
+            + self.review_risk[review]
+            + self.region_risk[region]
+            + self.channel_risk[channel]
+        )
+        latency = 6.0 + risk * 1.25 + (2.5 if shipping == "express" else 0.0)
+        return {
+            "correct": 0 if violations else 1,
+            "risk_score": risk,
+            "latency_ms": latency,
+            "pruned_violation": 1 if violations else 0,
+            "violations": violations,
+        }
+'''
+]
+
+[[slots]]
+sheet = "CHANNEL"
+raw = true
+values = [
+'''CHANNEL = "web"''',
+'''CHANNEL = "ivr"''',
+'''CHANNEL = "partner"''',
+]
+
+[[slots]]
+sheet = "PAYMENT"
+raw = true
+values = [
+'''PAYMENT = "card"''',
+'''PAYMENT = "invoice"''',
+'''PAYMENT = "wire"''',
+]
+
+[[slots]]
+sheet = "REGION"
+raw = true
+values = [
+'''REGION = "us"''',
+'''REGION = "eu"''',
+]
+
+[[slots]]
+sheet = "SHIPPING"
+raw = true
+values = [
+'''SHIPPING = "standard"''',
+'''SHIPPING = "express"''',
+]
+
+[[slots]]
+sheet = "REVIEW"
+raw = true
+values = [
+'''REVIEW = "none"''',
+'''REVIEW = "auto"''',
+'''REVIEW = "manual"''',
+]
+
+[[slots]]
+sheet = "TAIL"
+raw = true
+values = [
+'''_result = CheckoutRiskEngine().evaluate(CHANNEL, PAYMENT, REGION, SHIPPING, REVIEW)
+FW_VAR = 2 if _result["pruned_violation"] else 0
+FW_CUSTOM_VAR = FW_VAR
+print(
+    "app=gui_constraints_checkout "
+    "channel=%s payment=%s region=%s shipping=%s review=%s "
+    "correct=%d risk_score=%d latency_ms=%.3f pruned_violation=%d violations=%s FW_VAR=%d"
+    % (
+        CHANNEL,
+        PAYMENT,
+        REGION,
+        SHIPPING,
+        REVIEW,
+        _result["correct"],
+        _result["risk_score"],
+        _result["latency_ms"],
+        _result["pruned_violation"],
+        "+".join(_result["violations"]) or "none",
+        FW_VAR,
+    )
+)
+'''
+]

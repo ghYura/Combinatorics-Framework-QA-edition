@@ -1,0 +1,167 @@
+title = "Telemetry catalog — full nested-dependency SUT (pipeline-grade)"
+note = """First-class INPUT SPEC for the nested-bond sieve refactor (task 29062026). It is a real,
+runnable telemetry /api/catalog/lookup generator on its OWN — remove the sieve and every one of its
+3^6 = 729 forms still assembles a well-formed URL (absent params are the `= None` baseline and are
+simply omitted). The HEAD carries the `TelemetryLookup` validity engine for THIS pipeline's rule subset; the
+authored `orders` + `constraints` (a mapping + four `assert` bonds) ARE the nested dependencies the
+refactored sieve enforces on the live fw_final, and they classify EXACTLY what `TelemetryLookup.validate` flags
+invalid (the acceptance test proves removed == engine-invalid).
+
+Every generated URL also carries the external service baseline `accessKey=key-orbit`,
+`AccessTier=public`, and `geometry=tabular`; these fixed fields do not add combinatorial axes.
+
+Each parameter is a MANDATORY single-select slot whose FIRST value is the absent sentinel `= None`
+(the fw_final baseline) — so presence is `ne <sentinel>`, every nested bond is enforceable by the
+fw_final sieve, and the URL renders by omitting None params (the §B.4 sentinel model, docs/28).
+
+Nested dependencies authored here, spanning every new sieve primitive:
+  • R_SIGNAL_BY_FAMILY  mapping     — SignalClass must belong to DatasetFamily
+  • R_ZARR_QUALITY     assert ge   — Encoding=zarr requires QualityTier ≥ gold        (ordinal vs constant)
+  • R_CAPTURE_RANGE   assert geSheet — CaptureEnd ≥ CaptureStart                 (ordinal cross-field)
+  • R_CAPTURE_NEEDS_START assert    — CaptureEnd present requires CaptureStart present (presence)
+  • R_OPEN_NO_ZARR      assert/forbid — DatasetFamily=OpenData forbids Encoding=zarr        (value × value)"""
+
+[[goals]]
+key = "valid"
+dir = "max"
+
+[[goals]]
+key = "broken_count"
+dir = "min"
+
+# ---- ordinal ranks for the ordinal leaves (keyed on the EXACT cell strings the sieve decodes) ----
+[orders]
+QualityTier = ['QualityTier = "bronze"', 'QualityTier = "gold"']
+CaptureStart = ["CaptureStart = 1200", "CaptureStart = 2400"]
+CaptureEnd = ["CaptureEnd = 1200", "CaptureEnd = 2400"]
+
+# ============================ the generator (slots) ============================
+[[slots]]
+sheet = "HEAD"
+raw = true
+values = [
+'''DatasetFamily = SignalClass = Encoding = QualityTier = CaptureStart = CaptureEnd = None
+
+
+class TelemetryLookup:
+    """The validity model for THIS pipeline's rule subset — the single source of truth the authored
+    sieve bonds are checked against (the acceptance test execs this and asserts the sieve removes
+    exactly TelemetryLookup.validate's invalid set)."""
+
+    ALLOWED = {"Climate": ["Radar"], "OpenData": ["AirQuality"]}
+    QUALITY = {"bronze": 0, "gold": 1}
+
+    @staticmethod
+    def validate(family, signal, encoding, quality, capture_start, capture_end):
+        broken = []
+        if family is not None and signal is not None and signal not in TelemetryLookup.ALLOWED.get(family, []):
+            broken.append("R_SIGNAL_BY_FAMILY")                  # mapping: SignalClass by DatasetFamily
+        if encoding == "zarr" and quality is not None and TelemetryLookup.QUALITY[quality] < TelemetryLookup.QUALITY["gold"]:
+            broken.append("R_ZARR_QUALITY")                     # ordinal vs constant: zarr needs >= gold
+        if capture_start is not None and capture_end is not None and capture_end < capture_start:
+            broken.append("R_CAPTURE_RANGE")                   # ordinal cross-field: End >= Start
+        if capture_end is not None and capture_start is None:
+            broken.append("R_CAPTURE_NEEDS_START")              # presence: End requires Start
+        if family == "OpenData" and encoding == "zarr":
+            broken.append("R_OPEN_NO_ZARR")                      # value x value: no zarr for OpenData
+        return broken
+
+    @staticmethod
+    def url(locator, family, signal, encoding, quality, capture_start, capture_end):
+        pairs = [("accessKey", "key-orbit"), ("AccessTier", "public"), ("geometry", "tabular"),
+                 ("DatasetFamily", family), ("SignalClassList", signal), ("encoding", encoding),
+                 ("QualityTier", quality), ("CaptureTimeStart", capture_start), ("CaptureTimeEnd", capture_end)]
+        qs = "&".join("%s=%s" % (k, v) for k, v in pairs if v is not None)
+        return "http://localhost:8080/api/catalog/lookup/%s%s" % (locator, ("?" + qs) if qs else "")'''
+]
+
+[[slots]]
+sheet = "DatasetFamily"
+raw = true
+values = ['''DatasetFamily = None''', '''DatasetFamily = "Climate"''', '''DatasetFamily = "OpenData"''']
+
+[[slots]]
+sheet = "SignalClass"
+raw = true
+values = ['''SignalClass = None''', '''SignalClass = "Radar"''', '''SignalClass = "AirQuality"''']
+
+[[slots]]
+sheet = "Encoding"
+raw = true
+values = ['''Encoding = None''', '''Encoding = "csv"''', '''Encoding = "zarr"''']
+
+[[slots]]
+sheet = "QualityTier"
+raw = true
+values = ['''QualityTier = None''', '''QualityTier = "bronze"''', '''QualityTier = "gold"''']
+
+[[slots]]
+sheet = "CaptureStart"
+raw = true
+values = ['''CaptureStart = None''', '''CaptureStart = 1200''', '''CaptureStart = 2400''']
+
+[[slots]]
+sheet = "CaptureEnd"
+raw = true
+values = ['''CaptureEnd = None''', '''CaptureEnd = 1200''', '''CaptureEnd = 2400''']
+
+[[slots]]
+sheet = "TAIL"
+raw = true
+values = [
+'''_broken = TelemetryLookup.validate(DatasetFamily, SignalClass, Encoding, QualityTier, CaptureStart, CaptureEnd)
+FW_VAR = 0 if not _broken else 2
+FW_CUSTOM_VAR = FW_VAR
+_url = TelemetryLookup.url("grid-sample", DatasetFamily, SignalClass, Encoding, QualityTier, CaptureStart, CaptureEnd)
+print(
+    "app=telemetry_catalog "
+    "family=%s signal=%s encoding=%s quality=%s cs=%s ce=%s "
+    "valid=%d broken=%s broken_count=%d url=%s FW_VAR=%d"
+    % (DatasetFamily, SignalClass, Encoding, QualityTier, CaptureStart, CaptureEnd,
+       int(not _broken), "+".join(_broken) or "none", len(_broken), _url, FW_VAR)
+)'''
+]
+
+# ============================ the nested bonds (sieve) =========================
+# Keyed on the EXACT, whitespace-stripped cell strings above. These ARE the §B nested-dependency
+# primitives; the test proves they classify identically to TelemetryLookup.validate.
+
+[[constraints]]
+id = "R_SIGNAL_BY_FAMILY"
+mapping.source = "DatasetFamily"
+mapping.target = "SignalClass"
+# absent SignalClass ('= None') is always allowed; a present one must belong to the DatasetFamily.
+mapping.allow.'DatasetFamily = "Climate"' = ['SignalClass = "Radar"', 'SignalClass = None']
+mapping.allow.'DatasetFamily = "OpenData"' = ['SignalClass = "AirQuality"', 'SignalClass = None']
+
+[[constraints]]
+id = "R_ZARR_QUALITY"
+polarity = "require"
+assert = { sheet = "QualityTier", ge = 'QualityTier = "gold"' }
+condition.all = [
+    { sheet = "Encoding", eq = 'Encoding = "zarr"' },
+    { sheet = "QualityTier", ne = 'QualityTier = None' },
+]
+
+[[constraints]]
+id = "R_CAPTURE_RANGE"
+polarity = "require"
+assert = { sheet = "CaptureEnd", geSheet = "CaptureStart" }
+condition.all = [
+    { sheet = "CaptureEnd", ne = "CaptureEnd = None" },
+    { sheet = "CaptureStart", ne = "CaptureStart = None" },
+]
+
+[[constraints]]
+id = "R_CAPTURE_NEEDS_START"
+polarity = "require"
+assert.any = [
+    { sheet = "CaptureEnd", eq = "CaptureEnd = None" },
+    { sheet = "CaptureStart", ne = "CaptureStart = None" },
+]
+
+[[constraints]]
+id = "R_OPEN_NO_ZARR"
+polarity = "forbid"
+assert = { sheet = "Encoding", eq = 'Encoding = "zarr"' }
+condition = { sheet = "DatasetFamily", eq = 'DatasetFamily = "OpenData"' }

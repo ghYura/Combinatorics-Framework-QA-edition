@@ -1,0 +1,168 @@
+spec_version = "1"
+title = "all-body all-hole deterministic staged rigid-passage proof"
+note = "One Bundle candidate owns one fixed body/hole pair. The candidate constructs the complete user-declared staged universe through FW_Combi products, executes neutral first, fully exhausts the first successful measured-action tier, records every executed predecessor, and emits a valid failed observation with FW_VAR=0 when the discrete space is exhausted. The mandatory Bundle sieve removes the deliberately represented rigid-policy/scale contradiction before Reader assembly."
+args = ["mode=sieve3d_all_pairs_staged"]
+
+[[goals]]
+key = "full_pass"
+dir = "max"
+[[goals]]
+key = "passed_volume_pct"
+dir = "max"
+[[goals]]
+key = "solution_actions"
+dir = "min"
+[[goals]]
+key = "solution_keyframes"
+dir = "min"
+[[goals]]
+key = "changed_parameter_count"
+dir = "min"
+[[goals]]
+key = "worst_clearance"
+dir = "max"
+[[goals]]
+key = "search_attempts"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import os, sys
+from pathlib import Path
+_roots = []
+_env = os.environ.get("SIEVE3D_MAX_PASSAGE_ROOT")
+if _env:
+    _roots.append(Path(_env))
+_cwd = Path(os.getcwd())
+_roots.extend([
+    _cwd / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+    _cwd / "generator_trunk" / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+    Path(os.environ.get("BUNDLE_REPO_ROOT", _cwd)) / "generator_trunk" / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+])
+for _root in _roots:
+    if _root.exists():
+        sys.path.insert(0, str(_root))
+        break
+import staged_passage_search as search
+search.reset_bundle_context()
+''']
+
+[[slots]]
+sheet = "BODY"
+key = "body"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'search.select_body("wave_bar");',
+  'search.select_body("flower");',
+  'search.select_body("twisted_flower");',
+  'search.select_body("hook120");',
+  'search.select_body("snake");',
+  'search.select_body("helix_bar");',
+  'search.select_body("croissant");',
+  'search.select_body("pierced_cube");',
+  'search.select_body("half_pipe");',
+  'search.select_body("plug");',
+]
+
+[[slots]]
+sheet = "HOLE"
+key = "hole"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'search.select_hole("wave_slot");',
+  'search.select_hole("flower_hole");',
+  'search.select_hole("round_small");',
+  'search.select_hole("round_generous");',
+  'search.select_hole("square_snug");',
+  'search.select_hole("square_9");',
+  'search.select_hole("arch");',
+  'search.select_hole("eye_snake");',
+  'search.select_hole("triangle");',
+  'search.select_hole("ring_gap");',
+]
+
+[[slots]]
+sheet = "FAMILIES"
+key = "families"
+verb = "FW_Subsets_EXACT(6)"
+raw = true
+values = [
+  'search.enable_family("neutral");',
+  'search.enable_family("rotation");',
+  'search.enable_family("shift");',
+  'search.enable_family("mixed");',
+  'search.enable_family("multi_move");',
+  'search.enable_family("screw_thread");',
+]
+
+[[slots]]
+sheet = "RIGID_MOVES"
+key = "rigid_moves"
+verb = "FW_Subsets_EXACT(8)"
+raw = true
+values = [
+  'search.enable_move("spin");',
+  'search.enable_move("tilt");',
+  'search.enable_move("turn");',
+  'search.enable_move("dx");',
+  'search.enable_move("dy");',
+  'search.enable_move("drop");',
+  'search.enable_move("wiggle");',
+  'search.enable_move("thread");',
+]
+
+[[slots]]
+sheet = "POLICY"
+key = "policy"
+verb = "FW_Combi(1)"
+raw = true
+values = ['search.select_policy("rigid_only");']
+
+[[slots]]
+sheet = "MODIFICATION"
+key = "modification"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'search.select_modification("none");',
+  'search.select_modification("scale");',
+]
+
+[[slots]]
+sheet = "RUN"
+key = "run"
+verb = "FW_Combi(1)"
+raw = true
+values = ['search.run_configured_pair();']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+bundle_fw_var = search.bundle_fw_var()
+FW_VAR = bundle_fw_var
+FW_CUSTOM_VAR = bundle_fw_var
+print(search.bundle_kv_line())
+''']
+
+[[constraints]]
+id = "rigid_policy_forbids_scale"
+sheets = ["POLICY", "MODIFICATION"]
+polarity = "forbid"
+pairs = [
+  { POLICY = 'search.select_policy("rigid_only");', MODIFICATION = 'search.select_modification("scale");' },
+]
+gate = {}
+desc = "The main proof is rigid-only; scaling is represented for classification and removed by the mandatory Bundle sieve before SUT execution."
+
+[[custom_vars]]
+code = 6
+msg = "candidate infrastructure, evidence, or independent certificate is invalid"

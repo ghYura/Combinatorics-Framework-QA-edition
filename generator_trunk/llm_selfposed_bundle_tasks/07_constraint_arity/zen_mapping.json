@@ -1,0 +1,69 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_07_constraint_arity",
+  "category": "constraint arity (binary vs ternary)",
+  "user_problem": "I deploy across region, tier, and replicas. One forbidden rule is binary (free tier in a restricted region), but another is a true 3-way rule (enterprise tier in a restricted region with a single replica). What can Bundle enforce before execution, and what can't it?",
+  "bundle_offer": "Bundle's sieve v1 executes BINARY [[constraints]] (two sheets) and prunes them before execution; a true ternary (3-sheet) bond is REPORTED as unsupported (never silently skipped) and must be decomposed into binary rules or enforced by the TAIL oracle at runtime.",
+  "hypothesis": "The binary free-tier rule removes 6 rows in the sieve; the ternary rule is reported unsupported, and the oracle catches the enterprise+restricted+single-replica candidates as DOMAIN_FAIL.",
+  "zen_mapping": [
+    {
+      "freedom": "region",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "4"
+    },
+    {
+      "freedom": "tier",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "replicas",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "binary bond (free x restricted)",
+      "shape": "a bond, arity 2",
+      "verb": "[[constraints]] sieve v1 (executable)",
+      "cardinality": "removes 6"
+    },
+    {
+      "freedom": "ternary bond (ent x restricted x single replica)",
+      "shape": "a bond, arity 3",
+      "verb": "reported unsupported -> decompose or oracle",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "[[constraints]] sieve v1 ",
+      "reported unsupported -> decompose or oracle",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "replicas",
+        "dir": "max"
+      }
+    ],
+    "oracle": "sieve v1 applies the binary bond (36->30); the ternary bond is reported unsupported and the TAIL oracle sets FW_VAR=2 for enterprise+restricted+single-replica; else 0"
+  },
+  "pattern": "constraints/diff_fuzz_when",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/constraints/diff_fuzz_when"
+    }
+  ]
+}

@@ -1,0 +1,28 @@
+// ── 7.txt — initial: isHighFreqToken(...) (HOT, inner-loop) ──────────
+// Hot path: called O(N×M) inside scoreLine — for every line, for every
+// token in that line, against the corpus topTokens list.
+//
+// Contract:
+//   in   token     (the candidate to test)
+//        topTokens (corpus's top-K frequent tokens; may be List or Set)
+//        support   (token → DF count map)
+//        cutoff    (minimum DF to count as 'frequent')
+//   out  true iff token is in topTokens AND its support >= cutoff
+//
+// Original AnalyzerCore.java realisation: List.contains (O(M)) per call.
+
+    public static boolean isHighFreqToken(String token, List<String> topTokens,
+                                          Map<String, Integer> support, int cutoff) {
+        long __t0 = System.nanoTime();
+        Metrics.p7_invocations++;
+        Metrics.p7_total_topk_size += (topTokens == null ? 0 : topTokens.size());
+        try {
+            if (token == null || topTokens == null) return false;
+            boolean ok = topTokens.contains(token)
+                      && support.getOrDefault(token, 0) >= cutoff;
+            if (ok) Metrics.p7_match_count++;
+            return ok;
+        } finally {
+            Metrics.p7_duration_ns += System.nanoTime() - __t0;
+        }
+    }

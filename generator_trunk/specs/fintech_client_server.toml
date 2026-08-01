@@ -1,0 +1,62 @@
+title = "Finance Stack — client-server comprehensive test suite"
+note  = "client→server1→server2 pipeline: JSON+SOAP APIs, HMAC auth, domain transactions, workflow"
+goals = ["bugs_found", "coverage"]
+args  = ["target=fintech_client_server", "stack=python_inmemory"]
+
+# Cartesian dims — orthogonal request/protocol dimensions.
+# Permutation (OP_SEQUENCE), Subsets (OPT_FIELDS), Combi(2) (FAULTS)
+# are handled programmatically in testgen_fintech.py (mirrors testgen_api.py).
+
+[[slots]]
+sheet  = "OPERATION"
+key    = "op"
+values = ["create_account", "credit", "debit", "transfer", "balance_inquiry"]
+
+[[slots]]
+sheet  = "PROTOCOL"
+key    = "protocol"
+values = ["json", "soap"]
+
+[[slots]]
+sheet  = "AUTH"
+key    = "auth"
+values = ["valid_hmac", "missing_headers", "bad_signature", "expired_timestamp"]
+
+[[slots]]
+sheet  = "CURRENCY"
+key    = "currency"
+values = ["USD", "EUR", "usd", "XX", ""]
+
+[[slots]]
+sheet  = "AMOUNT"
+key    = "amount"
+values = ["100.00", "0.00", "-1.00", "0.001", "9999999999.99"]
+
+[[slots]]
+sheet  = "SUDDEN"
+key    = "sudden"
+values = ["freeze_mid_debit", "replay_attack", "concurrent_credit", "noop"]
+flags  = ["FW_Optional"]
+# FW_Optional: the Core includes this slot in SOME combos and drops it from others.
+# Semantics: a "sudden action" that may or may not fire mid-sequence —
+# exactly models race conditions, unexpected state changes, and replay attacks.
+
+[[custom_vars]]
+code = 2
+msg  = "service raised unexpected exception (crash / unhandled InvalidOperation)"
+
+[[custom_vars]]
+code = 3
+msg  = "wrong error type: expected ValidationError/NotFoundError but got something else"
+
+[[custom_vars]]
+code = 4
+msg  = "HMAC security check bypassed (auth=bad but verify_request returned True)"
+
+[[custom_vars]]
+code = 5
+msg  = "currency normalisation failure (usd vs USD divergence in stored account)"
+
+[[custom_vars]]
+code = 6
+msg  = "wrong final transaction status (expected SETTLED/REJECTED, got unexpected state)"

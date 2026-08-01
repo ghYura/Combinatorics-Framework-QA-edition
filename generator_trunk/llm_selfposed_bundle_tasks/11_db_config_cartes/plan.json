@@ -1,0 +1,335 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 6,
+      "mode": "BOUNDED",
+      "reasons": [
+        "each FW_Optional slot independently multiplies the post-sieve candidate space",
+        "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+      ],
+      "upper": 18,
+      "value": 18
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+      "lower": 6,
+      "mode": "BOUNDED",
+      "reasons": [
+        "matches estimate_core_combos's slot filter and Cartes operand sizing (declared sheet size, not post-verb result-table size)",
+        "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+      ],
+      "upper": 18,
+      "value": 18
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "DATA_SIZE": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=2",
+        "lower": 2,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 2,
+        "value": 2
+      },
+      "DB_CONFIG": {
+        "assumptions": [
+          "operand sheet row count approximates its post-verb result-table size"
+        ],
+        "formula": "n × other_n = 3 × 3 (upper bound)",
+        "lower": 3,
+        "mode": "BOUNDED",
+        "reasons": [
+          "FW_Cartes(WORKLOAD) joins this slot's 3 values against the operand SHEET's declared 3 values, but the operand's actual Core result-table size can differ after its own verb/exclusion/brace effects — the product is an upper bound only"
+        ],
+        "upper": 9,
+        "value": 9
+      },
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "WORKLOAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": 6,
+      "mode": "BOUNDED",
+      "reasons": [],
+      "upper": 18,
+      "value": 18
+    },
+    "raw_values": {
+      "DATA_SIZE": 2,
+      "DB_CONFIG": 3,
+      "HEAD": 1,
+      "TAIL": 1,
+      "WORKLOAD": 3
+    }
+  },
+  "constraints_present": 0,
+  "dependency_graph": {
+    "graph": {
+      "edges": [
+        {
+          "dst": "WORKLOAD",
+          "kind": "cartes",
+          "src": "DB_CONFIG"
+        }
+      ],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 2,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "DATA_SIZE",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Cartes(WORKLOAD)"
+          },
+          "id": "DB_CONFIG",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": true,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "WORKLOAD",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:4851fc6c1f7c639721f639a7c8ede0f4145a3cb48e293a6c73b32124e66375e0",
+    "warnings": [
+      {
+        "code": "unused_advanced_node",
+        "message": "slot 'WORKLOAD' is FW_Exclude'd (set aside from the cartesian) but never consumed by a brace operand — it is unreachable and contributes nothing",
+        "nodes": [
+          "WORKLOAD"
+        ]
+      }
+    ]
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [6, 18] × 500-5000 per unit",
+      "lower": 3000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 90000,
+      "value": 49500
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [6, 18] × 200-2000 per unit",
+      "lower": 1200,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 36000,
+      "value": 19800
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (49500) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ final candidates count [6, 18] × 0.05-2 per unit",
+      "lower": 0,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 36,
+      "value": 18
+    },
+    "final_count": 18,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [6, 18] × 1 per unit",
+      "lower": 6,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 18,
+      "value": 18
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ final candidates count [6, 18] × 1 per unit",
+      "lower": 6,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 18,
+      "value": 18
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ final candidates count [6, 18] × 150-1500 per unit",
+      "lower": 900,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a BOUNDED final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 27000,
+      "value": 14850
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 0,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "DB_CONFIG",
+      "verb": "FW_Cartes(WORKLOAD)"
+    },
+    {
+      "flags": [
+        "FW_Exclude"
+      ],
+      "n": 3,
+      "sheet": "WORKLOAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 2,
+      "sheet": "DATA_SIZE",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "scenario",
+  "spec_path": "llm_selfposed_bundle_tasks/11_db_config_cartes/scenario.toml",
+  "spec_sha256": "7c6da133027de97a80065137d843f16b793a9c35d52b48703e43dce64a7c8ad6",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)",
+    "mandatory Core product is BOUNDED, not EXACT — Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+    "final candidate count is BOUNDED [6, 18], not an exact prediction — treat 18 as an upper-bound planning figure"
+  ]
+}

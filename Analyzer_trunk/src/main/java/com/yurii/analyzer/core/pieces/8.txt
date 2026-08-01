@@ -1,0 +1,31 @@
+// ── 8.txt — initial: extractNumbers(String) (HOT) ────────────────────
+// Hot path: called once per analysed line inside extractFeatures.
+// Pulls every number (signed integer / decimal / scientific notation)
+// from the text; comma decimals supported via String.replace upstream.
+//
+// Contract:
+//   in   String text
+//   out  List<Double> in textual order, parseable values; unparseable
+//        matches yield 0.0 to preserve count-of-numbers semantics.
+//
+// Original AnalyzerCore.java realisation: NUMBER_RE while-find loop.
+
+    public static List<Double> extractNumbers(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p8_invocations++;
+        Metrics.p8_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return new ArrayList<>();
+            List<Double> out = new ArrayList<>();
+            Matcher nm = NUMBER_RE.matcher(text);
+            while (nm.find()) {
+                String s = nm.group().replace(',', '.').trim();
+                try { out.add(Double.parseDouble(s)); }
+                catch (NumberFormatException nfe) { out.add(0.0); }
+            }
+            Metrics.p8_total_numbers_extracted += out.size();
+            return out;
+        } finally {
+            Metrics.p8_duration_ns += System.nanoTime() - __t0;
+        }
+    }

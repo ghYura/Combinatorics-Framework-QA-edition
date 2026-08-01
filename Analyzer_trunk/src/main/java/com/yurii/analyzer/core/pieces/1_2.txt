@@ -1,0 +1,23 @@
+// ── 1_2.txt — variant 2 of mean: parallel Stream reduction ───────────
+// Same contract. Wins on very large lists where parallel decomposition
+// outweighs Stream overhead; loses on tiny lists due to fork/join cost.
+// (Could equivalently delegate to Apache Commons Math:
+//      org.apache.commons.math3.stat.StatUtils.mean(double[])
+//  — kept JDK-only here for self-containment.)
+
+    public static double mean(List<Double> values) {
+        long __t0 = System.nanoTime();
+        Metrics.p1_invocations++;
+        Metrics.p1_total_input_size += (values == null ? 0 : values.size());
+        try {
+            if (values == null || values.isEmpty()) return 0.0;
+            double out = values.parallelStream()
+                               .mapToDouble(Double::doubleValue)
+                               .average()
+                               .orElse(0.0);
+            Metrics.p1_sum_of_outputs += out;
+            return out;
+        } finally {
+            Metrics.p1_duration_ns += System.nanoTime() - __t0;
+        }
+    }

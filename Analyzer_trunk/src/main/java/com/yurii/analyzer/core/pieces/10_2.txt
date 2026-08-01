@@ -1,0 +1,38 @@
+// ── 10_2.txt — variant 2: int[128] histogram + lazy map materialisation
+// Same contract. Avoids the per-char Map lookup/merge entirely by
+// accumulating into a primitive int[128] histogram, then materialising
+// the LinkedHashMap in one pass at the end. Uniform fast path; the
+// only allocation in the hot loop is per-character integer arithmetic.
+
+    private static final boolean[] DELIM_LUT_2 = new boolean[128];
+    static {
+        for (int i = 0; i < DELIMITERS.length(); i++) {
+            char c = DELIMITERS.charAt(i);
+            if (c < 128) DELIM_LUT_2[c] = true;
+        }
+    }
+
+    public static Map<String, Integer> delimiterCounts(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p10_invocations++;
+        Metrics.p10_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            Map<String, Integer> out = new LinkedHashMap<>();
+            if (text == null || text.isEmpty()) return out;
+            int[] hist = new int[128];
+            int total = 0;
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                if (ch < 128 && DELIM_LUT_2[ch]) { hist[ch]++; total++; }
+            }
+            // Materialise in DELIMITERS' declared order so iteration is stable.
+            for (int i = 0; i < DELIMITERS.length(); i++) {
+                char c = DELIMITERS.charAt(i);
+                if (hist[c] > 0) out.put(String.valueOf(c), hist[c]);
+            }
+            Metrics.p10_total_delimiters += total;
+            return out;
+        } finally {
+            Metrics.p10_duration_ns += System.nanoTime() - __t0;
+        }
+    }

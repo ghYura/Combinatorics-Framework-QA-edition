@@ -1,0 +1,307 @@
+title = "Superoptimization #2 — shortest branchless straight-line program for abs(x)"
+note  = "Each slot rK is one SSA instruction over {x,r1..r(K-1)}; FW_Combi(1) cartesian over the slots = every length-N straight-line program. Executor runs the correctness oracle (match the reference on all 256 inputs) -> FW_VAR=0 iff correct; Analyzer minimises instruction count to return the superoptimal program."
+# directions overridden: 'instructions'/'cycles' are not in the MIN/MAX lexicon
+args  = ["target=abs", "width=8bit", "domain=all_256_inputs"]
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "instructions"
+dir = "min"
+[[goals]]
+key = "cycles"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+def candidate(x):
+    x &= 0xFF
+    if x >= 128: x -= 256
+'''
+]
+
+[[slots]]
+sheet = "R1"
+key   = "r1"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r1 = -x;
+''',
+'''
+    r1 = ~x;
+''',
+'''
+    r1 = x >> 7;
+''',
+'''
+    r1 = x >> 1;
+''',
+'''
+    r1 = (x << 1) & 0xFF;
+''',
+'''
+    r1 = x ^ x;
+''',
+'''
+    r1 = x & x;
+''',
+'''
+    r1 = x | x;
+''',
+'''
+    r1 = (x + x) & 0xFF;
+''',
+'''
+    r1 = (x - x) & 0xFF;
+''',
+]
+
+[[slots]]
+sheet = "R2"
+key   = "r2"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r2 = -x;
+''',
+'''
+    r2 = -r1;
+''',
+'''
+    r2 = ~x;
+''',
+'''
+    r2 = ~r1;
+''',
+'''
+    r2 = x >> 7;
+''',
+'''
+    r2 = r1 >> 7;
+''',
+'''
+    r2 = x >> 1;
+''',
+'''
+    r2 = r1 >> 1;
+''',
+'''
+    r2 = (x << 1) & 0xFF;
+''',
+'''
+    r2 = (r1 << 1) & 0xFF;
+''',
+'''
+    r2 = x ^ x;
+''',
+'''
+    r2 = x ^ r1;
+''',
+'''
+    r2 = r1 ^ r1;
+''',
+'''
+    r2 = x & x;
+''',
+'''
+    r2 = x & r1;
+''',
+'''
+    r2 = r1 & r1;
+''',
+'''
+    r2 = x | x;
+''',
+'''
+    r2 = x | r1;
+''',
+'''
+    r2 = r1 | r1;
+''',
+'''
+    r2 = (x + x) & 0xFF;
+''',
+'''
+    r2 = (x + r1) & 0xFF;
+''',
+'''
+    r2 = (r1 + r1) & 0xFF;
+''',
+'''
+    r2 = (x - x) & 0xFF;
+''',
+'''
+    r2 = (x - r1) & 0xFF;
+''',
+'''
+    r2 = (r1 - r1) & 0xFF;
+''',
+]
+
+[[slots]]
+sheet = "R3"
+key   = "r3"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r3 = -x;
+''',
+'''
+    r3 = -r1;
+''',
+'''
+    r3 = -r2;
+''',
+'''
+    r3 = ~x;
+''',
+'''
+    r3 = ~r1;
+''',
+'''
+    r3 = ~r2;
+''',
+'''
+    r3 = x >> 7;
+''',
+'''
+    r3 = r1 >> 7;
+''',
+'''
+    r3 = r2 >> 7;
+''',
+'''
+    r3 = x >> 1;
+''',
+'''
+    r3 = r1 >> 1;
+''',
+'''
+    r3 = r2 >> 1;
+''',
+'''
+    r3 = (x << 1) & 0xFF;
+''',
+'''
+    r3 = (r1 << 1) & 0xFF;
+''',
+'''
+    r3 = (r2 << 1) & 0xFF;
+''',
+'''
+    r3 = x ^ x;
+''',
+'''
+    r3 = x ^ r1;
+''',
+'''
+    r3 = x ^ r2;
+''',
+'''
+    r3 = r1 ^ r1;
+''',
+'''
+    r3 = r1 ^ r2;
+''',
+'''
+    r3 = r2 ^ r2;
+''',
+'''
+    r3 = x & x;
+''',
+'''
+    r3 = x & r1;
+''',
+'''
+    r3 = x & r2;
+''',
+'''
+    r3 = r1 & r1;
+''',
+'''
+    r3 = r1 & r2;
+''',
+'''
+    r3 = r2 & r2;
+''',
+'''
+    r3 = x | x;
+''',
+'''
+    r3 = x | r1;
+''',
+'''
+    r3 = x | r2;
+''',
+'''
+    r3 = r1 | r1;
+''',
+'''
+    r3 = r1 | r2;
+''',
+'''
+    r3 = r2 | r2;
+''',
+'''
+    r3 = (x + x) & 0xFF;
+''',
+'''
+    r3 = (x + r1) & 0xFF;
+''',
+'''
+    r3 = (x + r2) & 0xFF;
+''',
+'''
+    r3 = (r1 + r1) & 0xFF;
+''',
+'''
+    r3 = (r1 + r2) & 0xFF;
+''',
+'''
+    r3 = (r2 + r2) & 0xFF;
+''',
+'''
+    r3 = (x - x) & 0xFF;
+''',
+'''
+    r3 = (x - r1) & 0xFF;
+''',
+'''
+    r3 = (x - r2) & 0xFF;
+''',
+'''
+    r3 = (r1 - r1) & 0xFF;
+''',
+'''
+    r3 = (r1 - r2) & 0xFF;
+''',
+'''
+    r3 = (r2 - r2) & 0xFF;
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    out = r3 & 0xFF
+    if out >= 128: out -= 256
+    return out
+'''
+]
+
+[[custom_vars]]
+code = 2
+msg  = "program incorrect on >=1 input (not a valid superoptimization)"

@@ -1,0 +1,70 @@
+{
+  "nodes": [
+    {
+      "id": "HEAD",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 1,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "REGION",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 4,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "REPLICAS",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 3,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "TAIL",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 1,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "TIER",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 3,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    }
+  ],
+  "edges": []
+}

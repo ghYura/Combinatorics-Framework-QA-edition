@@ -1,0 +1,125 @@
+# ============================================================================
+# USE-CASE #8b — ML/LLM eval against TWO REAL LOCAL surrogates (differential).
+#
+# Uses the author's actual offline surrogate services (advanced_surrogate /
+# advanced_surrogate2 -- sklearn-backed, OpenAI-compatible FastAPI), run LOCALLY
+# on 127.0.0.1 (NO external egress, policy-compliant). The discrete outer
+# structure the Bundle excels at: MODEL (A vs B) x prompt STYLE x TEMP. The
+# MODEL dimension makes this a DIFFERENTIAL eval -- the same prompt against two
+# models, compared on quality/latency/cost.
+#
+# 2(MODEL) x 3(STYLE) x 2(TEMP) = 12 candidates. Deterministic at temp 0 (the
+# surrogate is reproducible; a real eval records seed + sampling params). Oracle:
+# answered + within token budget -> PASS, else DOMAIN_FAIL (5 unreachable/empty,
+# 6 over-budget). Analyzer Pareto over answered:max, latency_ms:min, cost_usd:min.
+#
+# Run trusted-local with the two surrogates up:
+#   (cd advanced_surrogate  && python3 -m uvicorn app:app --host 127.0.0.1 --port 8055 &)
+#   (cd advanced_surrogate2 && python3 -m uvicorn app:app --host 127.0.0.1 --port 8056 &)
+#   python3 bundle_run.py usecases/ml_eval_surrogate --db mlsurr \
+#     --execution-policy-profile trusted-local --candidate-origin reviewed-checked-in \
+#     --acknowledge-trusted-local 'reviewed checked-in local-surrogate fixture; NO SANDBOX'
+# ============================================================================
+title = "ML/LLM differential eval — two real local sklearn surrogates, model A vs B"
+note  = "FW_Combi(1) MODEL/STYLE/TEMP; queries local OpenAI-compatible surrogates; cost-aware Pareto."
+args  = ["mode=ml_eval_surrogate"]
+
+[[goals]]
+key = "answered"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "cost_usd"
+dir = "min"
+
+[[slots]]   # invariant frame: model endpoints + prompt framing + chat client + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import json, os, time, urllib.request
+MODELS = {
+    "A": os.environ.get("SURR_A", "http://127.0.0.1:8055"),
+    "B": os.environ.get("SURR_B", "http://127.0.0.1:8056"),
+}
+QUESTION = "List two prime numbers under ten."
+MODEL = "A"
+STYLE = "direct"
+TEMP = 0.0
+
+def _frame(style, q):
+    if style == "cot":
+        return "Think step by step, then answer. " + q
+    if style == "terse":
+        return q + " Answer in one short sentence."
+    return q
+
+def _chat(url, prompt, temp):
+    data = json.dumps({"model": "local-cpu-surrogate-llm",
+                       "messages": [{"role": "user", "content": prompt}],
+                       "temperature": temp}).encode("utf-8")
+    req = urllib.request.Request(url + "/v1/chat/completions", data=data,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=10) as r:
+        return json.loads(r.read().decode("utf-8"))
+''']
+
+[[slots]]   # differential dimension: which local surrogate (A vs B)
+sheet  = "MODEL"
+key    = "model"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["MODEL = \"A\"\n", "MODEL = \"B\"\n"]
+
+[[slots]]   # prompt framing style
+sheet  = "STYLE"
+key    = "style"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["STYLE = \"direct\"\n", "STYLE = \"cot\"\n", "STYLE = \"terse\"\n"]
+
+[[slots]]   # decoding temperature
+sheet  = "TEMP"
+key    = "temp"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TEMP = 0.0\n", "TEMP = 0.7\n"]
+
+[[slots]]   # invariant frame: query the chosen surrogate, measure, oracle verdict
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_url = MODELS[MODEL]
+_prompt = _frame(STYLE, QUESTION)
+_t0 = time.monotonic()
+_err = ""
+try:
+    _resp = _chat(_url, _prompt, TEMP)
+except Exception as _e:
+    _resp, _err = {}, type(_e).__name__
+_latency = (time.monotonic() - _t0) * 1000.0
+_msg = ((_resp.get("choices", [{}]) or [{}])[0].get("message", {}) or {}).get("content", "")
+_tokens = int((_resp.get("usage", {}) or {}).get("total_tokens", 0))
+_cost = round(_tokens * 0.000002, 8)
+_answered = int(bool(_msg))
+if _err or not _msg:
+    FW_VAR = 5
+elif _tokens > 256:
+    FW_VAR = 6
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=ml_eval_surrogate model=%s style=%s temp=%s latency_ms=%.1f total_tokens=%d "
+      "cost_usd=%.8f answered=%d error=%s FW_VAR=%d"
+      % (MODEL, STYLE, TEMP, _latency, _tokens, _cost, _answered, _err or "none", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 5
+msg = "surrogate unreachable or empty response"
+[[custom_vars]]
+code = 6
+msg = "response exceeded token budget"

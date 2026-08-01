@@ -1,0 +1,49 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Bond matrix: A x C</title>
+<style>
+ body{font:14px/1.5 system-ui,sans-serif;margin:24px;color:#1a1a1a;background:#fafafa}
+ h1{font-size:18px} .sub{color:#666}
+ table{border-collapse:collapse;margin:14px 0}
+ th,td{border:1px solid #ccc;padding:7px 10px;text-align:center}
+ th{background:#eee} td.cell{cursor:pointer;min-width:34px;user-select:none}
+ td.allow{background:#e9f7ee} td.forbid{background:#fde2e2;color:#a00;font-weight:700}
+ td.cell:hover{outline:2px solid #888}
+ .panel{margin:12px 0;padding:10px 12px;background:#fff;border:1px solid #ddd;border-radius:6px}
+ .rule{color:#a00} button{font:14px system-ui;padding:7px 12px;cursor:pointer}
+ code{background:#f0f0f0;padding:1px 4px;border-radius:3px}
+</style>
+<h1>Bond matrix: A x C</h1>
+<div class="sub">Click a cell to toggle a <b>forbidden bond</b> (red) between a row value and a column value.
+Then <b>Download sidecar.json</b> and run <code>bundle_run.py &lt;spec&gt; --sieve</code>.</div>
+<div id="grid"></div>
+<div class="panel"><b>Impact (co-occurrence):</b> <span id="impact"></span></div>
+<div class="panel"><b>Rules (plain language):</b><div id="rules"></div></div>
+<button id="dl">Download sidecar.json</button>
+<script>
+const D={"a": "A", "b": "C", "va": ["a11", "a12", "a13"], "vb": ["c11", "c12", "c13"], "forbidden": ["[\"a11\",\"c11\"]", "[\"a12\",\"c13\"]"], "full": 36};
+const F=new Set(D.forbidden);
+const key=(a,b)=>JSON.stringify([a,b]);
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function attr(s){return esc(s).replace(/'/g,"&#39;");}
+function render(){
+ let h="<table><tr><th>"+esc(D.a)+" \\ "+esc(D.b)+"</th>"+D.vb.map(v=>"<th>"+esc(v)+"</th>").join("")+"</tr>";
+ for(const a of D.va){h+="<tr><th>"+esc(a)+"</th>";
+  for(const b of D.vb){const f=F.has(key(a,b));
+   h+="<td class='cell "+(f?"forbid":"allow")+"' data-a='"+attr(a)+"' data-b='"+attr(b)+"'>"+(f?"x":".")+"</td>";}
+  h+="</tr>";}
+ h+="</table>"; document.getElementById("grid").innerHTML=h;
+ document.querySelectorAll("td.cell").forEach(td=>td.onclick=()=>{
+   const k=key(td.dataset.a,td.dataset.b); F.has(k)?F.delete(k):F.add(k); render();});
+ const perCell=D.full/(D.va.length*D.vb.length), removed=Math.round(F.size*perCell);
+ document.getElementById("impact").textContent=
+   F.size+" forbidden pair(s) -> removes "+removed+" of "+D.full+" combinations ("+(D.full-removed)+" kept).";
+ document.getElementById("rules").innerHTML=[...F].sort().map(k=>{const p=JSON.parse(k);
+   return "<div class='rule'>x  "+esc(D.a)+":"+esc(p[0])+"  +  "+esc(D.b)+":"+esc(p[1])+"</div>";}).join("")
+   ||"<i>none yet - all bonds allowed</i>";
+}
+function sidecar(){const pairs=[...F].sort().map(k=>{const p=JSON.parse(k);const o={};o[D.a]=p[0];o[D.b]=p[1];return o;});
+ return {version:1,params:{},constraints:pairs.length?[{id:"bond_"+D.a+"_"+D.b,polarity:"forbid",
+  sheets:[D.a,D.b],pairs:pairs,gate:{},desc:pairs.length+" forbidden "+D.a+"x"+D.b+" value-pair(s)"}]:[]};}
+document.getElementById("dl").onclick=()=>{const blob=new Blob([JSON.stringify(sidecar(),null,2)],{type:"application/json"});
+ const u=URL.createObjectURL(blob),a=document.createElement("a");a.href=u;a.download="sidecar.json";a.click();URL.revokeObjectURL(u);};
+render();
+</script></html>

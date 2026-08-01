@@ -1,0 +1,32 @@
+// ── 7_2.txt — variant 2: identity-keyed Set cache (build once, reuse)
+// Same contract; the most aggressive variant. Builds a HashSet for a
+// given topTokens reference exactly once (lazily); subsequent calls
+// with the same reference reuse the cached set. Uses WeakHashMap to
+// allow the cache to be reclaimed when topTokens is no longer reached
+// from the heap.
+//
+// IMPORTANT: assumes the caller does not mutate topTokens after first
+// use — true for the analyzer where SynthesizedRules.topTokens is an
+// immutable snapshot.
+
+    private static final WeakHashMap<List<String>, HashSet<String>> TOPK_CACHE = new WeakHashMap<>();
+
+    public static boolean isHighFreqToken(String token, List<String> topTokens,
+                                          Map<String, Integer> support, int cutoff) {
+        long __t0 = System.nanoTime();
+        Metrics.p7_invocations++;
+        Metrics.p7_total_topk_size += (topTokens == null ? 0 : topTokens.size());
+        try {
+            if (token == null || topTokens == null) return false;
+            HashSet<String> set;
+            synchronized (TOPK_CACHE) {
+                set = TOPK_CACHE.computeIfAbsent(topTokens, HashSet::new);
+            }
+            boolean ok = set.contains(token)
+                      && support.getOrDefault(token, 0) >= cutoff;
+            if (ok) Metrics.p7_match_count++;
+            return ok;
+        } finally {
+            Metrics.p7_duration_ns += System.nanoTime() - __t0;
+        }
+    }

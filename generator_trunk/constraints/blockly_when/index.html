@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>FW when-predicate builder (Blockly)</title>
+    <style>
+      body { margin: 0; font: 14px/1.5 system-ui, sans-serif; }
+      #bar { padding: 8px 12px; background: #f3f3f3; border-bottom: 1px solid #ddd; }
+      #ws { height: 60vh; }
+      pre { background: #111; color: #7fdc7f; padding: 10px; margin: 0; max-height: 26vh; overflow: auto; }
+      .hint { color: #666; margin-left: 8px; }
+    </style>
+  </head>
+  <body>
+    <div id="bar">
+      <button id="gen">Generate</button>
+      <button id="dl" disabled>Download sidecar.json</button>
+      <span id="sheets" style="color:#06c; margin-left:10px"></span>
+      <span class="hint">Drag a <b>forbid … when</b> block; build a boolean formula over params
+        (e.g. <code>A.charge × C.charge &gt; 0</code>) into its <b>when</b> input. → bundle_run --sieve.</span>
+    </div>
+    <div id="ws"></div>
+    <pre id="out">// sidecar preview — press Generate</pre>
+    <script type="module" src="/src/main.js"></script>
+  </body>
+</html>

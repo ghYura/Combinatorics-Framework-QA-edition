@@ -1,0 +1,37 @@
+title = "Esoteric #5 — Game of Life seed search (discover gliders & methuselahs)"
+note  = "Each of the 3 ROWS of the 3x3 box is an FW_Subsets slot over its 3 cells, so the product 2^3 x 2^3 x 2^3 = 512 breeds every seed (3 combos columns keep the positional FW_VAR encoding clean). Each seed is run on a torus and classified (still/oscillator/spaceship/methuselah/extinct); Analyzer lifespan:max + displacement:max discovers the glider and the longest-lived seed. FW_Combi(5) would breed the 126 pentominoes instead."
+args  = ["grid=64x64_torus", "generations=250", "rule=B3/S23"]
+[[goals]]
+key = "lifespan"
+dir = "max"
+[[goals]]
+key = "displacement"
+dir = "max"
+[[goals]]
+key = "max_population"
+dir = "max"
+
+[[slots]]
+sheet = "ROW0"
+key   = "row0"
+verb  = "FW_Subsets"
+values = ["(0,0)", "(0,1)", "(0,2)"]
+
+[[slots]]
+sheet = "ROW1"
+key   = "row1"
+verb  = "FW_Subsets"
+values = ["(1,0)", "(1,1)", "(1,2)"]
+
+[[slots]]
+sheet = "ROW2"
+key   = "row2"
+verb  = "FW_Subsets"
+values = ["(2,0)", "(2,1)", "(2,2)"]
+
+[[custom_vars]]
+code = 2
+msg  = "seed went extinct"
+[[custom_vars]]
+code = 3
+msg  = "seed froze into a boring still-life"

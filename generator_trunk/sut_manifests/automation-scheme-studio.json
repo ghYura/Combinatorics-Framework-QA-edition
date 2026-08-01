@@ -1,0 +1,61 @@
+{
+  "schema": "bundle.sut-manifest/v1",
+  "id": "automation-scheme-studio",
+  "title": "Automation Scheme Studio — control-circuit search",
+  "maturity": "canonical",
+  "summary": "A deterministic control-system builder and simulator. Bundle-generated code forms an immutable recursive topology (sequence, parallel, repeat, feedback) which the SUT compiles into a real circuit and runs against an excitation battery.",
+  "source": {
+    "kind": "sibling-checkout",
+    "sut_paths_key": "automation_scheme_studio",
+    "repository": "https://github.com/ghYura/SUT.git",
+    "revision": "db1ac787d07fe4ea16b084b551576c1da1a055fd",
+    "revision_resolution": "Resolved through BUNDLE_SUT_ROOT (never a machine-specific absolute path). AUTOMATION_STUDIO_ROOT overrides the project directly."
+  },
+  "lifecycle": {
+    "install": "none for the Bundle path — bootstrap.py adds <sut>/src to sys.path; `pip install -e .` only for standalone use",
+    "start": "none — the SUT is an in-process library; each candidate builds and runs its own circuit",
+    "health": "python -m pytest -q generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/test_advanced_feedback.py",
+    "stop": "none — no process outlives a candidate"
+  },
+  "determinism": {
+    "deterministic": true,
+    "reset": "Each candidate constructs a fresh SearchPlan and circuit; nothing is shared between candidates.",
+    "seed": "The excitation battery, duration and dt are fixed per scenario in the spec's HEAD (family/battery/duration/dt).",
+    "caveats": ["Floating-point simulation: verdicts are threshold comparisons on simulated signals, so results are reproducible on one host but sensitive to a change of numeric library."]
+  },
+  "oracle": {
+    "kind": "threshold",
+    "description": "The SUT's own Oracle evaluates the simulated response and emits seven objectives (control/robustness/stability score, settling time, worst error, overshoot, control effort) plus a verdict code.",
+    "independence": "PARTIAL — the oracle ships with the SUT and shares its simulation code, so it is not independent of the thing it judges. It detects circuits that fail to build, produce non-finite signals, or miss acceptance limits; it cannot detect a systematic error in the simulator itself. This is the weakest oracle in the canonical set and is why the set is not limited to it.",
+    "implementation": "<sut>/src/automation_constructor/experiments/bundle_search.py"
+  },
+  "controls": {
+    "known_pass": ["advanced_feedback/00_smoke: 32 generated, at least one Oracle PASS, full chain green"],
+    "known_fail": ["advanced_feedback/01_operator_smoke: 8 generated, 4 PASS — the 4 non-PASS are declared domain rejections, not defects"],
+    "intentional_defects": []
+  },
+  "access": {"read": ["{scratch}", "<sut>/src"], "write": ["{scratch}"], "network": []},
+  "limits": {"wall_seconds_per_candidate": 60, "memory_mb": 1024, "max_candidates_per_gate": 64},
+  "trusted_artifacts": [],
+  "capability_row": {
+    "language": "python", "candidate_sink": "sharded", "handoff": "v2",
+    "run_mode": "verdict", "execution_policy": "trusted-local",
+    "executor_pool": "single", "repeat": "k1", "analyzer": "formal"
+  },
+  "candidate_origin": "reviewed-checked-in",
+  "cleanup": "python generator_trunk/bundle_run.py cleanup <run-dir>; campaign reports go to an ignored campaign_results/ directory.",
+  "ci": {
+    "tier": 2,
+    "workflow_gate": "canonical-sut-automation",
+    "tests": ["generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/test_advanced_feedback.py"],
+    "scenarios": [
+      "generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/00_smoke",
+      "generator_trunk/scenarios/automation_scheme_studio/advanced_feedback/01_operator_smoke"
+    ]
+  },
+  "caveats": [
+    "Requires the sibling SUT checkout pinned by revision. CI checks it out explicitly and runs both the oracle tests and a bounded full-chain smoke.",
+    "The heavier 10_third_order_brace and 20_grouped_repetition scenarios have runtime-unknown cardinality and are deliberately NOT in the gate set.",
+    "Its campaign launcher passes --unleash-initial-productivity-power, which makes hard budget gates advisory. That is a launcher choice, not an engine default."
+  ]
+}

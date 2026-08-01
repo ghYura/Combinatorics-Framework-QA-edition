@@ -1,0 +1,48 @@
+// gRPC candidate transport (2026-07-02) — Reader → Executor live candidate feed.
+// The Reader's GrpcCandidateSink streams every assembled candidate (the exact bytes
+// the loose-file sink would have written to "<id><extension>") to the Executor's
+// GrpcCandidateReceiver, which routes each through the SAME per-candidate
+// compile/run/classify/record pipeline the directory watcher uses.
+//
+// This file is duplicated verbatim in Reader_trunk and Executor_trunk (the two
+// projects build independently); keep the copies in sync.
+syntax = "proto3";
+
+package fw.candidate.v1;
+
+option java_package = "com.company.grpc";
+option java_multiple_files = true;
+option java_outer_classname = "CandidateFeedProto";
+
+// One assembled candidate. `content` is byte-identical to what the loose-file
+// transport would have persisted (FW_REPLACE applied, trim applied, tail appended).
+message Candidate {
+  string id = 1;      // stable candidate id, e.g. "17_0_0" or "17_349_4"
+  bytes content = 2;  // candidate body bytes
+}
+
+// Executor's end-of-stream receipt. `received` is the authoritative count of
+// candidates accepted off the wire; the Reader fail-closes its run when this
+// disagrees with what it sent (mirrors the STEP 31 sink reconciliation).
+message StreamSummary {
+  uint64 received = 1;
+  uint64 errors = 2;      // candidates that could not be persisted/scheduled
+  string executor_id = 3; // e.g. "java:<pid>"
+}
+
+message Ping { string sender = 1; }
+
+message Pong {
+  string executor_id = 1;
+  bool ready = 2;  // true once the legacy handshake (insert.sql template) has loaded
+}
+
+service CandidateFeed {
+  // Cheap preflight so the Reader fails fast (before emission starts) when no
+  // Executor is listening on the configured target.
+  rpc PingCheck (Ping) returns (Pong);
+
+  // Client-streaming feed: Reader pushes candidates, Executor replies with the
+  // receipt summary after the Reader half-closes.
+  rpc StreamCandidates (stream Candidate) returns (StreamSummary);
+}

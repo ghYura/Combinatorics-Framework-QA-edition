@@ -1,0 +1,59 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_10_feature_flag_interaction",
+  "category": "feature-flag interaction (FW_Subsets)",
+  "user_problem": "My service has several feature flags; ANY subset can be enabled, and some flag combinations interact badly. I also roll out in stages. Which flag sets are safe, and which interactions break?",
+  "bundle_offer": "Bundle models WHICH flags are enabled as FW_Subsets (any subset, 2^n) crossed with the rollout stage; the TAIL oracle catches flag interactions (a dependency, a conflicting pair) because a within-subset bond is not a binary 2-sheet sieve rule; the Analyzer returns a capability-vs-risk Pareto front.",
+  "hypothesis": "Subsets enabling experimental_ui without new_router fail a dependency; audit+cache in canary conflict; the rest pass.",
+  "zen_mapping": [
+    {
+      "freedom": "which feature flags are enabled",
+      "shape": "any subset (incl. none)",
+      "verb": "FW_Subsets",
+      "cardinality": "2^4 = 16"
+    },
+    {
+      "freedom": "rollout stage",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "flag dependency / conflicting pair",
+      "shape": "a within-subset bond (not a binary sieve rule)",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Subsets",
+      "FW_Combi",
+      "TAIL oracle ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "enabled_flags",
+        "dir": "max"
+      },
+      {
+        "key": "risk_score",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=2 experimental_ui without new_router (dependency); FW_VAR=3 audit+cache in canary (conflict); FW_VAR=0 safe"
+  },
+  "pattern": "secure_pipeline FW_Subsets features",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/secure_pipeline FW_Subsets features"
+    }
+  ]
+}

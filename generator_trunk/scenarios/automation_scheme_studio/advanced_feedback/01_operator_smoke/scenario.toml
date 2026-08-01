@@ -1,0 +1,215 @@
+spec_version = "1"
+title = "Advanced operator-level recursive feedback smoke"
+note = "A deliberately tiny real run proving FW_Group plus a three-link nested-brace chain survives Core/Reader assembly and becomes executable recursive SUT circuits."
+args = ["sut=automation_scheme_studio", "suite=advanced_feedback", "tier=operator-smoke"]
+
+seq_extra = [
+  ["SERIES_RESULT", "FW_Reuse", "FW_(SERIES_OPEN,,GROUPED_MODULE,,REPEATED_MOTIF,,SERIES_CLOSE,,M:N)"],
+  ["PARALLEL_RESULT", "FW_Reuse", "FW_(PARALLEL_OPEN,,FW_(),,SIDE_BRANCH,,PARALLEL_CLOSE,,M:N)"],
+  ["FEEDBACK_RESULT", "FW_Reuse", "FW_(FEEDBACK_OPEN,,FW_(),,CONDITIONER,,FEEDBACK_CLOSE,,M:N)"],
+]
+
+[[goals]]
+key = "control_score"
+dir = "max"
+[[goals]]
+key = "robustness_score"
+dir = "max"
+[[goals]]
+key = "stability_score"
+dir = "max"
+[[goals]]
+key = "settling_time_s"
+dir = "min"
+[[goals]]
+key = "worst_error"
+dir = "min"
+[[goals]]
+key = "overshoot_pct"
+dir = "min"
+[[goals]]
+key = "control_effort"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import initialize_candidate
+PLAN, INITIAL_COMPONENT_PARAMETERS, MEASUREMENT_TERMINALS = initialize_candidate(
+    family="advanced_feedback_operator_smoke", battery="screen", duration=1.2, dt=0.06
+)
+from generator_trunk.scenarios.automation_scheme_studio.advanced_topology import (
+    annotate_result, attach_topology, emit_atom, emit_close, emit_node, emit_open, template
+)
+TOPOLOGY_STREAM = []
+''']
+
+[[slots]]
+sheet = "GROUPED_MODULE"
+key = "grouped_module"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_node(TOPOLOGY_STREAM, template("parallel_pid_loops"))
+''',
+'''emit_node(TOPOLOGY_STREAM, template("repeated_relay_loop"))
+'''
+]
+
+[[slots]]
+sheet = "REPEATED_MOTIF"
+key = "repeated_motif"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(TOPOLOGY_STREAM, "gain")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "low_pass")
+'''
+]
+
+[[slots]]
+sheet = "SIDE_BRANCH"
+key = "side_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_node(TOPOLOGY_STREAM, template("parallel_conditioners"))
+'''
+]
+
+[[slots]]
+sheet = "CONDITIONER"
+key = "conditioner"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(TOPOLOGY_STREAM, "unit_delay")
+'''
+]
+
+[[slots]]
+sheet = "SERIES_RESULT"
+key = "series_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PARALLEL_RESULT"
+key = "parallel_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "FEEDBACK_RESULT"
+key = "feedback_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "SERIES_OPEN"
+key = "series_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(TOPOLOGY_STREAM, 1, "sequence")
+''']
+
+[[slots]]
+sheet = "SERIES_CLOSE"
+key = "series_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 1)
+''']
+
+[[slots]]
+sheet = "PARALLEL_OPEN"
+key = "parallel_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(TOPOLOGY_STREAM, 2, "parallel", reducer="mean")
+''']
+
+[[slots]]
+sheet = "PARALLEL_CLOSE"
+key = "parallel_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 2)
+''']
+
+[[slots]]
+sheet = "FEEDBACK_OPEN"
+key = "feedback_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(
+    TOPOLOGY_STREAM, 3, "feedback", controller="pid",
+    boundary="unit_delay", placement="forward_and_feedback"
+)
+''']
+
+[[slots]]
+sheet = "FEEDBACK_CLOSE"
+key = "feedback_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 3)
+''']
+
+[[slots]]
+sheet = "POLICY"
+key = "policy"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+PLAN.architecture = "serial"
+PLAN.controller = "pi"
+PLAN.plant = "second_order"
+PLAN.apply_profile("balanced")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+TOPOLOGY = attach_topology(PLAN, TOPOLOGY_STREAM)
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import finish_candidate
+_RESULT = finish_candidate(PLAN, MEASUREMENT_TERMINALS)
+annotate_result(_RESULT, TOPOLOGY)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line(
+    initial_parameters=INITIAL_COMPONENT_PARAMETERS,
+    include_terminals=True,
+    include_parameters=True,
+))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "circuit validation/build/compile failure"
+[[custom_vars]]
+code = 3
+msg = "simulation runtime or non-finite signal failure"
+[[custom_vars]]
+code = 4
+msg = "unstable excitation response or internal tester terminal"
+[[custom_vars]]
+code = 5
+msg = "tracking/convergence acceptance limit exceeded"

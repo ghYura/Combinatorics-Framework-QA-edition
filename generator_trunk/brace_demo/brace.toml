@@ -1,0 +1,81 @@
+title = "Brace demo — FW_(,,A,,B,,,,M:N) joins two PRIOR FW_Seq RESULT tables"
+note  = "A = FW_Combi(2) over 3 steps -> its RESULT table fw_A = 3 pairs; B = FW_Combi(1) over 2 regions -> fw_B = 2 rows. The brace joins THOSE RESULT TABLES (not the raw sheets), M:N -> 3*2 = 6 plans. A,B are FW_Exclude'd so they appear ONLY via the join (consumed, not double-counted). Proves the corrected brace semantics: operands are the combination-results of earlier FW_Seq rows."
+args = ["mode=brace_demo"]
+
+# Brace row — TOP-LEVEL key: in TOML it MUST precede every [[slots]]/[[goals]] table,
+# otherwise it binds to the last table (TAIL) and is silently dropped from FW_Seq.
+# Target sheet JOINED joins the RESULT tables of A and B (M:N). 9 fields:
+# FW_(start,_,E1,rel,E2,_,end,sep,mult) — here E1=A, E2=B, mult=M:N.
+seq_extra = [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]]
+
+[[goals]]
+key = "steps"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+plan = []
+''',
+]
+
+[[slots]]
+sheet = "A"
+key   = "a"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''
+plan.append("audit")
+''',
+'''
+plan.append("migrate")
+''',
+'''
+plan.append("backup")
+''',
+]
+
+[[slots]]
+sheet = "B"
+key   = "b"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''
+plan.append("region:eu")
+''',
+'''
+plan.append("region:us")
+''',
+]
+
+[[slots]]
+sheet = "JOINED"
+key   = "joined"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+pass  # placeholder; the brace (seq_extra) overwrites this sheet's rows with the A x B join
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+_n = len(plan)
+FW_VAR = 0
+print("app=brace plan=%s steps=%d FW_VAR=%d" % ("|".join(plan), _n, FW_VAR))
+''',
+]

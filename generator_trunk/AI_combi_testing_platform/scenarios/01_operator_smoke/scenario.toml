@@ -1,0 +1,199 @@
+spec_version = "1"
+title = "AI prompt-program higher-order operator smoke"
+note = "Eight cost-free candidates prove FW_Group, FW_PermutR, and a three-link nested brace chain through Core, Reader, exact oracle, Executor, and formal Analyzer."
+args = ["suite=ai_combi_testing", "tier=operator-smoke", "adapter=oracle-control"]
+
+seq_extra = [
+  ["TASK_RENDER_RESULT", "FW_Reuse", "FW_(TASK_OPEN,,GROUPED_CONSTRAINTS,,REPEATED_TRANSFORMS,,TASK_CLOSE,,M:N)"],
+  ["SCHEMA_RESULT", "FW_Reuse", "FW_(SCHEMA_OPEN,,FW_(),,FORMAT_BRANCH,,SCHEMA_CLOSE,,M:N)"],
+  ["PROMPT_RESULT", "FW_Reuse", "FW_(PROMPT_OPEN,,FW_(),,CONTROL_BRANCH,,PROMPT_CLOSE,,M:N)"],
+]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "semantic_invariance_ok"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "program_order"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+from generator_trunk.AI_combi_testing_platform.renderers import emit_atom, emit_close, emit_open
+PLAN = initialize_candidate(family="ordering", seed=2718, complexity=4)
+PLAN.semantic_mode = "loaded"
+PLAN.costume = "loaded"
+''']
+
+[[slots]]
+sheet = "GROUPED_CONSTRAINTS"
+key = "grouped_constraints"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "constraint_order:forward")
+''',
+'''emit_atom(PLAN.program_stream, "distractor:neutral")
+'''
+]
+
+[[slots]]
+sheet = "REPEATED_TRANSFORMS"
+key = "repeated_transforms"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "paraphrase:direct")
+''',
+'''emit_atom(PLAN.program_stream, "tone:strict")
+'''
+]
+
+[[slots]]
+sheet = "FORMAT_BRANCH"
+key = "format_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "schema:json")
+'''
+]
+
+[[slots]]
+sheet = "CONTROL_BRANCH"
+key = "control_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "prompt_version:v2")
+'''
+]
+
+[[slots]]
+sheet = "TASK_RENDER_RESULT"
+key = "task_render_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "SCHEMA_RESULT"
+key = "schema_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PROMPT_RESULT"
+key = "prompt_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "TASK_OPEN"
+key = "task_open"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_open(PLAN.program_stream, 1, "task")
+'''
+]
+
+[[slots]]
+sheet = "TASK_CLOSE"
+key = "task_close"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_close(PLAN.program_stream, 1)
+'''
+]
+
+[[slots]]
+sheet = "SCHEMA_OPEN"
+key = "schema_open"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_open(PLAN.program_stream, 2, "schema")
+'''
+]
+
+[[slots]]
+sheet = "SCHEMA_CLOSE"
+key = "schema_close"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_close(PLAN.program_stream, 2)
+'''
+]
+
+[[slots]]
+sheet = "PROMPT_OPEN"
+key = "prompt_open"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_open(PLAN.program_stream, 3, "prompt")
+'''
+]
+
+[[slots]]
+sheet = "PROMPT_CLOSE"
+key = "prompt_close"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''emit_close(PLAN.program_stream, 3)
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

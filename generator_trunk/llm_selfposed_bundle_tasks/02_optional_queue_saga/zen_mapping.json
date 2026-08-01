@@ -1,0 +1,55 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_02_optional_queue_saga",
+  "category": "optional sudden actions",
+  "user_problem": "My message-queue consumer does fetch -> process -> ack. I also worry about a redelivery (the same message arriving twice) and a crash before ack. Which orderings and which fault combinations break correctness?",
+  "bundle_offer": "Bundle runs the consumer steps in every order and bolts on two optional 'sudden actions' (redelivery, crash-before-ack) as a separate dimension, then a saga oracle checks ordering, idempotency, and liveness across all combinations.",
+  "hypothesis": "Only fetch<process<ack is valid; a redelivery without an idempotency key double-processes; a crash before ack loses liveness.",
+  "zen_mapping": [
+    {
+      "freedom": "consumer step order",
+      "shape": "an ordering",
+      "verb": "FW_Permut",
+      "cardinality": "3! = 6"
+    },
+    {
+      "freedom": "redelivery may or may not fire",
+      "shape": "may-or-may-not (sudden action)",
+      "verb": "FW_Optional",
+      "cardinality": "x2"
+    },
+    {
+      "freedom": "crash-before-ack may or may not fire",
+      "shape": "may-or-may-not (sudden action)",
+      "verb": "FW_Optional",
+      "cardinality": "x2"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Permut",
+      "FW_Optional",
+      "FW_Optional",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "process_count",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=3 process before fetch; 2 ack before process; 4 double-process; 5 not-acked without crash cause; 0 PASS"
+  },
+  "pattern": "usecases/event_order",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/usecases/event_order"
+    }
+  ]
+}

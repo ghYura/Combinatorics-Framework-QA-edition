@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.yurii.framework</groupId>
+    <artifactId>framework-java-reactor</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>pom</packaging>
+
+    <name>Framework Java reactor</name>
+
+    <modules>
+        <module>Combinatoricslib3parallel</module>
+        <module>Analyzer_trunk</module>
+        <module>Core_trunk</module>
+        <module>Reader_trunk</module>
+        <module>Executor_trunk/lib-src</module>
+        <module>Executor_trunk</module>
+    </modules>
+</project>

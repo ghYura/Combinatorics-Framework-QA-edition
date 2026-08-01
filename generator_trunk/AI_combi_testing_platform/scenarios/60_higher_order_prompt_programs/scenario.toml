@@ -1,0 +1,204 @@
+spec_version = "1"
+title = "Fourth-order recursive prompt-program study"
+note = "FW_Group and FW_PermutR feed four nested brace links, including grouped FW_()G consumption, to construct executable recursive prompt programs."
+args = ["suite=ai_combi_testing", "study=higher-order-prompt-programs", "order=4"]
+
+seq_extra = [
+  ["CLAUSE_RESULT", "FW_Reuse", "FW_(CLAUSE_OPEN,,GROUPED_CLAUSES,,REPEATED_MOTIFS,,CLAUSE_CLOSE,,M:N)"],
+  ["FORMAT_RESULT", "FW_Reuse", "FW_(FORMAT_OPEN,,FW_(),,FORMAT_ATOM,,FORMAT_CLOSE,,M:N)"],
+  ["CONTEXT_RESULT", "FW_Reuse", "FW_(CONTEXT_OPEN,,FW_()G,,CONTEXT_ATOM,,CONTEXT_CLOSE,,M:N)"],
+  ["ROOT_RESULT", "FW_Reuse", "FW_(ROOT_OPEN,,FW_(),,VERSION_ATOM,,ROOT_CLOSE,,M:N)"],
+]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "program_order"
+dir = "max"
+[[goals]]
+key = "program_depth"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+from generator_trunk.AI_combi_testing_platform.renderers import emit_atom, emit_close, emit_open
+PLAN = initialize_candidate(family="ordering", seed=24494, complexity=5)
+PLAN.semantic_mode = "loaded"
+PLAN.costume = "loaded"
+''']
+
+[[slots]]
+sheet = "GROUPED_CLAUSES"
+key = "grouped_clauses"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "constraint_order:forward")
+''',
+'''emit_atom(PLAN.program_stream, "constraint_order:reverse")
+'''
+]
+
+[[slots]]
+sheet = "REPEATED_MOTIFS"
+key = "repeated_motifs"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "paraphrase:direct")
+''',
+'''emit_atom(PLAN.program_stream, "distractor:neutral")
+'''
+]
+
+[[slots]]
+sheet = "FORMAT_ATOM"
+key = "format_atom"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_atom(PLAN.program_stream, "schema:json")
+''']
+
+[[slots]]
+sheet = "CONTEXT_ATOM"
+key = "context_atom"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_atom(PLAN.program_stream, "long_range:3")
+''']
+
+[[slots]]
+sheet = "VERSION_ATOM"
+key = "version_atom"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_atom(PLAN.program_stream, "prompt_version:v2")
+''']
+
+[[slots]]
+sheet = "CLAUSE_RESULT"
+key = "clause_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+[[slots]]
+sheet = "FORMAT_RESULT"
+key = "format_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+[[slots]]
+sheet = "CONTEXT_RESULT"
+key = "context_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+[[slots]]
+sheet = "ROOT_RESULT"
+key = "root_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "CLAUSE_OPEN"
+key = "clause_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(PLAN.program_stream, 1, "clauses")
+''']
+[[slots]]
+sheet = "CLAUSE_CLOSE"
+key = "clause_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(PLAN.program_stream, 1)
+''']
+[[slots]]
+sheet = "FORMAT_OPEN"
+key = "format_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(PLAN.program_stream, 2, "format")
+''']
+[[slots]]
+sheet = "FORMAT_CLOSE"
+key = "format_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(PLAN.program_stream, 2)
+''']
+[[slots]]
+sheet = "CONTEXT_OPEN"
+key = "context_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(PLAN.program_stream, 3, "context")
+''']
+[[slots]]
+sheet = "CONTEXT_CLOSE"
+key = "context_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(PLAN.program_stream, 3)
+''']
+[[slots]]
+sheet = "ROOT_OPEN"
+key = "root_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(PLAN.program_stream, 4, "prompt")
+''']
+[[slots]]
+sheet = "ROOT_CLOSE"
+key = "root_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(PLAN.program_stream, 4)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

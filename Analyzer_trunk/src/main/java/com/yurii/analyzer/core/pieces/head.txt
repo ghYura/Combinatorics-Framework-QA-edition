@@ -1,0 +1,137 @@
+// ── head.txt ──────────────────────────────────────────────────────────
+// All imports any variant might need, plus the global Metrics struct
+// that every piece writes into.  When the combinatorics engine glues
+// pieces together, this is the prologue.
+
+package generated;
+
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.math.BigDecimal;
+import java.math.MathContext;
+import java.math.RoundingMode;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.text.NumberFormat;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.PriorityQueue;
+import java.util.Set;
+import java.util.UUID;
+import java.util.WeakHashMap;
+import java.util.regex.MatchResult;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+// External libraries any variant *may* reference (the combinatorics
+// engine adds them to the build classpath only when a referencing
+// variant is chosen):
+//   org.apache.commons:commons-math3  → StatUtils, Median, Percentile
+//   org.apache.commons:commons-lang3  → StringUtils
+//   com.google.guava:guava            → Multisets, Stopwatch
+//   it.unimi.dsi:fastutil             → primitive maps
+//   org.eclipse.collections:eclipse-collections → primitive maps
+//   org.antlr:antlr4-runtime          → grammar-driven shell parser
+//   org.jline:jline                   → shell tokenisation
+
+public class Generated {
+
+    // ─── Regex constants used by hot-path pieces ─────────────────────
+    public static final Pattern NUMBER_RE = Pattern.compile(
+            "(?<!\\w)[-+]?(?:\\d+(?:[.,]\\d+)?|\\d*\\.\\d+)(?:[eE][-+]?\\d+)?");
+    public static final Pattern TOKEN_RE = Pattern.compile(
+            "\\b\\w+\\b", Pattern.UNICODE_CHARACTER_CLASS);
+    public static final Pattern KV_PAIR_RE = Pattern.compile(
+            "([A-Za-zА-Яа-я_][\\w.\\-]*)\\s*[:=]\\s*([^\\s;|,\\]\\)\\}]+)",
+            Pattern.UNICODE_CHARACTER_CLASS);
+    public static final Pattern PLACEHOLDER_RE = Pattern.compile(
+            "\\$\\{[^}]+}|\\{\\{[^}]+}}|\\[[^\\]]+]|<[^>]+>");
+    public static final Pattern COMMENT_RE = Pattern.compile("^\\s*(#|//)");
+
+    // Special chars that piece 10 (delimiterCounts) tracks.
+    public static final String DELIMITERS = ":=,;|/\\()[]{}<>";
+
+    // ─── Global metric struct ────────────────────────────────────────
+    // Every static field starts at the JVM default (0 / 0.0); tail.txt
+    // emits  start (always 0)  / end (snapshot at exit) / delta = end−0.
+    public static final class Metrics {
+        // ─ Existing pieces (1-5) ─
+        // piece 1: mean(List<Double>)
+        public static long   p1_invocations;
+        public static long   p1_duration_ns;
+        public static long   p1_total_input_size;
+        public static double p1_sum_of_outputs;
+
+        // piece 2: charEntropy(String)
+        public static long   p2_invocations;
+        public static long   p2_duration_ns;
+        public static long   p2_total_input_chars;
+        public static double p2_sum_of_entropy;
+
+        // piece 3: compressSignature(String)
+        public static long   p3_invocations;
+        public static long   p3_duration_ns;
+        public static long   p3_total_input_chars;
+        public static long   p3_total_output_chars;
+
+        // piece 4: canonicalNumber(double)
+        public static long   p4_invocations;
+        public static long   p4_duration_ns;
+        public static double p4_sum_of_inputs;
+        public static long   p4_total_output_chars;
+
+        // piece 5: isShellCommandComplete(String)
+        public static long   p5_invocations;
+        public static long   p5_duration_ns;
+        public static long   p5_total_input_chars;
+        public static long   p5_completed_count;
+
+        // ─ Hot-path additions (6-10) ─
+        // piece 6: tokenLowers(List<String>)  — sub-piece of extractFeatures
+        public static long   p6_invocations;
+        public static long   p6_duration_ns;
+        public static long   p6_total_input_size;
+        public static long   p6_total_output_chars;
+
+        // piece 7: isHighFreqToken(String, List<String>, Map, int)
+        //          — sub-piece of scoreLine
+        public static long   p7_invocations;
+        public static long   p7_duration_ns;
+        public static long   p7_total_topk_size;
+        public static long   p7_match_count;
+
+        // piece 8: extractNumbers(String) — sub-piece of extractFeatures
+        public static long   p8_invocations;
+        public static long   p8_duration_ns;
+        public static long   p8_total_input_chars;
+        public static long   p8_total_numbers_extracted;
+
+        // piece 9: lineKind(...) — sub-piece of extractFeatures
+        public static long   p9_invocations;
+        public static long   p9_duration_ns;
+        public static long   p9_total_input_chars;
+        public static long   p9_kv_numeric_count;
+
+        // piece 10: delimiterCounts(String) — sub-piece of extractFeatures
+        public static long   p10_invocations;
+        public static long   p10_duration_ns;
+        public static long   p10_total_input_chars;
+        public static long   p10_total_delimiters;
+
+        private Metrics() {}
+    }

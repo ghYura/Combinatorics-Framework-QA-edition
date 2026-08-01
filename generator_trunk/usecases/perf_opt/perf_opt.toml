@@ -1,0 +1,102 @@
+# ============================================================================
+# USE-CASE #7 — Performance / systems design-space optimization.
+#
+# Tier-2 "Парето — приманка, но нужна бенчмарк-строгость": the rigor here is a
+# DETERMINISTIC surrogate cost model (no wall-clock timing -> no noise), so the
+# Pareto front is exactly reproducible. A real study swaps `_model` for measured
+# numbers from the stage benchmark harness; the spec/oracle/analysis stay identical.
+#
+# Discrete design space for a compute kernel: algorithm x thread count x batch
+# size x cache size = 3*4*3*2 = 72 configurations. Every config is VALID
+# (FW_VAR=0) -- this is OPTIMIZATION, not pass/fail: the Analyzer selects the
+# non-dominated configs over THREE conflicting objectives:
+#   latency_ms   -> min
+#   memory_mb    -> min
+#   throughput_rps -> max
+#
+# Self-contained Python compute (no SUT, no network, no Docker) -> runs
+# trusted-local. Each candidate prints one app= K=V metrics line the Analyzer
+# ingests; the formal Pareto report ties every selected config to its provenance.
+# ============================================================================
+title = "Performance optimization — kernel design space, deterministic surrogate, 3-objective Pareto"
+note  = "FW_Combi(1) over algo/threads/batch/cache; all valid; multi-objective selection."
+args  = ["mode=perf_opt"]
+
+[[goals]]
+key = "throughput_rps"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "memory_mb"
+dir = "min"
+
+[[slots]]   # invariant frame: shared config vars + the DETERMINISTIC cost model + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import math
+ALGO = "naive"
+THREADS = 1
+BATCH = 16
+CACHE = "small"
+
+def _model(algo, threads, batch, cache):
+    # base per-item latency by algorithm (arbitrary but FIXED units -> reproducible)
+    base = {"naive": 100.0, "blocked": 60.0, "simd": 35.0}[algo]
+    # Amdahl-style speedup with a 15% serial fraction (diminishing returns in threads)
+    serial = 0.15
+    speedup = 1.0 / (serial + (1.0 - serial) / threads)
+    # larger batches amortize per-item overhead (log), but cost memory (below)
+    per_item = base / (1.0 + math.log2(batch) * 0.08)
+    cache_factor = 0.85 if cache == "large" else 1.0
+    latency = per_item * cache_factor / speedup
+    throughput = 1000.0 / latency * threads * 0.9
+    memory = (8.0 + batch * 0.5 + threads * 4.0
+              + (64.0 if cache == "large" else 8.0)
+              + {"simd": 12.0, "blocked": 6.0, "naive": 2.0}[algo])
+    return round(latency, 3), round(throughput, 1), round(memory, 1)
+''']
+
+[[slots]]   # design dimension: algorithm implementation
+sheet  = "ALGO"
+key    = "algo"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["ALGO = \"naive\"\n", "ALGO = \"blocked\"\n", "ALGO = \"simd\"\n"]
+
+[[slots]]   # design dimension: thread count
+sheet  = "THREADS"
+key    = "threads"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["THREADS = 1\n", "THREADS = 2\n", "THREADS = 4\n", "THREADS = 8\n"]
+
+[[slots]]   # design dimension: batch size
+sheet  = "BATCH"
+key    = "batch"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["BATCH = 16\n", "BATCH = 64\n", "BATCH = 256\n"]
+
+[[slots]]   # design dimension: cache size
+sheet  = "CACHE"
+key    = "cache"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["CACHE = \"small\"\n", "CACHE = \"large\"\n"]
+
+[[slots]]   # invariant frame: evaluate the model, emit metrics, mark valid (FW_VAR=0)
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_latency, _throughput, _memory = _model(ALGO, THREADS, BATCH, CACHE)
+FW_VAR = 0  # every configuration is valid; optimization selects, it does not reject
+FW_CUSTOM_VAR = FW_VAR
+print("app=perf_opt algo=%s threads=%d batch=%d cache=%s "
+      "latency_ms=%.3f throughput_rps=%.1f memory_mb=%.1f FW_VAR=%d"
+      % (ALGO, THREADS, BATCH, CACHE, _latency, _throughput, _memory, FW_VAR))
+''']

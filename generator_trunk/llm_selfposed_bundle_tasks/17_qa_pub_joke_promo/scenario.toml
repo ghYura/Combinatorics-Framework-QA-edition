@@ -1,0 +1,97 @@
+# Self-posed scenario 17 — "a QA tester walks into a pub" (PROMO / one-minute Bundle demo).
+# The classic QA joke turned into a real combinatorial test: a tester ENTERs a pub different ways, performs
+# the actions (enter/sit/order) in every ORDER, orders weird QUANTITIES, of weird TARGETS, and the bar must
+# never crash -- it must accept normal orders and reject invalid ones cleanly. Boundary/type/domain/order
+# abuse is FIRST-CLASS, generated on purpose (not random fuzzing).
+#   ENTRY 3 x ACTION_SEQUENCE P(3)=6 x QUANTITY 5 x ORDER_TARGET 3 = 270 candidates. trusted-local.
+#   Motto: "Bundle walks into the pub before your users do."
+# Verdict codes merged to 0/2/3/4 (within combo-column capacity); the detailed sub-reason is in the metrics.
+title = "QA tester walks into a pub (promo) — FW_Combi(1) entry/quantity/target x FW_Permut action order, clean-reject oracle"
+note  = "Promo/demo: boundary values (1/0/-1/huge/abcd) and invalid action orders are generated INTENTIONALLY; the oracle separates clean rejection from a crash or silent accept. A one-minute Bundle explainer."
+args  = ["mode=qa_pub_joke"]
+
+[[goals]]
+key = "accepted"
+dir = "max"
+
+[[slots]]   # HEAD: the bar's order handler (must reject cleanly, never crash)
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''ACTIONS = []
+ENTRY = "walks"
+QTY = "1"
+TARGET = "beer"
+''']
+
+[[slots]]   # how the tester enters (cartesian leaf)
+sheet  = "ENTRY"
+key    = "entry"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["ENTRY = \"walks\"\n", "ENTRY = \"runs\"\n", "ENTRY = \"rolls\"\n"]
+
+[[slots]]   # ORDER-sensitive action sequence -> permutations (enter must come first)
+sheet  = "ACTION"
+key    = "action"
+verb   = "FW_Permut"
+raw    = true
+values = ["ACTIONS.append(\"enter\")\n", "ACTIONS.append(\"sit\")\n", "ACTIONS.append(\"order\")\n"]
+
+[[slots]]   # weird order quantities (boundary/type/domain abuse as first-class values)
+sheet  = "QUANTITY"
+key    = "quantity"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["QTY = \"1\"\n", "QTY = \"0\"\n", "QTY = \"-1\"\n", "QTY = \"999999999\"\n", "QTY = \"abcd\"\n"]
+
+[[slots]]   # what is being ordered (one absurd target)
+sheet  = "ORDER_TARGET"
+key    = "order_target"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TARGET = \"beer\"\n", "TARGET = \"cup\"\n", "TARGET = \"lizard\"\n"]
+
+[[slots]]   # TAIL: clean-reject oracle (never crash). Codes merged to fit capacity; detail in the print line.
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_pos = {a: i for i, a in enumerate(ACTIONS)}
+_bad_order = int(_pos["order"] < _pos["enter"] or _pos["sit"] < _pos["enter"])  # acted before entering
+# parse the quantity defensively (the bar must never crash on weird input)
+if not (QTY.lstrip("-").isdigit()):
+    _qty_kind = "type"          # e.g. "abcd"
+elif int(QTY) < 0:
+    _qty_kind = "domain"        # e.g. -1
+elif int(QTY) == 0:
+    _qty_kind = "zero"          # accepted no-op
+elif int(QTY) > 1000000:
+    _qty_kind = "huge"          # capacity-reject, must not overflow
+else:
+    _qty_kind = "ok"
+_bad_target = int(TARGET == "lizard")
+if _bad_order:
+    FW_VAR = 2                  # invalid action order (acted before entering)
+elif _qty_kind in ("type", "domain", "huge"):
+    FW_VAR = 3                  # invalid quantity rejected cleanly (type/domain/capacity)
+elif _bad_target:
+    FW_VAR = 4                  # invalid order target rejected cleanly
+else:
+    FW_VAR = 0                  # PASS: normal (or zero no-op) order accepted
+FW_CUSTOM_VAR = FW_VAR
+_accepted = int(FW_VAR == 0)
+print("app=qa_pub_joke entry=%s actions=%s qty=%s qty_kind=%s target=%s accepted=%d FW_VAR=%d"
+      % (ENTRY, ">".join(ACTIONS), QTY, _qty_kind, TARGET, _accepted, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "invalid action order: ordered or sat before entering the pub"
+[[custom_vars]]
+code = 3
+msg = "invalid quantity rejected cleanly (non-numeric type, negative domain, or huge over-capacity) -- never crash, never overflow"
+[[custom_vars]]
+code = 4
+msg = "invalid order target rejected cleanly (you cannot order a lizard)"

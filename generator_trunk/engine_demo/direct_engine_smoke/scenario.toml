@@ -1,0 +1,195 @@
+spec_version = "1"
+title = "Direct engine smoke — higher-order record-pipeline composition"
+note = "The minimal direct engine demonstration: FW_Group, FW_PermutR and a three-link nested-brace chain compose an executable record pipeline that an exact differential oracle judges. No reference application, no external SUT, no network. Bounded at 8 candidates for a release gate."
+args = ["suite=engine_demo", "tier=direct-engine-smoke"]
+
+# TOP-LEVEL key: a brace row placed after a table would bind to that table and be
+# silently dropped from FW_Seq. Three links, each consuming the previous RESULT
+# TABLE, so this is genuine second/third/fourth-order composition rather than a
+# wider Cartesian product:
+#   SEQ_RESULT  = sequence( group(GROUPED_STAGE), REPEATED_MOTIF )
+#   PAR_RESULT  = parallel( SEQ_RESULT,           SIDE_BRANCH    )
+#   ROOT_RESULT = sequence( PAR_RESULT,           FINALIZER      )
+seq_extra = [
+  ["SEQ_RESULT", "FW_Reuse", "FW_(SEQ_OPEN,,GROUPED_STAGE,,REPEATED_MOTIF,,SEQ_CLOSE,,M:N)"],
+  ["PAR_RESULT", "FW_Reuse", "FW_(PAR_OPEN,,FW_(),,SIDE_BRANCH,,PAR_CLOSE,,M:N)"],
+  ["ROOT_RESULT", "FW_Reuse", "FW_(ROOT_OPEN,,FW_(),,FINALIZER,,ROOT_CLOSE,,M:N)"],
+]
+
+# Declared objectives for the FORMAL Analyzer. Correctness is not an objective:
+# a non-zero FW_VAR removes a candidate from formal eligibility entirely.
+[[goals]]
+key = "stages"
+dir = "max"
+[[goals]]
+key = "retained"
+dir = "max"
+[[goals]]
+key = "ops"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.engine_demo.record_pipeline import (
+    emit_atom, emit_close, emit_node, emit_open, evaluate, template
+)
+STREAM = []
+''']
+
+# FW_Group: re-combines this sheet's own prior result rows as atoms and rewrites
+# the generated code-string. The rewrite is deliberately the identity pattern —
+# the point here is the grouping operator, not the regex surgery.
+[[slots]]
+sheet = "GROUPED_STAGE"
+key = "grouped_stage"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_node(STREAM, template("normalize"))
+''',
+'''emit_node(STREAM, template("spread"))
+''',
+]
+
+# FW_PermutR(2): an ordered length-2 sequence WITH repetition over two stages —
+# 2^2 = 4 orders. `sort` and `scale(k=-1)` do not commute, so stage order is a
+# real, exactly decidable degree of freedom rather than a cosmetic axis.
+[[slots]]
+sheet = "REPEATED_MOTIF"
+key = "repeated_motif"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(STREAM, "sort")
+''',
+'''emit_atom(STREAM, "scale", k=-1)
+''',
+]
+
+[[slots]]
+sheet = "SIDE_BRANCH"
+key = "side_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_node(STREAM, template("guard"))
+''']
+
+[[slots]]
+sheet = "FINALIZER"
+key = "finalizer"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_node(STREAM, template("compact"))
+''']
+
+# Intermediate brace targets are assembly temporaries. Without FW_Exclude each
+# would also multiply into fw_final and the run would produce redundant
+# candidates instead of the intended 8 roots.
+[[slots]]
+sheet = "SEQ_RESULT"
+key = "seq_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PAR_RESULT"
+key = "par_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+# The highest-order root is the ONLY brace target that enters the final product.
+[[slots]]
+sheet = "ROOT_RESULT"
+key = "root_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+# Helper sheets. The brace weaves their first fragment into its joined output;
+# Core also emits them as ordinary one-value columns, which the adapter's parser
+# treats as debris (an immediately-closed empty scope).
+[[slots]]
+sheet = "SEQ_OPEN"
+key = "seq_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 1, "sequence")
+''']
+
+[[slots]]
+sheet = "SEQ_CLOSE"
+key = "seq_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 1)
+''']
+
+[[slots]]
+sheet = "PAR_OPEN"
+key = "par_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 2, "parallel", reducer="merge")
+''']
+
+[[slots]]
+sheet = "PAR_CLOSE"
+key = "par_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 2)
+''']
+
+[[slots]]
+sheet = "ROOT_OPEN"
+key = "root_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 3, "sequence")
+''']
+
+[[slots]]
+sheet = "ROOT_CLOSE"
+key = "root_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 3)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = evaluate(STREAM)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction/compile/validation failure"
+[[custom_vars]]
+code = 3
+msg = "pipeline execution failure"
+[[custom_vars]]
+code = 4
+msg = "independent oracle disagreement or structural-bound violation"
+[[custom_vars]]
+code = 5
+msg = "record service contract violated"

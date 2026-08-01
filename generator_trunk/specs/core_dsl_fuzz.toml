@@ -1,0 +1,26 @@
+title = "Core FW_Seq DSL combinatorial coverage (the engine exercising itself)"
+note  = "Search space OVER the Core's own FW_Seq directives — a catalog of verb x flag x multiplicity combinations. Demonstrates that the SAME engine handles directive-valued slots, not just domain data (this was the v25 generator's original purpose). The ${a|b} option-expansion below is expanded by fwgen before the product."
+goals = ["parser_crashes", "rule_coverage"]
+args  = ["mode=parser_smoke"]
+
+[[slots]]
+sheet = "VERB"
+key   = "verb"
+values = ["FW_Combi(${1|2|size})", "FW_CombiR(2)", "FW_Permut", "FW_PermutR(2)", "FW_Subsets"]
+
+[[slots]]
+sheet = "FLAG"
+key   = "flag"
+values = ["FW_Reuse", "FW_ReuseTableOnly", "FW_Optional", "FW_Exclude"]
+
+[[slots]]
+sheet = "MULT"
+key   = "multiplicity"
+values = ["1:1", "1:N", "M:1", "M:N", "M:M"]
+
+[[custom_vars]]
+code = 2
+msg  = "FW_Seq parse error / unexpected directive rejection"
+[[custom_vars]]
+code = 3
+msg  = "engine produced 0 rows for a valid directive combo"

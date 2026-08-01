@@ -1,0 +1,134 @@
+title = "LLM-Transformer rich verbs — FW_Cartes(SEQLEN) input matrix × FW_Subsets_RANGE(1,2) perturbations"
+note  = """Input-space test of CPUTransformerDynamic. The PROBE input is a MATRIX of (token-pattern) x
+(sequence-length): PROBE = FW_Cartes(SEQLEN) crosses 3 token patterns with the excluded SEQLEN sheet's
+2 lengths -> 6 inputs. Then 1-to-2 PERTURBATIONS are layered on from a palette of 3 -> FW_Subsets_RANGE(1,2)
+= C(3,1)+C(3,2) = 6. Each candidate feeds the resulting token tensor through the model and CONVICTS
+code1/2/9 on wrong-shape / non-finite / crash. FW_VAR=0 means the input was handled correctly.
+Freedom→verb: 'cross another sheet -> matrix of A×B' is FW_Cartes (SEQLEN is excluded so it appears ONLY
+via the cross); 'apply 1 to N add-ons from a palette' is the size-bounded powerset FW_Subsets_RANGE(1,2)."""
+goals = ["latency_ms", "seq_len"]
+args  = ["mode=richverbs"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme3 import CPUTransformerDynamic
+VOCAB = 64
+pat = "arange"
+L = 4
+batch = 1
+perturb = []
+METRICS = dict(app="richverbs", pat="arange", seq_len=4, batch=1, perturb="",
+               latency_ms=0.0, code=0, defect=0)
+''']
+
+[[slots]]
+sheet = "PROBE"
+key   = "probe"
+verb  = "FW_Cartes(SEQLEN)"
+raw   = true
+values = ['''
+pat = "zeros"
+''', '''
+pat = "arange"
+''', '''
+pat = "high"
+''']
+
+[[slots]]
+sheet = "SEQLEN"
+key   = "seqlen"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+L = 4
+''', '''
+L = 8
+''']
+
+[[slots]]
+sheet = "PERTURB"
+key   = "perturb"
+verb  = "FW_Subsets_RANGE(1,2)"
+raw   = true
+values = ['''
+perturb.append("offset")
+''', '''
+perturb.append("widebatch")
+''', '''
+perturb.append("reverse")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+code = 0
+out = None
+try:
+    torch.manual_seed(0)
+    if "widebatch" in perturb:
+        batch = 3
+    if pat == "zeros":
+        x = torch.zeros((batch, L), dtype=torch.long)
+    elif pat == "high":
+        x = torch.full((batch, L), VOCAB - 1, dtype=torch.long)
+    else:
+        x = (torch.arange(batch * L).view(batch, L)) % VOCAB
+    if "offset" in perturb:
+        x = (x + 7) % VOCAB
+    if "reverse" in perturb:
+        x = torch.flip(x, dims=[1])
+    M = CPUTransformerDynamic(vocab_size=VOCAB, d_model=16, n_layers=2, n_heads=4,
+                              n_kv_heads=2, d_ffn=24, num_experts=2, max_seq_len=64)
+    M.eval()
+    with torch.no_grad():
+        out = M(x)
+    exp = (batch, L, VOCAB)
+    if tuple(out.shape) != exp:
+        code = 1
+    elif not bool(torch.isfinite(out).all()):
+        code = 2
+except Exception as e:
+    code = 9
+    METRICS["err"] = type(e).__name__
+METRICS["pat"] = pat
+METRICS["seq_len"] = L
+METRICS["batch"] = batch
+METRICS["perturb"] = "-".join(perturb) if perturb else "none"
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: an input matrix cell produced the wrong output shape"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: an input matrix cell produced non-finite logits"
+
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: an input matrix cell crashed the model"

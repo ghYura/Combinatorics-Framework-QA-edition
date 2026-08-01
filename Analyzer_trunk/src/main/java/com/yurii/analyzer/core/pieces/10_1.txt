@@ -1,0 +1,32 @@
+// ── 10_1.txt — variant 1: precomputed boolean[128] LUT ───────────────
+// Same contract. Replaces String.indexOf (O(16) scan per char) with
+// a 128-byte ASCII bitmap lookup (O(1) per char). All 16 delimiters
+// are ASCII so non-ASCII chars short-circuit to 'false' immediately.
+
+    private static final boolean[] DELIM_LUT = new boolean[128];
+    static {
+        for (int i = 0; i < DELIMITERS.length(); i++) {
+            char c = DELIMITERS.charAt(i);
+            if (c < 128) DELIM_LUT[c] = true;
+        }
+    }
+
+    public static Map<String, Integer> delimiterCounts(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p10_invocations++;
+        Metrics.p10_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            Map<String, Integer> out = new LinkedHashMap<>();
+            if (text == null || text.isEmpty()) return out;
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                if (ch < 128 && DELIM_LUT[ch]) {
+                    out.merge(String.valueOf(ch), 1, Integer::sum);
+                    Metrics.p10_total_delimiters++;
+                }
+            }
+            return out;
+        } finally {
+            Metrics.p10_duration_ns += System.nanoTime() - __t0;
+        }
+    }

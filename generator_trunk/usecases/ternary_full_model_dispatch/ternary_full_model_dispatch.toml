@@ -1,0 +1,65 @@
+title = "Runtime-large full-model adaptive ternary dispatch optimization"
+note = "Real full-model timings; exact torch-int32 equality oracle; one Bundle worker required."
+args = ["mode=ternary_full_model_dispatch"]
+
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "seq1_ms"
+dir = "min"
+[[goals]]
+key = "seq48_ms"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme" / "testme5upgraded").resolve()))
+from benchmark_full_model_ternary import run_full_model_benchmark
+THREADS = 8
+MIN_CPP_WORK = 0
+''']
+
+[[slots]]
+sheet = "THREADS"
+key = "threads"
+verb = "FW_Combi(1)"
+raw = true
+values = ["THREADS = 1\n", "THREADS = 2\n", "THREADS = 4\n", "THREADS = 8\n"]
+
+[[slots]]
+sheet = "MIN_CPP_WORK"
+key = "min_cpp_work"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "MIN_CPP_WORK = 0\n",
+  "MIN_CPP_WORK = 16384\n",
+  "MIN_CPP_WORK = 32768\n",
+  "MIN_CPP_WORK = 65536\n",
+  "MIN_CPP_WORK = 131072\n",
+  "MIN_CPP_WORK = 262144\n",
+  "MIN_CPP_WORK = 524288\n",
+  "MIN_CPP_WORK = 1048576\n",
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''_result = run_full_model_benchmark(threads=THREADS,min_cpp_work=MIN_CPP_WORK,warmup=1,repeats=3)
+FW_VAR = 0 if _result["correct"] else 2
+FW_CUSTOM_VAR = FW_VAR
+print("app=ternary_full_model_dispatch threads=%d min_cpp_work=%d latency_ms=%.6f throughput_runs_s=%.3f seq1_ms=%.6f seq16_ms=%.6f seq48_ms=%.6f FW_VAR=%d" % (THREADS,MIN_CPP_WORK,_result["latency_ms"],_result["throughput_runs_s"],_result["seq1_ms"],_result["seq16_ms"],_result["seq48_ms"],FW_VAR))
+''']

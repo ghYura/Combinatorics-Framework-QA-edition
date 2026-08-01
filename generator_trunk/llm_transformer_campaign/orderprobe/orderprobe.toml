@@ -1,0 +1,135 @@
+title = "LLM-Transformer order probe — FW_Permut seq-length order × FW_PermutR mode schedule × FW_CombiR batch multiset"
+note  = """Order/state-sensitivity test of CPUTransformerDynamic on a SINGLE REUSED instance. A probe battery
+runs forwards whose seq-length ORDER, train/eval mode SCHEDULE and batch-size MULTISET are the variables.
+The verdict CONVICTS: code1 wrong shape, code2 non-finite, code4 a state-leak / non-determinism (a repeated
+eval forward of the same input diverges -> the instance carried hidden state across calls), code9 crash.
+FW_VAR=0 means the model is order-invariant and leak-free for that schedule.
+Freedom→verb: the seq-length probe ORDER 'is the variable' -> FW_Permut (n!); the 2-step {train,eval} mode
+SCHEDULE is 'a sequence with repetition over an alphabet' -> FW_PermutR(2) (n^k); the batch sizes are a
+'k-of-n MULTISET, order irrelevant, repetition allowed' -> FW_CombiR(2) (C(n+k-1,k))."""
+goals = ["latency_ms", "nprobes"]
+args  = ["mode=orderprobe"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme3 import CPUTransformerDynamic
+VOCAB = 64
+order = []
+modes = []
+batches = []
+METRICS = dict(app="orderprobe", nprobes=0, order="", modes="", batches="",
+               latency_ms=0.0, code=0, defect=0)
+''']
+
+[[slots]]
+sheet = "SEQORD"
+key   = "seqord"
+verb  = "FW_Permut"
+raw   = true
+values = ['''
+order.append(2)
+''', '''
+order.append(3)
+''', '''
+order.append(4)
+''']
+
+[[slots]]
+sheet = "MODESCHED"
+key   = "modesched"
+verb  = "FW_PermutR(2)"
+raw   = true
+values = ['''
+modes.append("train")
+''', '''
+modes.append("eval")
+''']
+
+[[slots]]
+sheet = "BATCHMS"
+key   = "batchms"
+verb  = "FW_CombiR(2)"
+raw   = true
+values = ['''
+batches.append(1)
+''', '''
+batches.append(2)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+code = 0
+try:
+    torch.manual_seed(0)
+    M = CPUTransformerDynamic(vocab_size=VOCAB, d_model=8, n_layers=2, n_heads=2,
+                              n_kv_heads=1, d_ffn=12, num_experts=2, max_seq_len=32)
+    nprobes = 0
+    with torch.no_grad():
+        for i, L in enumerate(order):
+            mode = modes[i % len(modes)]
+            b = batches[i % len(batches)]
+            if mode == "eval":
+                M.eval()
+            else:
+                M.train()
+            x = (torch.arange(b * L).view(b, L)) % VOCAB
+            o = M(x)
+            nprobes += 1
+            if tuple(o.shape) != (b, L, VOCAB):
+                code = 1
+                break
+            if not bool(torch.isfinite(o).all()):
+                code = 2
+                break
+        if code == 0:
+            M.eval()
+            ref_x = (torch.arange(3).view(1, 3)) % VOCAB
+            r1 = M(ref_x)
+            r2 = M(ref_x)
+            if not torch.equal(r1, r2):
+                code = 4
+except Exception as e:
+    code = 9
+    METRICS["err"] = type(e).__name__
+METRICS["nprobes"] = nprobes if "nprobes" in dir() else 0
+METRICS["order"] = "-".join(str(x) for x in order)
+METRICS["modes"] = "-".join(modes)
+METRICS["batches"] = "-".join(str(x) for x in batches)
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a probe in the schedule produced the wrong output shape"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a probe in the schedule produced non-finite logits"
+
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: state-leak / non-determinism — repeated eval forward of the same input diverged"

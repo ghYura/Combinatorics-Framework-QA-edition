@@ -1,0 +1,39 @@
+// ── 3_2.txt — variant 2: precomputed ASCII category lookup table ─────
+// Same contract. Avoids the Character.* method calls for ASCII chars
+// (the common case) by caching their category in a 128-byte table at
+// class load. Non-ASCII codepoints fall through to Character.* — same
+// answer, just slower for them.
+
+    private static final char[] SIG_LUT = new char[128];
+    static {
+        for (int c = 0; c < 128; c++) {
+            char ch = (char) c;
+            SIG_LUT[c] = Character.isDigit(ch) ? 'D'
+                       : Character.isLetter(ch) ? 'L'
+                       : Character.isWhitespace(ch) ? 'S' : 'P';
+        }
+    }
+
+    public static String compressSignature(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p3_invocations++;
+        Metrics.p3_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return "";
+            StringBuilder sb = new StringBuilder(8);
+            char prev = 0;
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                char cur = ch < 128 ? SIG_LUT[ch]
+                         : Character.isDigit(ch) ? 'D'
+                         : Character.isLetter(ch) ? 'L'
+                         : Character.isWhitespace(ch) ? 'S' : 'P';
+                if (cur != prev) { sb.append(cur); prev = cur; }
+            }
+            String out = sb.toString();
+            Metrics.p3_total_output_chars += out.length();
+            return out;
+        } finally {
+            Metrics.p3_duration_ns += System.nanoTime() - __t0;
+        }
+    }

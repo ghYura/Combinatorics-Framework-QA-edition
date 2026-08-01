@@ -1,0 +1,137 @@
+spec_version = "1"
+title = "sieve3d combinatorial independent interleavings proof suite"
+note = "Uses FW_Permut over two-body action interleavings to prove combinatorial ordering tests find state-machine defects that hand-picked geometry campaigns can miss."
+args = ["mode=sieve3d_interleavings"]
+
+[[goals]]
+key = "law_evals"
+dir = "max"
+[[goals]]
+key = "oracle_checks"
+dir = "max"
+[[goals]]
+key = "preconditions_met"
+dir = "max"
+[[goals]]
+key = "precondition_skips"
+dir = "min"
+[[goals]]
+key = "violations"
+dir = "min"
+[[goals]]
+key = "record_steps"
+dir = "max"
+[[goals]]
+key = "api_calls"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import os, sys
+from pathlib import Path
+_candidates = []
+_env = os.environ.get("SIEVE3D_COMBI_PRINCIPLES_ROOT")
+if _env:
+    _candidates.append(Path(_env))
+_cwd = Path(os.getcwd())
+_candidates.extend([
+    _cwd / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+    _cwd / "generator_trunk" / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+    Path(os.environ.get("BUNDLE_REPO_ROOT", _cwd)) / "generator_trunk" / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+])
+for _p in _candidates:
+    if _p.exists():
+        sys.path.insert(0, str(_p))
+        break
+import metamorphic_laws as laws
+laws.reset()
+# Required by the SUT recorder contract: start through API at the very end of HEAD.
+laws.start_recording()
+''']
+
+[[slots]]
+sheet = "BODYPAIR"
+key = "bodypair"
+verb = "FW_Combi(2)"
+raw = true
+values = [
+  'laws.select_case("flower_fit");',
+  'laws.select_case("cube_square");',
+  'laws.select_case("wave_slot");',
+]
+
+[[slots]]
+sheet = "SCALE"
+key = "scale"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'laws.select_scale("fine");',
+  'laws.select_scale("coarse");',
+]
+
+[[slots]]
+sheet = "INTERLEAVE"
+key = "interleave"
+verb = "FW_Permut"
+raw = true
+values = [
+  'laws.queue_interleave("A_dx");',
+  'laws.queue_interleave("A_dy");',
+  'laws.queue_interleave("B_dx");',
+  'laws.queue_interleave("B_dy");',
+]
+
+[[slots]]
+sheet = "RUN"
+key = "run"
+verb = "FW_Combi(1)"
+raw = true
+values = ['laws.run_interleaving();']
+
+[[slots]]
+sheet = "OBS"
+key = "obs"
+verb = "FW_Subsets"
+raw = true
+values = [
+  'laws.observe("events");',
+  'laws.observe("metrics");',
+]
+
+[[slots]]
+sheet = "OPT_RECORD_STATUS"
+key = "opt_record_status"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['laws.observe("record_status");']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_REC_INFO = laws.finish_recording(laws.label())
+try:
+    FW_VAR = laws.fw_var()
+except Exception as _exc:
+    FW_VAR = 6
+FW_CUSTOM_VAR = FW_VAR
+print(laws.kv_line("sieve3d_interleavings", "sieve3d_interleavings_v1", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "a generated independent-interleaving oracle was violated"
+[[custom_vars]]
+code = 4
+msg = "metamorphic law precondition was not satisfied for this generated candidate"
+[[custom_vars]]
+code = 6
+msg = "recording was not captured/saved or candidate infrastructure failed"

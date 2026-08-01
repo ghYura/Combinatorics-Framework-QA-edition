@@ -1,0 +1,9 @@
+# Regenerable build output — not tracked (rebuild via mvn / Python)
+target/
+__pycache__/
+*.pyc
+*.pyo
+*.class
+.idea/
+*.iml
+.DS_Store

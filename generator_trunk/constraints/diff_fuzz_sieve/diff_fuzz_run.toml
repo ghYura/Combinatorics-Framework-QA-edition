@@ -1,0 +1,137 @@
+title = "Differential fuzzing #4 (RUN) — correct vs naive evaluator, full Bundle"
+note  = "Slots concatenate into a self-checking .py; FW_VAR=2 marks a precedence divergence."
+[[goals]]
+key = "divergences"
+dir = "max"
+args  = ["mode=diff_fuzz_run"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+def impl_A(e):                       # CORRECT precedence evaluator (reference)
+    return int(eval(e, {"__builtins__": {}}, {}))
+def impl_B(e):                       # NAIVE left-to-right evaluator (the bug under test)
+    s = e.replace(" ", ""); acc = int(s[0]); i = 1
+    while i < len(s):
+        op = s[i]; rhs = int(s[i + 1])
+        acc = acc + rhs if op == "+" else acc - rhs if op == "-" else acc * rhs
+        i += 2
+    return acc
+E = ""
+''',
+]
+
+[[slots]]
+sheet = "O1"
+key   = "o1"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+E += "1"
+''',
+'''
+E += "2"
+''',
+'''
+E += "3"
+''',
+]
+
+[[slots]]
+sheet = "OP1"
+key   = "op1"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+E += "+"
+''',
+'''
+E += "-"
+''',
+'''
+E += "*"
+''',
+]
+
+[[slots]]
+sheet = "O2"
+key   = "o2"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+E += "1"
+''',
+'''
+E += "2"
+''',
+'''
+E += "3"
+''',
+]
+
+[[slots]]
+sheet = "OP2"
+key   = "op2"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+E += "+"
+''',
+'''
+E += "-"
+''',
+'''
+E += "*"
+''',
+]
+
+[[slots]]
+sheet = "O3"
+key   = "o3"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+E += "1"
+''',
+'''
+E += "2"
+''',
+'''
+E += "3"
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+_a = impl_A(E); _b = impl_B(E)
+FW_VAR = 0 if _a == _b else 2        # FW_VAR=2 == DIVERGENCE found (impl_B is wrong)
+print("app=diff_fuzz expr=%s correct=%d naive=%d divergences=%d FW_VAR=%d"
+      % (E, _a, _b, 0 if _a == _b else 1, FW_VAR))   # 'app=' prefix => Analyzer collect_kv picks it up
+''',
+]
+
+[[custom_vars]]
+code = 2
+msg  = "implementations DIVERGED (precedence bug)"
+
+# --- constraint sidecar: demo "bond" between value-cells (enforced by the --sieve stage) ---
+[[constraints]]
+id = "ban_O1eq1_with_O3eq3"
+sheets = ["O1", "O3"]
+pairs = [ { O1 = 'E += "1"', O3 = 'E += "3"' } ]
+gate = {}
+desc = "operand 1 in O1 forbidden together with operand 3 in O3 (demo)"

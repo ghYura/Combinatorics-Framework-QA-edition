@@ -1,0 +1,159 @@
+// ── tail.txt ──────────────────────────────────────────────────────────
+// Exercises every piece on a fixed corpus, then dumps every metric.
+// All metrics start at zero (Java default for static fields), so START
+// is always 0 and DELTA == END.
+
+    public static void main(String[] args) throws Exception {
+        // ── Workload covering every piece ────────────────────────────
+        // (kept small + deterministic so the metric values are stable
+        //  across glued combinations and across machines.)
+
+        List<String> samples = List.of(
+                "operation=ingest cost=0.72 latency=12.4 throughput=185 status=ok",
+                "operation=transform cost=0.55 latency=7.10 throughput=623 status=ok",
+                "operation=optimise cost=0.50 latency=5.00 throughput=1840 status=ok",
+                "alpha=12.3 beta=4.5 gamma=6.7",
+                "пример: значение_метрики=0.42 единицы=ms",
+                "{ \"event\": \"login\", \"user\": \"alice\", \"latency_ms\": 42 }",
+                "DROP TABLE users; -- forbidden",
+                "the quick brown fox jumps over the lazy dog repeatedly",
+                "                  ",
+                "x=1");
+
+        // Pieces 2 (charEntropy) + 3 (compressSignature) + 8 (extractNumbers)
+        // + 10 (delimiterCounts) over each sample — these are the per-line
+        // hot calls inside extractFeatures.
+        List<List<Double>> allNumbers = new ArrayList<>();
+        for (String s : samples) {
+            charEntropy(s);
+            compressSignature(s);
+            allNumbers.add(extractNumbers(s));
+            delimiterCounts(s);
+        }
+
+        // Piece 1 (mean) over a sweep of synthetic samples
+        for (int n : new int[]{8, 64, 512, 4096}) {
+            ArrayList<Double> vs = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) vs.add(Math.sin(i * 0.001));
+            mean(vs);
+        }
+
+        // Piece 4 (canonicalNumber) sweep
+        for (double v : new double[]{0.0, 1.0, 2.5, 3.14159, 42.0, -7.875,
+                                     0.123456789, 1e-9, 1e9, 0.5}) {
+            canonicalNumber(v);
+        }
+
+        // Piece 5 (isShellCommandComplete) representative inputs
+        for (String s : new String[]{
+                "echo hello",
+                "if [ -f /etc/hostname ]; then echo found; fi",
+                "cat <<EOF\nbody line\nEOF",
+                "echo \"unterminated",
+                "echo line1 \\\necho line2",
+                "for i in 1 2 3; do echo $i; done",
+                ""}) isShellCommandComplete(s);
+
+        // Pieces 6 (tokenLowers), 7 (isHighFreqToken), 9 (lineKind) —
+        // build representative tokens / kvs / topTokens to exercise them.
+        List<String> topTokens = List.of("cost", "latency", "throughput",
+                                         "status", "ok", "operation",
+                                         "ingest", "alpha", "beta", "gamma");
+        Map<String, Integer> support = new HashMap<>();
+        for (String t : topTokens) support.put(t, 7);
+        for (int s = 0; s < samples.size(); s++) {
+            String text = samples.get(s);
+            // tokens via TOKEN_RE
+            ArrayList<String> tokens = new ArrayList<>();
+            Matcher tm = TOKEN_RE.matcher(text);
+            while (tm.find()) tokens.add(tm.group());
+            // lowercase via piece 6
+            List<String> lowers = tokenLowers(tokens);
+            // membership probe via piece 7 — for every token
+            for (String t : lowers) isHighFreqToken(t, topTokens, support, 3);
+            // kv pairs via KV_PAIR_RE
+            Map<String, String> kv = new LinkedHashMap<>();
+            Matcher km = KV_PAIR_RE.matcher(text);
+            while (km.find()) kv.put(km.group(1).trim().toLowerCase(Locale.ROOT),
+                                      km.group(2).trim());
+            int placeholders = (int) PLACEHOLDER_RE.matcher(text).results().count();
+            // line kind via piece 9
+            lineKind(text, tokens, kv, allNumbers.get(s), placeholders);
+        }
+
+        // ── Dump every metric to stdout in key.start / .end / .delta ─
+        StringBuilder report = new StringBuilder();
+        appendMetric(report, "p1_invocations",        Metrics.p1_invocations);
+        appendMetric(report, "p1_duration_ns",        Metrics.p1_duration_ns);
+        appendMetric(report, "p1_total_input_size",   Metrics.p1_total_input_size);
+        appendMetric(report, "p1_sum_of_outputs",     Metrics.p1_sum_of_outputs);
+
+        appendMetric(report, "p2_invocations",        Metrics.p2_invocations);
+        appendMetric(report, "p2_duration_ns",        Metrics.p2_duration_ns);
+        appendMetric(report, "p2_total_input_chars",  Metrics.p2_total_input_chars);
+        appendMetric(report, "p2_sum_of_entropy",     Metrics.p2_sum_of_entropy);
+
+        appendMetric(report, "p3_invocations",        Metrics.p3_invocations);
+        appendMetric(report, "p3_duration_ns",        Metrics.p3_duration_ns);
+        appendMetric(report, "p3_total_input_chars",  Metrics.p3_total_input_chars);
+        appendMetric(report, "p3_total_output_chars", Metrics.p3_total_output_chars);
+
+        appendMetric(report, "p4_invocations",        Metrics.p4_invocations);
+        appendMetric(report, "p4_duration_ns",        Metrics.p4_duration_ns);
+        appendMetric(report, "p4_sum_of_inputs",      Metrics.p4_sum_of_inputs);
+        appendMetric(report, "p4_total_output_chars", Metrics.p4_total_output_chars);
+
+        appendMetric(report, "p5_invocations",        Metrics.p5_invocations);
+        appendMetric(report, "p5_duration_ns",        Metrics.p5_duration_ns);
+        appendMetric(report, "p5_total_input_chars",  Metrics.p5_total_input_chars);
+        appendMetric(report, "p5_completed_count",    Metrics.p5_completed_count);
+
+        appendMetric(report, "p6_invocations",        Metrics.p6_invocations);
+        appendMetric(report, "p6_duration_ns",        Metrics.p6_duration_ns);
+        appendMetric(report, "p6_total_input_size",   Metrics.p6_total_input_size);
+        appendMetric(report, "p6_total_output_chars", Metrics.p6_total_output_chars);
+
+        appendMetric(report, "p7_invocations",        Metrics.p7_invocations);
+        appendMetric(report, "p7_duration_ns",        Metrics.p7_duration_ns);
+        appendMetric(report, "p7_total_topk_size",    Metrics.p7_total_topk_size);
+        appendMetric(report, "p7_match_count",        Metrics.p7_match_count);
+
+        appendMetric(report, "p8_invocations",        Metrics.p8_invocations);
+        appendMetric(report, "p8_duration_ns",        Metrics.p8_duration_ns);
+        appendMetric(report, "p8_total_input_chars",  Metrics.p8_total_input_chars);
+        appendMetric(report, "p8_total_numbers_extracted", Metrics.p8_total_numbers_extracted);
+
+        appendMetric(report, "p9_invocations",        Metrics.p9_invocations);
+        appendMetric(report, "p9_duration_ns",        Metrics.p9_duration_ns);
+        appendMetric(report, "p9_total_input_chars",  Metrics.p9_total_input_chars);
+        appendMetric(report, "p9_kv_numeric_count",   Metrics.p9_kv_numeric_count);
+
+        appendMetric(report, "p10_invocations",       Metrics.p10_invocations);
+        appendMetric(report, "p10_duration_ns",       Metrics.p10_duration_ns);
+        appendMetric(report, "p10_total_input_chars", Metrics.p10_total_input_chars);
+        appendMetric(report, "p10_total_delimiters",  Metrics.p10_total_delimiters);
+
+        System.out.print(report);
+
+        // ── Persist to a unique file under /tmp/ and print the path ──
+        String unique = "analyzer_pieces_" + UUID.randomUUID() + ".metrics";
+        Path metricsFile = Path.of(System.getProperty("java.io.tmpdir"), unique);
+        try (BufferedWriter w = Files.newBufferedWriter(metricsFile, StandardCharsets.UTF_8)) {
+            w.write(report.toString());
+        }
+        System.out.println("metrics_file=" + metricsFile.toAbsolutePath());
+    }
+
+    /** Emits  start=0  end=<v>  delta=<v>  for one metric, three lines. */
+    private static void appendMetric(StringBuilder out, String key, long end) {
+        out.append(key).append(".start=0\n");
+        out.append(key).append(".end=").append(end).append('\n');
+        out.append(key).append(".delta=").append(end).append('\n');
+    }
+
+    private static void appendMetric(StringBuilder out, String key, double end) {
+        out.append(key).append(".start=0.0\n");
+        out.append(key).append(".end=").append(end).append('\n');
+        out.append(key).append(".delta=").append(end).append('\n');
+    }
+}

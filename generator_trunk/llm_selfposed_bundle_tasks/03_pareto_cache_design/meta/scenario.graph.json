@@ -1,0 +1,83 @@
+{
+  "nodes": [
+    {
+      "id": "EVICT",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 3,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "HEAD",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 1,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "PREFETCH",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 2,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "SIZE",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 3,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "TAIL",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 1,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    },
+    {
+      "id": "TTL",
+      "kind": "slot",
+      "attrs": {
+        "verb": "FW_Combi(1)",
+        "n": 2,
+        "optional": false,
+        "excluded": false,
+        "heading": false,
+        "group": false,
+        "separator": null
+      }
+    }
+  ],
+  "edges": []
+}

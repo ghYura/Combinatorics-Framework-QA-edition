@@ -1,0 +1,141 @@
+spec_version = "1"
+title = "Advanced recursive feedback topology smoke"
+note = "32 real SUT circuits: nested feedback, parallel local loops, repeated loops, and mixed inverter/modulator paths."
+args = ["sut=automation_scheme_studio", "suite=advanced_feedback", "tier=smoke"]
+
+[[goals]]
+key = "control_score"
+dir = "max"
+[[goals]]
+key = "robustness_score"
+dir = "max"
+[[goals]]
+key = "stability_score"
+dir = "max"
+[[goals]]
+key = "settling_time_s"
+dir = "min"
+[[goals]]
+key = "worst_error"
+dir = "min"
+[[goals]]
+key = "overshoot_pct"
+dir = "min"
+[[goals]]
+key = "control_effort"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import initialize_candidate
+PLAN, INITIAL_COMPONENT_PARAMETERS, MEASUREMENT_TERMINALS = initialize_candidate(
+    family="advanced_feedback_smoke", battery="screen", duration=0.72, dt=0.06
+)
+from generator_trunk.scenarios.automation_scheme_studio.advanced_topology import (
+    Node, annotate_result, attach_topology, emit_node, template
+)
+TOPOLOGY_STREAM = []
+''']
+
+[[slots]]
+sheet = "TOPOLOGY"
+key = "topology"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''
+emit_node(TOPOLOGY_STREAM, template("inverter_modulator_loop"))
+''',
+'''
+emit_node(TOPOLOGY_STREAM, template("parallel_conditioners"))
+''',
+'''
+emit_node(TOPOLOGY_STREAM, template("parallel_pid_loops"))
+''',
+'''
+emit_node(TOPOLOGY_STREAM, template("deep_mixed"))
+'''
+]
+
+[[slots]]
+sheet = "CONTROL_POLICY"
+key = "control_policy"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''
+PLAN.architecture = "serial"
+PLAN.controller = "pi"
+''',
+'''
+PLAN.architecture = "cascade_velocity"
+PLAN.controller = "pid"
+PLAN.inner_controller = "p"
+PLAN.branches = ["p", "pid", "relay"]
+PLAN.enable("actuator_limit")
+'''
+]
+
+[[slots]]
+sheet = "PLANT"
+key = "plant"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''
+PLAN.plant = "first_order"
+''',
+'''
+PLAN.plant = "second_order"
+'''
+]
+
+[[slots]]
+sheet = "PROFILE"
+key = "profile"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''
+PLAN.apply_profile("conservative")
+''',
+'''
+PLAN.apply_profile("balanced")
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+TOPOLOGY = attach_topology(PLAN, TOPOLOGY_STREAM)
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import finish_candidate
+_RESULT = finish_candidate(PLAN, MEASUREMENT_TERMINALS)
+annotate_result(_RESULT, TOPOLOGY)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line(
+    initial_parameters=INITIAL_COMPONENT_PARAMETERS,
+    include_terminals=True,
+    include_parameters=True,
+))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "circuit validation/build/compile failure"
+[[custom_vars]]
+code = 3
+msg = "simulation runtime or non-finite signal failure"
+[[custom_vars]]
+code = 4
+msg = "unstable excitation response or internal tester terminal"
+[[custom_vars]]
+code = 5
+msg = "tracking/convergence acceptance limit exceeded"

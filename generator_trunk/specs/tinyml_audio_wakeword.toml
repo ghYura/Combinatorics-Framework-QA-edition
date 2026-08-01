@@ -1,0 +1,47 @@
+title = "TinyML/Edge — always-on wakeword audio engine"
+# Explicit directions: 'false_acceptance_rate' would mis-infer as MAX (substring
+# 'acc'); the author overrides where lexical inference is unsafe.
+[[goals]]
+key = "false_acceptance_rate"
+dir = "min"
+[[goals]]
+key = "false_rejection_rate"
+dir = "min"
+[[goals]]
+key = "cpu_cycles_per_sec"
+dir = "min"
+
+args = ["noise=100h_background", "triggers=1000_utterances"]
+
+[[slots]]
+sheet = "SAMPLERATE"
+key   = "sample_rate"
+values = ["16khz", "8khz", "4khz"]
+
+[[slots]]
+sheet = "FFT"
+key   = "fft_window"
+values = ["256", "512", "1024"]
+
+[[slots]]
+sheet = "MFCC"
+key   = "mfcc_features"
+values = ["10", "13", "20"]
+
+[[slots]]
+sheet = "ACT"
+key   = "nn_activation"
+values = ["relu", "hardswish"]
+
+[[custom_vars]]
+code = 2
+msg  = "false acceptance rate above threshold"
+[[custom_vars]]
+code = 3
+msg  = "false rejection rate above threshold"
+[[custom_vars]]
+code = 4
+msg  = "CPU cycles/sec over power budget"
+[[custom_vars]]
+code = 5
+msg  = "model did not converge"

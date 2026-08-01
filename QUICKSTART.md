@@ -1,0 +1,189 @@
+# Private technical-preview quick start
+
+This is the authoritative clean-checkout path for the Framework Bundle and its companion SUT
+portfolio. Both repositories are private technical-preview material. Your GitHub account must have
+access to both before cloning.
+
+## 1. Prerequisites
+
+- Linux or another POSIX-like environment
+- GitHub CLI (`gh`) and Git
+- Python 3.11 or newer
+- JDK 25 and Maven
+- Docker plus PostgreSQL client tools (`psql` and `pg_isready`) for the optional local database run
+
+The optional UI and editor prerequisites are documented in the root [README](README.md).
+
+## 2. Authenticate and clone both private repositories
+
+Check the active GitHub identity:
+
+```bash
+gh auth status --hostname github.com
+```
+
+If it is not authenticated, use GitHub CLI's interactive browser flow. Do not paste a token into a
+command, script, or repository file:
+
+```bash
+gh auth login --hostname github.com --git-protocol ssh --web
+```
+
+Create a new parent directory and clone both repositories as siblings:
+
+```bash
+mkdir -p downloaded-repos
+cd downloaded-repos
+gh repo clone ghYura/Combinatorics-Framework
+gh repo clone ghYura/SUT
+cd Combinatorics-Framework
+export BUNDLE_SUT_ROOT="$(cd ../SUT && pwd -P)"
+```
+
+Keep the two directory names unchanged for these commands. `BUNDLE_SUT_ROOT` is the supported
+portable connection between the repositories; no symlink or copied SUT tree is required.
+
+## 3. Create the Python environment and build Java components
+
+Run from the Framework repository root:
+
+```bash
+python3 -m venv .venv
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -e '.[test,science]'
+mvn -q clean package
+```
+
+The first pip or Maven invocation may download dependencies. Build products remain local and are
+ignored by Git.
+
+## 4. Run the self-contained 24-case plan
+
+```bash
+python generator_trunk/bundle_run.py plan \
+  generator_trunk/usecases/event_order \
+  --out /tmp/framework-plan
+
+python -c 'import json, pathlib; p=json.loads(pathlib.Path("/tmp/framework-plan/plan.json").read_text()); c=p["cardinality"]["final"]; assert c["mode"] == "EXACT" and c["value"] == 24, c; print("verified exact final cardinality: 24")'
+```
+
+This is the first smoke test because it needs no database, container, network service, or SUT.
+
+## 5. Run the deterministic companion-SUT smoke
+
+The combination-thinking tutor is standard-library-only and never contacts an external service:
+
+```bash
+(
+  cd "$BUNDLE_SUT_ROOT/combination_thinking_tutor"
+  PYTHONDONTWRITEBYTECODE=1 python3 -m unittest discover -s tests -v
+  PYTHONDONTWRITEBYTECODE=1 python3 tutor_sut.py --summary
+)
+```
+
+The expected exhaustive oracle covers 144 cases and reports 18 `PASS`, 120
+`ORDER_VIOLATION`, 2 `DOUBLE_CHARGE`, and 4 `DISPATCH_LOST`.
+
+The telemetry catalog is also standard-library-only:
+
+```bash
+(
+  cd "$BUNDLE_SUT_ROOT/telemetry_catalog_service"
+  PYTHONDONTWRITEBYTECODE=1 python3 selftest.py
+)
+```
+
+Its expected signal is `OK — 20 case(s), 0 failure(s)`.
+
+## 6. Optional local database deployment and full run
+
+The managed deploy profile is local-only: its published ports bind to `127.0.0.1`. Install the
+deployment extra, validate the profile, and start the two PostgreSQL containers:
+
+```bash
+python -m pip install -e '.[deploy]'
+python generator_trunk/bundle_run.py deploy validate
+python generator_trunk/bundle_run.py deploy up
+python generator_trunk/bundle_run.py doctor --deploy
+```
+
+`deploy up` creates `generator_trunk/deploy/.env` with a generated local password, a pair of
+checkout-scoped Docker volume names, and mode `0600`. The file is ignored by Git. The scoped names
+prevent an older checkout's volumes from being silently reused when a new checkout generates a new
+password. The command reports success only after authenticated SQL probes pass. Do not replace the
+template with a real credential and do not print, commit, or paste the generated values.
+
+An older `.env` without scoped volume names remains compatible with its legacy volumes. If its
+credentials no longer match those volumes, `deploy up` stops the containers without deleting data
+and explains the two recovery choices: restore the original `.env`, or, only for explicitly
+disposable data, run `deploy down --volumes` before retrying.
+
+Load the generated settings into the current shell and map them to the Bundle runtime variables:
+
+```bash
+set -a
+source generator_trunk/deploy/.env
+set +a
+
+export BUNDLE_MAIN_DB_HOST=127.0.0.1
+export BUNDLE_RESULTS_DB_HOST=127.0.0.1
+export BUNDLE_MAIN_DB_PORT="$BUNDLE_MAIN_DB_HOST_PORT"
+export BUNDLE_RESULTS_DB_PORT="$BUNDLE_RESULTS_DB_HOST_PORT"
+export BUNDLE_MAIN_DB_USER="$POSTGRES_USER"
+export BUNDLE_RESULTS_DB_USER="$POSTGRES_USER"
+export BUNDLE_MAIN_DB_PASSWORD="$POSTGRES_PASSWORD"
+export BUNDLE_RESULTS_DB_PASSWORD="$POSTGRES_PASSWORD"
+```
+
+Run the complete event-order pipeline:
+
+```bash
+python generator_trunk/bundle_run.py \
+  generator_trunk/usecases/event_order \
+  --db event_order_demo \
+  --lang py \
+  --execution-policy-profile trusted-local \
+  --candidate-origin reviewed-checked-in \
+  --acknowledge-trusted-local 'reviewed checked-in event_order fixture' \
+  --analyzer 'charges:min'
+```
+
+`trusted-local` is intentionally unsandboxed. Use it only for the checked-in candidate fixture or
+other code you trust.
+
+Stop the containers while preserving their named data volumes:
+
+```bash
+python generator_trunk/bundle_run.py deploy down
+unset POSTGRES_PASSWORD BUNDLE_MAIN_DB_PASSWORD BUNDLE_RESULTS_DB_PASSWORD
+```
+
+`deploy down --volumes` also deletes the local database volumes and is therefore reserved for an
+explicitly throwaway environment.
+
+## 7. Focused verification
+
+```bash
+python -m pytest -q \
+  generator_trunk/test_bundle_doctor.py \
+  generator_trunk/test_bundle_counts.py \
+  generator_trunk/test_fwgen_aliases.py
+
+bash Analyzer_trunk/run-tests.sh
+```
+
+For full live-deploy coverage, first use `deploy down`: the profile keeps fixed host-wide container
+names, so its acceptance test self-skips `EXPECTED_OPTIONAL` whenever any canonical name already
+exists. Production `deploy up`/`down` now proves ownership from labels and the selected `.env`
+before touching such a name; a foreign or ambiguous container is refused, never force-replaced.
+Persistent volume identity always comes from the selected `.env`, not ambient exports. A clean shell
+is still recommended for the full suite because ports, credentials and other non-identity settings
+retain normal process-environment precedence.
+
+For heavier suites, optional interfaces, security profiles, and troubleshooting, continue with the
+[README](README.md) and [installation guide](docs/03_INSTALLATION_AND_LOCAL_DEPLOYMENT.md).
+
+---
+
+**Upgrading from a checkout older than Phases 01–05?** Two things changed behaviour on purpose — `--execution-policy-profile` is now required for any run, and the gRPC candidate channel is loopback-only. The one-line fix for each, and how to revert them, is in [docs/38_MIGRATION_PHASE_01_05.md](docs/38_MIGRATION_PHASE_01_05.md).

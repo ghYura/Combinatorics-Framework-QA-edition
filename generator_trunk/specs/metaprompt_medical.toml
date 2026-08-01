@@ -1,0 +1,44 @@
+title = "Meta-Prompt Ops — Medical AI structured-extraction agent"
+goals = ["f1", "latency_ms", "cost_usd"]          # directions auto-inferred
+args  = ["validation_set=100_transcripts", "temperature=0.1"]
+
+[[slots]]
+sheet = "ENGINE"
+key   = "engine"
+values = ["gpt-4o", "claude-3-5-haiku", "llama-3.1-8b-instruct"]
+
+[[slots]]
+sheet = "PERSONA"
+key   = "persona"
+values = ["helpful_assistant", "strict_clinical_extractor", "chief_diagnostician_hl7fhir"]
+
+[[slots]]
+sheet = "REASONING"
+key   = "reasoning"
+values = ["direct", "zero_shot_cot", "plan_and_solve"]
+
+[[slots]]
+sheet = "FEWSHOT"
+key   = "fewshot"
+values = ["0_shot", "1_shot_perfect", "3_shots_edge_cases"]
+
+[[slots]]
+sheet = "OUTFORMAT"
+key   = "format"
+values = ["json", "xml", "yaml"]
+
+[[custom_vars]]
+code = 2
+msg  = "F1-score below 0.95 threshold"
+[[custom_vars]]
+code = 3
+msg  = "response not valid JSON/XML/YAML (schema broke)"
+[[custom_vars]]
+code = 4
+msg  = "hallucinated entity — drug/diagnosis absent from transcript"
+[[custom_vars]]
+code = 5
+msg  = "latency above 2000ms SLA"
+[[custom_vars]]
+code = 6
+msg  = "cost above per-run token budget"

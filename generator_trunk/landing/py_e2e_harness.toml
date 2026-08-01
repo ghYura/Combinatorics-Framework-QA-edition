@@ -1,0 +1,67 @@
+# ============================================================================
+# Python comprehensive e2e — same idea as the Java harness, but the Bundle's
+# Executor compiles ONLY Java, so the Python chain is Core → Reader (enumerate +
+# reassemble) → py_compile/exec check (the Python analogue of the Executor).
+# Rules: FW_Combi(1) config × FW_Permut op-order × FW_Subsets optional flag.
+# Every slot is a module-level (indent 0) statement, so ANY combination
+# concatenates into a valid runnable module. raw=true; Reader concatenator=''.
+# est ≈ 2·3·6·2 = 72 programs. Verdict: FW_VAR = 1 if score % 7 == 0 else 0.
+# ============================================================================
+title = "Python comprehensive e2e (Combi(1) × Permut × Subsets; every combo runs)"
+note  = "Decompose-style harness; Core enumerates, Reader reassembles a runnable .py per combo."
+goals = ["bugs_found"]
+args  = ["mode=py_e2e"]
+
+[[slots]]   # invariant frame: helper defs + state (module level, indent 0)
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''def f1(s): return s * 2 + 1
+def f2(s): return s * 3
+def f3(s): return s + 5
+score = 0
+flagA = False
+''']
+
+[[slots]]   # config dim 1 (cartesian leaf)
+sheet  = "MODE"
+key    = "mode"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["mode = 0\n", "mode = 1\n"]
+
+[[slots]]   # config dim 2 (cartesian leaf)
+sheet  = "SIZE"
+key    = "size"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["size = 1\n", "size = 2\n", "size = 3\n"]
+
+[[slots]]   # ORDER-sensitive op sequence → permutations (non-commutative ops)
+sheet  = "OPSEQ"
+key    = "opseq"
+verb   = "FW_Permut"
+raw    = true
+values = ["score = f1(score)\n", "score = f2(score)\n", "score = f3(score)\n"]
+
+[[slots]]   # optional flag → subsets (present / absent)
+sheet  = "OPTFLAGS"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = ["flagA = True\n"]
+
+[[slots]]   # invariant frame: fold config/flag into score, compute verdict, print
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''score += mode * 100 + size * 10 + (1 if flagA else 0)
+FW_VAR = 1 if score % 7 == 0 else 0
+print("FW_VAR=%d" % FW_VAR)
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "combo verdict: score % 7 == 0 (a 'failing' combination)"

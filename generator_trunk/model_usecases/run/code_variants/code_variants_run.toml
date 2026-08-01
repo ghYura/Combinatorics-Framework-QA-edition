@@ -1,0 +1,556 @@
+title = "Code variedness #6 (RUN) — 63 equivalent variants self-measured, full Bundle"
+note  = "Each candidate self-measures (inspect.getsource) and prints its software metrics; the Analyzer ranks the correct variants by Maintainability/Cyclomatic."
+args = ["mode=code_variants_run"]
+[[goals]]
+key = "maintainability_index"
+dir = "max"
+[[goals]]
+key = "cyclomatic"
+dir = "min"
+[[goals]]
+key = "nesting"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+import ast, io, math, tokenize, inspect
+def reference(a):
+    return sum(x * x for x in a if x % 2 == 0)
+def sloc(src: str) -> int:
+    return sum(1 for ln in src.splitlines() if ln.strip())
+def cyclomatic_and_nesting(src: str):
+    """McCabe cyclomatic complexity (1 + decision points) and statement nesting depth."""
+    tree = ast.parse(src)
+    cc = 1
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.If, ast.For, ast.While, ast.IfExp)):
+            cc += 1
+        elif isinstance(node, ast.BoolOp):
+            cc += len(node.values) - 1
+        elif isinstance(node, ast.ExceptHandler):
+            cc += 1
+        elif isinstance(node, ast.comprehension):
+            cc += len(node.ifs)                        # filter clauses add a path; the loop doesn't
+    NEST = (ast.For, ast.While, ast.If, ast.With, ast.Try)
+
+    def depth(node, d=0):
+        best = d
+        for child in ast.iter_child_nodes(node):
+            cd = d + 1 if isinstance(child, NEST) else d
+            best = max(best, depth(child, cd))
+        return best
+    return cc, depth(tree)
+_OPERATOR_TOKENS = {tokenize.OP}
+_KW_OPERATORS = {'import', 'if', 'elif', 'or', 'from', 'for', 'and', 'else', 'not', 'continue', 'is', 'in', 'def', 'while', 'return', 'lambda'}
+def halstead_volume(src: str) -> float:
+    operators, operands = {}, {}
+    Ntot_op = Ntot_and = 0
+    toks = tokenize.generate_tokens(io.StringIO(src).readline)
+    for tok in toks:
+        if tok.type in _OPERATOR_TOKENS or (tok.type == tokenize.NAME and tok.string in _KW_OPERATORS):
+            operators[tok.string] = operators.get(tok.string, 0) + 1
+        elif tok.type in (tokenize.NAME, tokenize.NUMBER, tokenize.STRING):
+            operands[tok.string] = operands.get(tok.string, 0) + 1
+    n1, n2 = len(operators), len(operands)
+    N1, N2 = sum(operators.values()), sum(operands.values())
+    vocab = max(1, n1 + n2)
+    return (N1 + N2) * math.log2(vocab)
+def maintainability_index(volume: float, cc: int, lines: int) -> float:
+    v = max(volume, 1.0)
+    ln = max(lines, 1)
+    mi = (171 - 5.2 * math.log(v) - 0.23 * cc - 16.2 * math.log(ln)) * 100.0 / 171.0
+    return max(0.0, min(100.0, mi))
+def metrics(src: str) -> dict:
+    cc, nest = cyclomatic_and_nesting(src)
+    vol = halstead_volume(src)
+    L = sloc(src)
+    return dict(sloc=L, cyclomatic=cc, nesting=nest,
+                halstead_volume=round(vol, 1),
+                maintainability_index=round(maintainability_index(vol, cc, L), 1))
+TESTS = [[], [0], [1], [2], [-4], [1, 2, 3, 4], [-3, -2, -1, 0, 1, 2], [10, 11, 12, 13, 14, 15], [7], [2, 2, 2], [-11, 5, -17, -16, 14], [3], [], [-7, -18, -15, 7, 6, -16, -5, -15], [7, -17, 16, -13, -6, 20, 20, 17], [], [-17, -6, -18, 15, -12, -2], [-11, 14, -13, 16, -1, 15], [-14, 17], [3, -14, 15], [16], [], [11, 14, 7], [9, 17, 9, 3, -1], [-9, -5, -15], [13, 11, 1, 8], [18, -16, -13, 12], [-10, 1, -11, 11, 6, -18], [15], [1, 2, 18, 11, 17]]
+''',
+]
+
+[[slots]]
+sheet = "CANDIDATE"
+key   = "candidate"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if x % 2 == 0:
+            s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if x % 2 == 0:
+            s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if x % 2 == 0:
+            s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if (x & 1) == 0:
+            s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if (x & 1) == 0:
+            s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if (x & 1) == 0:
+            s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not x % 2:
+            s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not x % 2:
+            s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not x % 2:
+            s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (x % 2 == 0):
+            continue
+        s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (x % 2 == 0):
+            continue
+        s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (x % 2 == 0):
+            continue
+        s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not ((x & 1) == 0):
+            continue
+        s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not ((x & 1) == 0):
+            continue
+        s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not ((x & 1) == 0):
+            continue
+        s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (not x % 2):
+            continue
+        s += x * x
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (not x % 2):
+            continue
+        s += x ** 2
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    for x in a:
+        if not (not x % 2):
+            continue
+        s += pow(x, 2)
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if x % 2 == 0:
+            s += x * x
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if x % 2 == 0:
+            s += x ** 2
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if x % 2 == 0:
+            s += pow(x, 2)
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if (x & 1) == 0:
+            s += x * x
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if (x & 1) == 0:
+            s += x ** 2
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if (x & 1) == 0:
+            s += pow(x, 2)
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if not x % 2:
+            s += x * x
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if not x % 2:
+            s += x ** 2
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    s = 0
+    i = 0
+    while i < len(a):
+        x = a[i]
+        if not x % 2:
+            s += pow(x, 2)
+        i += 1
+    return s
+''',
+'''
+def candidate(a):
+    return sum(x * x for x in a if x % 2 == 0)
+''',
+'''
+def candidate(a):
+    return sum(x ** 2 for x in a if x % 2 == 0)
+''',
+'''
+def candidate(a):
+    return sum(pow(x, 2) for x in a if x % 2 == 0)
+''',
+'''
+def candidate(a):
+    return sum(x * x for x in a if (x & 1) == 0)
+''',
+'''
+def candidate(a):
+    return sum(x ** 2 for x in a if (x & 1) == 0)
+''',
+'''
+def candidate(a):
+    return sum(pow(x, 2) for x in a if (x & 1) == 0)
+''',
+'''
+def candidate(a):
+    return sum(x * x for x in a if not x % 2)
+''',
+'''
+def candidate(a):
+    return sum(x ** 2 for x in a if not x % 2)
+''',
+'''
+def candidate(a):
+    return sum(pow(x, 2) for x in a if not x % 2)
+''',
+'''
+def candidate(a):
+    return sum([x * x for x in a if x % 2 == 0])
+''',
+'''
+def candidate(a):
+    return sum([x ** 2 for x in a if x % 2 == 0])
+''',
+'''
+def candidate(a):
+    return sum([pow(x, 2) for x in a if x % 2 == 0])
+''',
+'''
+def candidate(a):
+    return sum([x * x for x in a if (x & 1) == 0])
+''',
+'''
+def candidate(a):
+    return sum([x ** 2 for x in a if (x & 1) == 0])
+''',
+'''
+def candidate(a):
+    return sum([pow(x, 2) for x in a if (x & 1) == 0])
+''',
+'''
+def candidate(a):
+    return sum([x * x for x in a if not x % 2])
+''',
+'''
+def candidate(a):
+    return sum([x ** 2 for x in a if not x % 2])
+''',
+'''
+def candidate(a):
+    return sum([pow(x, 2) for x in a if not x % 2])
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: x % 2 == 0, a)
+    sqs = map(lambda x: x * x, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: x % 2 == 0, a)
+    sqs = map(lambda x: x ** 2, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: x % 2 == 0, a)
+    sqs = map(lambda x: pow(x, 2), evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: (x & 1) == 0, a)
+    sqs = map(lambda x: x * x, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: (x & 1) == 0, a)
+    sqs = map(lambda x: x ** 2, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: (x & 1) == 0, a)
+    sqs = map(lambda x: pow(x, 2), evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: not x % 2, a)
+    sqs = map(lambda x: x * x, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: not x % 2, a)
+    sqs = map(lambda x: x ** 2, evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    from functools import reduce
+    evens = filter(lambda x: not x % 2, a)
+    sqs = map(lambda x: pow(x, 2), evens)
+    return reduce(lambda p, x: p + x, sqs, 0)
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x * x if x % 2 == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x ** 2 if x % 2 == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (pow(x, 2) if x % 2 == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x * x if (x & 1) == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x ** 2 if (x & 1) == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (pow(x, 2) if (x & 1) == 0 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x * x if not x % 2 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (x ** 2 if not x % 2 else 0) + candidate(a[1:])
+''',
+'''
+def candidate(a):
+    if not a:
+        return 0
+    x = a[0]
+    return (pow(x, 2) if not x % 2 else 0) + candidate(a[1:])
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+_ok = all(candidate(list(t)) == reference(t) for t in TESTS)
+FW_VAR = 0 if _ok else 2
+_m = metrics(inspect.getsource(candidate))
+print("app=codevar correct=%d cyclomatic=%d nesting=%d halstead_volume=%.1f "
+      "maintainability_index=%.1f sloc=%d FW_VAR=%d"
+      % (1 if _ok else 0, _m["cyclomatic"], _m["nesting"], _m["halstead_volume"],
+         _m["maintainability_index"], _m["sloc"], FW_VAR))
+''',
+]
+
+[[custom_vars]]
+code = 2
+msg  = "variant not equivalent (failed oracle)"

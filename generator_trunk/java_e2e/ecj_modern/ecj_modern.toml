@@ -1,0 +1,87 @@
+# ============================================================================
+# Java E2E #2 — ECJ-MODERN: full modern Java that Janino 3.1.12 CANNOT compile,
+# so the adaptive backend MUST route every candidate to ECJ (and forced-Janino
+# fails on all of them, proving ECJ is required, not merely chosen).
+#
+# Same combinability discipline as janino_max: shared state is HEAD-declared
+# (static fields + `var` locals in the main opener, in scope for every later chunk
+# regardless of FW_Permut order); each middle chunk is a self-contained statement.
+# The MODERN constructs live in the INVARIANT HEAD/TAIL so EVERY one of the 48
+# candidates contains them -> every candidate needs ECJ.
+#
+# Modern features exercised (all beyond Janino's lightweight subset): a nested
+# `record`, `var` local-variable type inference, the Stream API, lambdas (->),
+# method references (::), Collectors, and a switch EXPRESSION with `yield`. Plus
+# the EXTERNAL dependency com.example.rules.Scorer (-dirJars) imported + invoked,
+# proving the JAR pass-through resolves through ECJ's compile classpath + runtime
+# parent classloader.
+#
+# est = 1(HEAD) x 2(BASE) x 6(OPS=3!) x 4(FLAGS=2^2) x 1(TAIL) = 48 candidates.
+# Verdict (FW_VAR): 0 = PASS, 1 = DOMAIN_FAIL; order-sensitive (non-commutative fold).
+# ============================================================================
+title = "Java E2E ecj-modern (records/var/streams/lambdas/switch-yield; ECJ-only; uses -dirJars dep)"
+note  = "Every candidate needs ECJ (Janino fails); imports com.example.rules.Scorer."
+args  = ["mode=java_ecj_modern"]
+
+[[slots]]   # invariant frame: imports + class + nested record + stream/lambda helper + var-using main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import java.util.*;
+import java.util.stream.*;
+import com.example.rules.Scorer;
+public class Candidate {
+    public static int FW_VAR = 0;
+    record Step(int delta, String tag) {}
+    static int sumDeltas(List<Step> steps) {
+        return steps.stream().mapToInt(Step::delta).sum();
+    }
+    public static void main(String[] args) {
+        var steps = new ArrayList<Step>();
+        var base = 0;
+''']
+
+[[slots]]   # config leaf (cartesian)
+sheet  = "BASE"
+key    = "base"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        base = 3;\n", "        base = 7;\n"]
+
+[[slots]]   # ORDER-sensitive op sequence -> permutations (non-commutative fold below -> result varies)
+sheet  = "OPS"
+key    = "ops"
+verb   = "FW_Permut"
+raw    = true
+values = ["        steps.add(new Step(base + 1, \"a\"));\n",
+          "        steps.add(new Step(base * 2, \"b\"));\n",
+          "        steps.add(new Step(Scorer.score(base), \"c\"));\n"]
+
+[[slots]]   # optional flags -> subsets (present / absent, any combination)
+sheet  = "FLAGS"
+key    = "flags"
+verb   = "FW_Subsets"
+raw    = true
+values = ["        steps.add(new Step(5, \"fa\"));\n",
+          "        steps.add(new Step(Scorer.blend(base, 2), \"fb\"));\n"]
+
+[[slots]]   # invariant frame: modern stream fold + switch-expression(yield) verdict + close
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''        var total = sumDeltas(steps);
+        var fold = steps.stream().mapToInt(Step::delta).reduce(7, (acc, d) -> acc * 31 + d);
+        var tags = steps.stream().map(Step::tag).collect(Collectors.joining("|"));
+        int code = switch (Math.floorMod(fold, 2)) {
+            case 0 -> 0;
+            case 1 -> { yield 1; }
+            default -> 1;
+        };
+        FW_VAR = code;
+        System.out.println("app=java_ecj_modern base=" + base + " total=" + total
+                + " fold=" + fold + " tags=" + tags + " FW_VAR=" + code);
+    }
+}
+''']

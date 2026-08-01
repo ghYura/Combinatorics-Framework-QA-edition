@@ -1,0 +1,105 @@
+# Self-posed scenario 12 — fallback sequence with FW_PermutR(3).
+# Category: service fallback / sequence with repetition. Demonstrates FW_PermutR as n^k:
+# 3 probe actions ^ 3 ordered positions = 27 repeated sequences, crossed with 2 request classes = 54 candidates.
+title = "Service fallback sequence — FW_PermutR repeated probes x request class"
+note  = "FW_PermutR(3) models a 3-step ordered fallback/probe sequence where the same probe can repeat; TAIL oracle checks deployability and Analyzer ranks availability/latency/cost."
+args  = ["mode=fallback_sequence_permutr"]
+
+[[goals]]
+key = "availability_score"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "cost_units"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''ACTIONS = []
+LATENCY_MS = 0
+COST_UNITS = 0
+COVERAGE_SCORE = 0
+RISK_SCORE = 0
+REQUEST_CLASS = "interactive"
+LATENCY_BUDGET = 60
+REQUIRES_PRIMARY = False
+
+def _seq_name(actions):
+    return "-".join(actions)
+
+def _availability(actions, coverage, risk, requires_primary):
+    diversity = len(set(actions)) * 5
+    primary_bonus = 12 if "primary" in actions else 0
+    missing_primary_penalty = 25 if requires_primary and "primary" not in actions else 0
+    duplicate_penalty = (len(actions) - len(set(actions))) * 4
+    return max(0, min(100, coverage // max(1, len(actions)) + diversity + primary_bonus - missing_primary_penalty - duplicate_penalty - risk))
+''']
+
+[[slots]]
+sheet = "PROBE_SEQ"
+key = "probe_seq"
+verb = "FW_PermutR(3)"
+raw = true
+values = ['''ACTIONS.append("cache")
+LATENCY_MS += 6
+COST_UNITS += 1
+COVERAGE_SCORE += 52
+RISK_SCORE += 1
+''', '''ACTIONS.append("replica")
+LATENCY_MS += 14
+COST_UNITS += 3
+COVERAGE_SCORE += 74
+RISK_SCORE += 2
+''', '''ACTIONS.append("primary")
+LATENCY_MS += 28
+COST_UNITS += 6
+COVERAGE_SCORE += 94
+RISK_SCORE += 4
+''']
+
+[[slots]]
+sheet = "REQUEST_CLASS"
+key = "request_class"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''REQUEST_CLASS = "interactive"
+LATENCY_BUDGET = 60
+REQUIRES_PRIMARY = False
+''', '''REQUEST_CLASS = "critical"
+LATENCY_BUDGET = 85
+REQUIRES_PRIMARY = True
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''_availability = _availability(ACTIONS, COVERAGE_SCORE, RISK_SCORE, REQUIRES_PRIMARY)
+if REQUEST_CLASS == "critical" and "primary" not in ACTIONS:
+    FW_VAR = 2      # critical traffic must eventually probe primary
+elif REQUEST_CLASS == "interactive" and ACTIONS[0] == "primary":
+    FW_VAR = 3      # interactive traffic should not start with the most expensive probe
+elif len(set(ACTIONS)) == 1 or LATENCY_MS > LATENCY_BUDGET:
+    FW_VAR = 4      # sequence has no fallback diversity or exceeds the latency budget
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=fallback_seq request_class=%s sequence=%s availability_score=%d latency_ms=%d cost_units=%d FW_VAR=%d"
+      % (REQUEST_CLASS, _seq_name(ACTIONS), _availability, LATENCY_MS, COST_UNITS, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "critical request sequence never probes primary"
+[[custom_vars]]
+code = 3
+msg = "interactive request sequence starts with expensive primary probe"
+[[custom_vars]]
+code = 4
+msg = "fallback sequence policy violation: no diversity or latency budget exceeded"

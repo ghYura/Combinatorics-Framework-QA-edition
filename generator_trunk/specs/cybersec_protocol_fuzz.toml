@@ -1,0 +1,34 @@
+title = "CyberSec — structural fuzzing of your own binary TCP protocol"
+note  = "Structural fuzzing of your OWN service under ASAN/GDB. Elitism keeps valid magic+CRC frames."
+goals = ["process_crashes", "code_coverage"]
+args  = ["target=localhost_service_under_asan", "debugger=gdb"]
+
+[[slots]]
+sheet = "MAGIC"
+key   = "magic_bytes"
+values = ["0xAABB_valid", "0x0000", "0xFFFF"]
+
+[[slots]]
+sheet = "LENGTH"
+key   = "length_field"
+values = ["exact", "minus_1", "plus_10000", "0xFFFF"]
+
+[[slots]]
+sheet = "CRC"
+key   = "checksum"
+values = ["valid_crc", "random_crc", "0x0000"]
+
+[[slots]]
+sheet = "BODY"
+key   = "body_content"
+values = ["valid_json", "nested_json_100_levels", "format_strings_%s%n"]
+
+[[custom_vars]]
+code = 2
+msg  = "target process crashed (SIGSEGV / ASAN abort) — FINDING"
+[[custom_vars]]
+code = 3
+msg  = "connection refused by validation layer"
+[[custom_vars]]
+code = 4
+msg  = "malformed frame rejected at parser"

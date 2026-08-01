@@ -1,0 +1,72 @@
+# Self-posed scenario 10 — feature-flag interaction (exercises FW_Subsets: the "any subset" verb).
+# A service has 4 feature flags; ANY SUBSET can be enabled (FW_Subsets -> 2^4 = 16), crossed with the
+# rollout stage (FW_Combi(1): canary/ga) -> 32 candidates. The oracle catches flag INTERACTIONS:
+#  - experimental_ui requires new_router (a within-subset dependency -- NOT a binary 2-sheet sieve rule,
+#    so it is enforced by the TAIL oracle, complementing scenario 07's arity rule);
+#  - audit + cache together overwhelm a canary rollout.
+# Pareto: more flags enabled (capability) vs lower risk. Self-contained -> trusted-local.
+title = "Feature-flag interaction — FW_Subsets over flags x rollout, interaction oracle, capability/risk Pareto"
+note  = "FW_Subsets (any subset of flags) x FW_Combi(1) rollout; oracle catches a flag dependency and a canary resource conflict. Within-subset bonds go to the oracle, not the binary sieve."
+args  = ["mode=feature_flags"]
+
+[[goals]]
+key = "enabled_flags"
+dir = "max"
+[[goals]]
+key = "risk_score"
+dir = "min"
+
+[[slots]]   # HEAD
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''FLAGS = set()
+ROLLOUT = "canary"
+''']
+
+[[slots]]   # which feature flags are enabled -> ANY SUBSET -> FW_Subsets (2^4 = 16, incl. none)
+sheet  = "FLAGS"
+key    = "flags"
+verb   = "FW_Subsets"
+raw    = true
+values = ['''FLAGS.add("cache")
+''', '''FLAGS.add("audit")
+''', '''FLAGS.add("experimental_ui")
+''', '''FLAGS.add("new_router")
+''']
+
+[[slots]]   # rollout stage (cartesian leaf)
+sheet  = "ROLLOUT"
+key    = "rollout"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["ROLLOUT = \"canary\"\n", "ROLLOUT = \"ga\"\n"]
+
+[[slots]]   # TAIL: evaluate flag interactions (the oracle); set FW_VAR; emit metrics
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_enabled = sorted(FLAGS)
+_n = len(_enabled)
+_dep_bad = int("experimental_ui" in FLAGS and "new_router" not in FLAGS)
+_canary_conflict = int("audit" in FLAGS and "cache" in FLAGS and ROLLOUT == "canary")
+_risk = int("experimental_ui" in FLAGS) + int("audit" in FLAGS) + int(_n >= 3 and ROLLOUT == "canary")
+if _dep_bad:
+    FW_VAR = 2
+elif _canary_conflict:
+    FW_VAR = 3
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=feature_flags rollout=%s flags=%s enabled_flags=%d risk_score=%d dep_bad=%d canary_conflict=%d FW_VAR=%d"
+      % (ROLLOUT, "+".join(_enabled) or "none", _n, _risk, _dep_bad, _canary_conflict, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "feature dependency violated: experimental_ui enabled without new_router (within-subset bond -> oracle, not the binary sieve)"
+[[custom_vars]]
+code = 3
+msg = "canary resource conflict: audit + cache both enabled in a canary rollout"

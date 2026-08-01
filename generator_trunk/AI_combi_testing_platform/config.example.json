@@ -1,0 +1,18 @@
+{
+  "schema": "ai-combi.config/v1",
+  "default_adapter": "oracle-control",
+  "external_adapters": [
+    {
+      "id": "example-openai-compatible",
+      "enabled": false,
+      "endpoint": "https://provider.example/v1/chat/completions",
+      "model": "replace-with-reviewed-model-id",
+      "api_key_env": "AI_COMBI_PROVIDER_API_KEY",
+      "timeout_seconds": 30,
+      "max_output_tokens": 256,
+      "request_budget": 10,
+      "cost_per_request_microusd": 0,
+      "monetary_budget_microusd": 0
+    }
+  ]
+}

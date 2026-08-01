@@ -1,0 +1,325 @@
+spec_version = "1"
+title = "Flagship L3 — wider factor space, two sudden actions, constraint sieve"
+note = "L2's construction, widened: a third module stage, an ordered motif over THREE stages, a clamp whose bounds are their own axes, and a SECOND FW_Optional sudden action. The sieve removes the clamp pairs whose low exceeds its high — candidates the engine can generate but the domain cannot execute. 864 mandatory rows - 216 sieved = 648, x4 optional = 2592 candidates. Same five-link brace chain, same oracle, same corpus as L2."
+args = ["suite=flagship", "tier=bundle-native-l3"]
+
+# Identical chain shape to L2 — the level changes the WIDTH of the axes, not the
+# way they are composed, so a cost difference between levels is attributable to
+# the size of the space rather than to a different construction.
+seq_extra = [
+  ["SEQ_RESULT",    "FW_Reuse", "FW_(SEQ_OPEN,,GROUPED_STAGE,,REPEATED_MOTIF,,SEQ_CLOSE,,M:N)"],
+  ["BRANCH_RESULT", "FW_Reuse", "FW_(NOP,,FW_(),,SIDE_BRANCH,,NOP,,M:N)"],
+  ["PAR_RESULT",    "FW_Reuse", "FW_(NOP,,PAR_OPEN,,FW_(),,PAR_CLOSE,,M:N)"],
+  ["NEST_RESULT",   "FW_Reuse", "FW_(NOP,,NEST_OPEN,,FW_(),,NEST_CLOSE,,M:N)"],
+  ["ROOT_RESULT",   "FW_Reuse", "FW_(ROOT_OPEN,,FW_(),,FINALIZER,,ROOT_CLOSE,,M:N)"],
+]
+
+[[goals]]
+key = "stages"
+dir = "max"
+[[goals]]
+key = "retained"
+dir = "max"
+[[goals]]
+key = "ops"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.engine_demo.record_pipeline import (
+    emit_atom, emit_close, emit_node, emit_open, template
+)
+from generator_trunk.flagship.pipeline_flagship import evaluate_stream_under
+STREAM = []
+FAULT = 0
+FAULT_DONE = 0
+SURGE = 0
+SURGE_DONE = 0
+CLIP_LOW = -30
+CLIP_HIGH = 30
+''']
+
+# FW_Optional #1 — a transient duplicate-batch event at the end of the inner
+# sequence (the L2 axis, unchanged).
+[[slots]]
+sheet = "FAULT_EVENT"
+key = "fault_event"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''FAULT = 1
+''']
+
+# FW_Optional #2 — a transient amplification after the parallel join. Two
+# independent optional slots make the optional multiplier 1 + C(2,1) + C(2,2) = 4,
+# which the run must reproduce exactly.
+[[slots]]
+sheet = "SURGE_EVENT"
+key = "surge_event"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''SURGE = 1
+''']
+
+# The clamp bounds are their own mandatory axes so the SIEVE can see them: a
+# constraint is a bond between two fw_final columns, and a brace operand has no
+# column to bond.
+[[slots]]
+sheet = "CLIP_LOW"
+key = "clip_low"
+verb = "FW_Combi(1)"
+raw = true
+values = ["CLIP_LOW = -30\n", "CLIP_LOW = 12\n"]
+
+[[slots]]
+sheet = "CLIP_HIGH"
+key = "clip_high"
+verb = "FW_Combi(1)"
+raw = true
+values = ["CLIP_HIGH = 30\n", "CLIP_HIGH = -12\n"]
+
+[[slots]]
+sheet = "GROUPED_STAGE"
+key = "grouped_stage"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_node(STREAM, template("normalize"))
+''',
+'''emit_node(STREAM, template("spread"))
+''',
+'''emit_atom(STREAM, "offset", k=4)
+''',
+]
+
+# FW_PermutR(2) over THREE stages = 3^2 = 9 orders. L4 changes only this verb.
+[[slots]]
+sheet = "REPEATED_MOTIF"
+key = "repeated_motif"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(STREAM, "sort")
+''',
+'''emit_atom(STREAM, "scale", k=-1)
+''',
+'''emit_atom(STREAM, "drop_below", threshold=0)
+''',
+]
+
+[[slots]]
+sheet = "SIDE_BRANCH"
+key = "side_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_node(STREAM, template("guard"))
+''',
+'''emit_node(STREAM, template("compact"))
+''',
+]
+
+[[slots]]
+sheet = "PAR_OPEN"
+key = "par_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 2, "parallel", reducer="merge")
+''',
+'''emit_open(STREAM, 2, "parallel", reducer="concat")
+''',
+]
+
+[[slots]]
+sheet = "NEST_OPEN"
+key = "nest_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 4, "sequence")
+''',
+'''emit_open(STREAM, 4, "repeat", count=2)
+''',
+]
+
+# One value: the finalizer's degrees of freedom now live in CLIP_LOW/CLIP_HIGH,
+# where the sieve can reach them.
+[[slots]]
+sheet = "FINALIZER"
+key = "finalizer"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''emit_atom(STREAM, "clamp", low=CLIP_LOW, high=CLIP_HIGH)
+''']
+
+[[slots]]
+sheet = "SEQ_RESULT"
+key = "seq_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "BRANCH_RESULT"
+key = "branch_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PAR_RESULT"
+key = "par_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "NEST_RESULT"
+key = "nest_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "ROOT_RESULT"
+key = "root_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "SEQ_OPEN"
+key = "seq_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 1, "sequence")
+''']
+
+[[slots]]
+sheet = "SEQ_CLOSE"
+key = "seq_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+if FAULT and not FAULT_DONE:
+    FAULT_DONE = 1
+    emit_open(STREAM, 5, "repeat", count=2)
+    emit_atom(STREAM, "drop_below", threshold=-99)
+    emit_close(STREAM, 5)
+emit_close(STREAM, 1)
+''']
+
+[[slots]]
+sheet = "PAR_CLOSE"
+key = "par_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 2)
+''']
+
+[[slots]]
+sheet = "NEST_CLOSE"
+key = "nest_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+if SURGE and not SURGE_DONE:
+    SURGE_DONE = 1
+    emit_atom(STREAM, "scale", k=2)
+emit_close(STREAM, 4)
+''']
+
+[[slots]]
+sheet = "ROOT_OPEN"
+key = "root_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 3, "sequence")
+''']
+
+[[slots]]
+sheet = "ROOT_CLOSE"
+key = "root_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 3)
+''']
+
+[[slots]]
+sheet = "NOP"
+key = "nop"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = evaluate_stream_under(STREAM)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction/compile/validation failure"
+[[custom_vars]]
+code = 3
+msg = "pipeline execution failure"
+[[custom_vars]]
+code = 4
+msg = "independent oracle disagreement or structural-bound violation"
+[[custom_vars]]
+code = 5
+msg = "record service contract violated"
+
+# --- sieve sidecar: value attributes the constraint reads -------------------
+[[params]]
+sheet = "CLIP_LOW"
+value = "CLIP_LOW = -30"
+bound = -30
+[[params]]
+sheet = "CLIP_LOW"
+value = "CLIP_LOW = 12"
+bound = 12
+[[params]]
+sheet = "CLIP_HIGH"
+value = "CLIP_HIGH = 30"
+bound = 30
+[[params]]
+sheet = "CLIP_HIGH"
+value = "CLIP_HIGH = -12"
+bound = -12
+
+# The sieve removes ONLY candidates the domain cannot execute: `clamp` with a low
+# above its high is a structural error (record_pipeline raises PipelineError), not
+# an interesting negative case. 1 of the 4 bound pairs is invalid, so this removes
+# exactly 864/4 = 216 mandatory rows. Nothing else is removed — a sieve that
+# discarded legitimate combinations would be manufacturing the result it reports.
+[[constraints]]
+id = "clamp_bounds_must_be_orderable"
+sheets = ["CLIP_LOW", "CLIP_HIGH"]
+when = "CLIP_LOW.bound > CLIP_HIGH.bound"
+gate = {}
+desc = "clamp low must not exceed clamp high — the pipeline cannot construct such an atom"

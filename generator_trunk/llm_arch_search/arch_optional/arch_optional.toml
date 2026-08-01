@@ -1,0 +1,125 @@
+spec_version = "1"
+title = "LLM-Arch search — OPTIONAL plugins: FW_Optional present/absent add-ons over a token-mixer base"
+note = """Optional architectural components as the Zen 'sudden actions' dimension. A base architecture
+(token-mixer = exactly-one-of-3) is augmented by up to 3 INDEPENDENT optional plugins that may or may not
+be present, in every combination: weight-tying, an extra final norm, and a wide FFN. FW_Optional gives the
+present-XOR-absent shape -> x(n+1) per slot, WITHOUT exploding the mandatory product.
+base 3 (TOKBASE) x 2^3 (plugins) = 24 candidates. Each composes the model with whichever plugins fired,
+builds, and tests forward+backward+proxy. FW_VAR=0 = the augmented architecture is valid/trainable.
+Freedom->verb: 'an add-on that may or may not be present, in any combination' -> FW_Optional. The Analyzer
+shows the params/trainability cost each plugin adds (e.g. weight-tying shrinks params; wide-FFN grows them)."""
+args = ["mode=arch_optional"]
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "llm_arch_search"))
+import arch_zoo
+geno = dict(vocab=64, d_model=64, n_heads=4, d_ffn=128, num_experts=4, top_k=2,
+            max_seq_len=64, n_layers=2, prenorm=True, norm="rmsnorm",
+            token_mixer="mhsa", channel_mixer="swiglu",
+            tie_head=False, extra_final_norm=False)
+plug = []
+''']
+
+[[slots]]
+sheet = "TOKBASE"
+key   = "tokbase"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["token_mixer"] = "mhsa"
+''', '''
+geno["token_mixer"] = "swa"
+''', '''
+geno["token_mixer"] = "linattn"
+''']
+
+[[slots]]
+sheet = "OPT_TIE"
+key   = "opt_tie"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["tie_head"] = True; plug.append("tie")
+''']
+
+[[slots]]
+sheet = "OPT_EXTRANORM"
+key   = "opt_extranorm"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["extra_final_norm"] = True; plug.append("xnorm")
+''']
+
+[[slots]]
+sheet = "OPT_WIDEFFN"
+key   = "opt_wideffn"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["d_ffn"] = 256; plug.append("wideffn")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = arch_zoo.evaluate(geno, batch=2, seq=16, benchmark_threads=1)
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_optional tokmix=%s plugins=%s nplugins=%d params=%d model_bytes=%d "
+      "latency_ms=%.3f eval_ms=%.1f tokens_per_s=%.1f loss=%.4f out_std=%.4f "
+      "proxy_gradnorm=%.4f grad_coverage=%.4f step_delta=%.8f loss_after_step=%.6f loss_improvement=%.8f nonzero_grad_coverage=%.4f causal_checks=%d benchmark_threads=%d causal_ok=%d "
+      "deterministic_ok=%d aux=%.4f code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % (geno["token_mixer"], ("+".join(plug) if plug else "none"), len(plug),
+         _m["params"], _m["model_bytes"], _m["latency_ms"], _m["eval_ms"], _m["tokens_per_s"],
+         _m["loss"], _m["out_std"], _m["proxy_gradnorm"], _m["grad_coverage"], _m["step_delta"], _m["loss_after_step"], _m["loss_improvement"],
+         _m["nonzero_grad_coverage"], _m["causal_checks"], _m["benchmark_threads"],
+         _m["causal_ok"], _m["deterministic_ok"], _m["aux"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: an augmented architecture produced the wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: an augmented architecture produced non-finite logits"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: an augmented architecture is untrainable (non-finite/absent gradient)"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: an augmented architecture leaks future-token information"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: an augmented architecture is non-deterministic in evaluation mode"
+[[custom_vars]]
+code = 6
+msg  = "DEFECT: optimizer step failed to reduce the same-batch objective"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible augmented architecture caught fail-loud"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: an augmented architecture crashed unexpectedly"

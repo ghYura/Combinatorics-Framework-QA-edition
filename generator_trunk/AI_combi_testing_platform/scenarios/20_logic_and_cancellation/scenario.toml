@@ -1,0 +1,90 @@
+spec_version = "1"
+title = "Logic and exact cancellation multiset study"
+note = "Task families cross repeated complexity/invariance motifs using FW_CombiR where repeated transformations are semantically valid."
+args = ["suite=ai_combi_testing", "study=logic-cancellation"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "semantic_invariance_ok"
+dir = "max"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+PLAN = initialize_candidate(family="ordering", seed=16180, complexity=1)
+''']
+
+[[slots]]
+sheet = "TASK_FAMILY"
+key = "task_family"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.task_family = "ordering"
+''',
+'''PLAN.task_family = "cancellation"
+'''
+]
+
+[[slots]]
+sheet = "REPEATED_COMPLEXITY_MOTIFS"
+key = "repeated_complexity_motifs"
+verb = "FW_CombiR(2)"
+raw = true
+values = [
+'''PLAN.complexity += 1
+''',
+'''PLAN.complexity += 2
+''',
+'''PLAN.complexity += 3
+'''
+]
+
+[[slots]]
+sheet = "SCHEMA"
+key = "schema"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.schema = "json"
+''',
+'''PLAN.schema = "plain"
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

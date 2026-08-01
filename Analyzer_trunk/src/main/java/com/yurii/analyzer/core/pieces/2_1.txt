@@ -1,0 +1,36 @@
+// ── 2_1.txt — variant 1 of charEntropy: pure HashMap codepoint counter
+// Same contract. Universal for any Unicode plane; no ASCII fast-path.
+// Slightly more allocations on Latin-only text but uniform cost shape.
+// (Drop-in for fastutil's Int2IntOpenHashMap or
+//   org.eclipse.collections.api.map.primitive.IntIntMap if profiling
+//   shows the boxing dominates — both kept in comments here.)
+
+    public static double charEntropy(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p2_invocations++;
+        Metrics.p2_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return 0.0;
+            HashMap<Integer, Integer> counts = new HashMap<>(64);
+            int n = 0;
+            int len = text.length();
+            for (int i = 0; i < len; ) {
+                int cp = text.codePointAt(i);
+                counts.merge(cp, 1, Integer::sum);
+                i += Character.charCount(cp);
+                n++;
+            }
+            if (n == 0) return 0.0;
+            final double inv = 1.0 / n;
+            final double invLog2 = 1.0 / Math.log(2);
+            double entropy = 0.0;
+            for (int c : counts.values()) {
+                double p = c * inv;
+                entropy -= p * Math.log(p) * invLog2;
+            }
+            Metrics.p2_sum_of_entropy += entropy;
+            return entropy;
+        } finally {
+            Metrics.p2_duration_ns += System.nanoTime() - __t0;
+        }
+    }

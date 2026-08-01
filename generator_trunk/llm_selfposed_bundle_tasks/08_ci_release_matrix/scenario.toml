@@ -1,0 +1,140 @@
+# Self-posed scenario 08 — CI/CD release matrix with pre-execution safety sieve.
+# Category: CI/CD release matrix. Demonstrates Bundle for release-engineering risk triage.
+# 3(SERVICE) x 3(STRATEGY) x 3(MIGRATION) x 2(TESTS) x 2(FLAG) = 108 mandatory.
+# Binary sieve forbids direct deploy + breaking DB migration: 3x1x1x2x2 = 12 removed -> 96 executed.
+# Runtime oracle catches two remaining release risks; Analyzer optimizes risk_score, duration_min, rollback_score.
+title = "CI/CD release matrix — strategy/migration/tests/feature-flag safety tradeoff"
+note  = "Release-engineering scenario: binary [[constraints]] remove structurally unsafe direct+breaking migrations before execution; TAIL oracle flags risky but executable release plans."
+args  = ["mode=ci_release_matrix"]
+
+[[goals]]
+key = "risk_score"
+dir = "min"
+[[goals]]
+key = "duration_min"
+dir = "min"
+[[goals]]
+key = "rollback_score"
+dir = "max"
+
+[[slots]]   # HEAD: deterministic scoring model
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''SERVICE = "api"
+STRATEGY = "direct"
+MIGRATION = "none"
+TESTS = "smoke"
+FLAG = "off"
+
+def _score(service, strategy, migration, tests, flag):
+    risk = 10
+    duration = 8
+    rollback = 1
+    risk += {"api": 3, "worker": 2, "frontend": 1}[service]
+    risk += {"direct": 8, "canary": 3, "blue_green": 1}[strategy]
+    risk += {"none": 0, "additive": 3, "breaking": 9}[migration]
+    risk -= 4 if tests == "full" else 0
+    risk += 2 if flag == "on" else 0
+    duration += {"direct": 0, "canary": 12, "blue_green": 18}[strategy]
+    duration += {"none": 0, "additive": 8, "breaking": 20}[migration]
+    duration += 20 if tests == "full" else 0
+    duration += 4 if flag == "on" else 0
+    rollback += {"direct": 0, "canary": 4, "blue_green": 5}[strategy]
+    rollback += 2 if flag == "on" else 0
+    rollback -= 2 if migration == "breaking" else 0
+    return max(0, risk), duration, max(0, rollback)
+''']
+
+[[slots]]
+sheet  = "SERVICE"
+key    = "service"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["SERVICE = \"api\"\n", "SERVICE = \"worker\"\n", "SERVICE = \"frontend\"\n"]
+
+[[slots]]
+sheet  = "STRATEGY"
+key    = "strategy"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["STRATEGY = \"direct\"\n", "STRATEGY = \"canary\"\n", "STRATEGY = \"blue_green\"\n"]
+
+[[slots]]
+sheet  = "MIGRATION"
+key    = "migration"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["MIGRATION = \"none\"\n", "MIGRATION = \"additive\"\n", "MIGRATION = \"breaking\"\n"]
+
+[[slots]]
+sheet  = "TESTS"
+key    = "tests"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TESTS = \"smoke\"\n", "TESTS = \"full\"\n"]
+
+[[slots]]
+sheet  = "FLAG"
+key    = "flag"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["FLAG = \"off\"\n", "FLAG = \"on\"\n"]
+
+[[slots]]   # TAIL: release-safety oracle + metrics for Analyzer
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_risk, _duration, _rollback = _score(SERVICE, STRATEGY, MIGRATION, TESTS, FLAG)
+if MIGRATION == "breaking" and TESTS == "smoke":
+    FW_VAR = 2      # executable but unsafe: breaking DB migration needs full tests
+elif STRATEGY == "canary" and FLAG == "on" and TESTS == "smoke":
+    FW_VAR = 3      # executable but unsafe: canary+new flag needs full tests/guardrail
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=ci_release service=%s strategy=%s migration=%s tests=%s flag=%s risk_score=%d duration_min=%d rollback_score=%d FW_VAR=%d"
+      % (SERVICE, STRATEGY, MIGRATION, TESTS, FLAG, _risk, _duration, _rollback, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "breaking migration was released with smoke tests only"
+[[custom_vars]]
+code = 3
+msg = "canary with enabled feature flag was released with smoke tests only"
+
+# --- params + binary pre-execution safety constraint for the sieve ---
+[[params]]
+sheet = "STRATEGY"
+value = 'STRATEGY = "direct"'
+is_direct = 1
+[[params]]
+sheet = "STRATEGY"
+value = 'STRATEGY = "canary"'
+is_direct = 0
+[[params]]
+sheet = "STRATEGY"
+value = 'STRATEGY = "blue_green"'
+is_direct = 0
+[[params]]
+sheet = "MIGRATION"
+value = 'MIGRATION = "none"'
+is_breaking = 0
+[[params]]
+sheet = "MIGRATION"
+value = 'MIGRATION = "additive"'
+is_breaking = 0
+[[params]]
+sheet = "MIGRATION"
+value = 'MIGRATION = "breaking"'
+is_breaking = 1
+
+[[constraints]]
+id = "no_direct_deploy_with_breaking_migration"
+sheets = ["STRATEGY", "MIGRATION"]
+when = "STRATEGY.is_direct == 1 and MIGRATION.is_breaking == 1"
+gate = {}
+desc = "release safety: direct deploy is forbidden with a breaking database migration; use canary or blue/green instead"

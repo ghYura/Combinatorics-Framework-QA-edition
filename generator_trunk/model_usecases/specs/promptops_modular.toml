@@ -1,0 +1,64 @@
+title = "Prompt optimization #1 — Model's exact modular decomposition (system role x few-shot x constraints x CoT x decoding)"
+note  = "Materialises Model #1 (Discrete/Automated Prompt Engineering) with the precise pieces it lists: system role, persona, few-shot examples, output constraints, chain-of-thought, decoding. Already executed end-to-end in llm_loop/ (offline StubProvider or a LOCAL Ollama, no off-PC egress); this spec is the ready-to-run search space. FW_Combi(1) breeds the cartesian of prompt modules; the Analyzer optimises the quality/cost trade-off."
+
+# directions overridden where lexical inference is unsafe
+args = ["validation_set=200_items", "judge=local_rules_or_ollama", "egress=none"]
+
+[[goals]]
+key = "task_score"
+dir = "max"
+[[goals]]
+key = "json_validity"
+dir = "max"
+[[goals]]
+key = "hallucination_rate"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "cost_usd"
+dir = "min"
+
+[[slots]]
+sheet = "SYSROLE"
+key   = "system_role"
+values = ["concise_assistant", "domain_expert", "skeptical_verifier"]
+
+[[slots]]
+sheet = "PERSONA"
+key   = "persona"
+values = ["neutral", "step_by_step_teacher", "terse_machine"]
+
+[[slots]]
+sheet = "REASONING"        # chain-of-thought instruction (Model's CoT piece)
+key   = "reasoning"
+values = ["direct", "zero_shot_cot", "plan_and_solve", "self_critique"]
+
+[[slots]]
+sheet = "FEWSHOT"          # few-shot examples piece
+key   = "fewshot"
+values = ["0_shot", "1_shot_perfect", "3_shots_edge_cases"]
+
+[[slots]]
+sheet = "CONSTRAINTS"      # output-constraint piece
+key   = "constraints"
+values = ["none", "json_schema_strict", "max_50_tokens", "json_schema_plus_length"]
+
+[[slots]]
+sheet = "DECODING"         # decoding controls
+key   = "decoding"
+values = ["temp_0.0", "temp_0.3", "temp_0.7"]
+
+[[custom_vars]]
+code = 2
+msg  = "task_score below acceptance threshold"
+[[custom_vars]]
+code = 3
+msg  = "output violated the format constraint (invalid JSON / over length)"
+[[custom_vars]]
+code = 4
+msg  = "hallucinated content absent from the source"
+[[custom_vars]]
+code = 5
+msg  = "latency above SLA"

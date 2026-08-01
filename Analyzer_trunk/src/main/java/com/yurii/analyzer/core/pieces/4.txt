@@ -1,0 +1,23 @@
+// ── 4.txt — initial implementation of canonicalNumber(double) ────────
+// Contract:
+//   in   double n
+//   out  String — "42"  for near-integers, "%.3f" otherwise (Locale.ROOT)
+//
+// Original AnalyzerCore.java: rint distance test + String.format.
+
+    public static String canonicalNumber(double n) {
+        long __t0 = System.nanoTime();
+        Metrics.p4_invocations++;
+        Metrics.p4_sum_of_inputs += n;
+        try {
+            String out;
+            if (Math.abs(n - Math.rint(n)) < 1e-9)
+                out = String.valueOf((long) Math.round(n));
+            else
+                out = String.format(Locale.ROOT, "%.3f", n);
+            Metrics.p4_total_output_chars += out.length();
+            return out;
+        } finally {
+            Metrics.p4_duration_ns += System.nanoTime() - __t0;
+        }
+    }

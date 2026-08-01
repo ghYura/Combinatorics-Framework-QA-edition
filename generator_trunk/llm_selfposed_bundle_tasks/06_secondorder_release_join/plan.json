@@ -1,0 +1,349 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "each FW_Optional slot independently multiplies the post-sieve candidate space",
+        "product includes UNKNOWN factor(s): ['= mandatory (no constraints declared -> sieve is a no-op)']"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots × brace joiner row-count(s) (seq_extra)",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "matches estimate_core_combos's slot filter and Cartes operand sizing (declared sheet size, not post-verb result-table size)",
+        "seq_extra brace joiner(s) contribute their joined-result-table row count, which is UNKNOWN until Core runs — it cannot be folded in as an exact factor",
+        "product includes UNKNOWN factor(s): [\"brace 'FW_(,,A,,B,,,,M:N)' joins two operand result tables\"]"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "A": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(2) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "B": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=2",
+        "lower": 2,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 2,
+        "value": 2
+      },
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "JOINED": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [],
+      "upper": null,
+      "value": null
+    },
+    "raw_values": {
+      "A": 3,
+      "B": 2,
+      "HEAD": 1,
+      "JOINED": 1,
+      "TAIL": 1
+    }
+  },
+  "constraints_present": 0,
+  "dependency_graph": {
+    "graph": {
+      "edges": [
+        {
+          "dst": "brace#0.2",
+          "kind": "produces",
+          "src": "JOINED"
+        },
+        {
+          "dst": "A",
+          "kind": "brace_operand",
+          "src": "brace#0.2"
+        },
+        {
+          "dst": "B",
+          "kind": "brace_operand",
+          "src": "brace#0.2"
+        }
+      ],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": true,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(2)"
+          },
+          "id": "A",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": true,
+            "group": false,
+            "heading": false,
+            "n": 2,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "B",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "is_join_result": true,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "JOINED",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "expr": "FW_(,,A,,B,,,,M:N)",
+            "mult": "M:N",
+            "target": "JOINED"
+          },
+          "id": "brace#0.2",
+          "kind": "brace"
+        }
+      ]
+    },
+    "graph_hash": "sha256:3c1a093dedadb45b41bfe5378b8eb03257fc8f661e79049371f73dfa89c2b85f",
+    "warnings": []
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "even if the final candidates count were known, candidate source bytes would still depend on an assumed per-unit cost in [500-5000] — no real sample exists to calibrate it"
+      ],
+      "formula": "candidate source bytes = (final candidates count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "candidate source bytes cannot be sized without a known final candidates count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "even if the Core rows count were known, Core DB bytes would still depend on an assumed per-unit cost in [200-2000] — no real sample exists to calibrate it"
+      ],
+      "formula": "Core DB bytes = (Core rows count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "Core DB bytes cannot be sized without a known Core rows count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "dominant": "unknown",
+    "dominant_reason": "every dimension is UNKNOWN — final candidate count could not be sized statically",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "even if the final candidates count were known, execution duration (seconds) would still depend on an assumed per-unit cost in [0.05-2] — no real sample exists to calibrate it"
+      ],
+      "formula": "execution duration (seconds) = (final candidates count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "execution duration (seconds) cannot be sized without a known final candidates count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "final_count": null,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "even if the final candidates count were known, loose-file inode count would still depend on an assumed per-unit cost in [1] — no real sample exists to calibrate it"
+      ],
+      "formula": "loose-file inode count = (final candidates count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "loose-file inode count cannot be sized without a known final candidates count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "even if the final candidates count were known, external request count would still depend on an assumed per-unit cost in [1] — no real sample exists to calibrate it"
+      ],
+      "formula": "external request count = (final candidates count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "external request count cannot be sized without a known final candidates count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "even if the final candidates count were known, Results DB bytes would still depend on an assumed per-unit cost in [150-1500] — no real sample exists to calibrate it"
+      ],
+      "formula": "Results DB bytes = (final candidates count) × (assumed per-unit cost) — count is UNKNOWN",
+      "lower": null,
+      "mode": "UNKNOWN",
+      "reasons": [
+        "Results DB bytes cannot be sized without a known final candidates count; see the cardinality plan's reasons for why that count is UNKNOWN"
+      ],
+      "upper": null,
+      "value": null
+    },
+    "run_class": "X"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 1,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [
+        "FW_Exclude"
+      ],
+      "n": 3,
+      "sheet": "A",
+      "verb": "FW_Combi(2)"
+    },
+    {
+      "flags": [
+        "FW_Exclude"
+      ],
+      "n": 2,
+      "sheet": "B",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "JOINED",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "scenario",
+  "spec_path": "llm_selfposed_bundle_tasks/06_secondorder_release_join/scenario.toml",
+  "spec_sha256": "da104aee664ea586e4ca5b76c6647372a7569e7c68fe118a926625ebcc4044dc",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)",
+    "1 seq_extra brace joiner row(s): their joined-result-table row count is UNKNOWN until Core runs (see cardinality.mandatory.reasons)",
+    "mandatory Core product is UNKNOWN, not EXACT — Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots × brace joiner row-count(s) (seq_extra)",
+    "final candidate count is UNKNOWN [None, None], not an exact prediction — treat None as an upper-bound planning figure"
+  ]
+}

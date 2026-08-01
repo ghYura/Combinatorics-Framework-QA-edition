@@ -1,0 +1,105 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_14_control_pair_combi2",
+  "category": "security control pair selection (FW_Combi(2))",
+  "user_problem": "I need to choose exactly two security controls from rate_limit, captcha, waf, and review_queue. Order does not matter and repeats are not allowed. Which pairs are safe for public API and admin API traffic, and how do coverage, friction, and cost trade off?",
+  "bundle_offer": "Bundle models the control pair as FW_Combi(2): choose exactly two distinct controls, order irrelevant. It crosses the pair with traffic profile, uses a TAIL oracle for admin-without-WAF and public excessive-friction policies, and returns a coverage/friction/cost Pareto front with PASS-aware annotations.",
+  "zen_mapping": [
+    {
+      "freedom": "choose exactly two security controls",
+      "shape": "k of n, order irrelevant, no repetition",
+      "verb": "FW_Combi(2)",
+      "cardinality": "C(4,2) = 6"
+    },
+    {
+      "freedom": "traffic profile",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "control-pair policy",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "oracle": "FW_VAR=2 admin traffic pair is missing WAF; FW_VAR=3 public traffic pair has excessive friction; FW_VAR=0 safe",
+  "spec_path": "llm_selfposed_bundle_tasks/14_control_pair_combi2/scenario.toml",
+  "spec_sha256": "783e2c14f827a1eca784ecdb07a3d5f25ea337543371ebfacfa08f076cae0a20",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 12,
+    "mode": "EXACT",
+    "reasons": [],
+    "upper": 12,
+    "value": 12
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 12,
+  "verdict_distribution": {
+    "PASS (safe control pair)": 8,
+    "admin traffic control pair is missing WAF": 3,
+    "public traffic control pair has excessive user friction": 1
+  },
+  "goals": [
+    {
+      "key": "coverage_score",
+      "dir": "max"
+    },
+    {
+      "key": "friction_score",
+      "dir": "min"
+    },
+    {
+      "key": "cost_units",
+      "dir": "min"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "2_0_0",
+      "outcome": "DOMAIN_FAIL",
+      "fw_var": 2,
+      "objectives": {
+        "coverage_score": 78.0,
+        "friction_score": 5.0,
+        "cost_units": 3.0
+      },
+      "reason_non_dominated": "champion: strictly best minimize cost_units (cost_units=3.000) on the 2-point Pareto front"
+    },
+    {
+      "candidate_id": "4_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "coverage_score": 96.0,
+        "friction_score": 3.0,
+        "cost_units": 5.0
+      },
+      "reason_non_dominated": "champion: strictly best maximize coverage_score (coverage_score=96.00) on the 2-point Pareto front"
+    }
+  ],
+  "pareto_front_size": 2,
+  "pareto_front_pass_count": 1,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=control_pair traffic=admin_api controls=captcha+review_queue coverage_score=66 friction_score=9 cost_units=5 FW_VAR=2",
+    "app=control_pair traffic=public_api controls=captcha+review_queue coverage_score=55 friction_score=9 cost_units=5 FW_VAR=3"
+  ],
+  "pass_example": "app=control_pair traffic=public_api controls=review_queue+waf coverage_score=70 friction_score=7 cost_units=7 FW_VAR=0",
+  "teaching_summary": "User problem (security control pair selection (FW_Combi(2))). Ran 12 candidates: 8x PASS (safe control pair), 3x admin traffic control pair is missing WAF, 1x public traffic control pair has excessive user friction. Formal Pareto front of 2. Verbs: choose exactly two security controls -> FW_Combi(2); traffic profile -> FW_Combi(1); control-pair policy -> TAIL oracle (FW_VAR). NOTE: 1 of 2 Pareto-front candidates are DOMAIN_FAIL (findings, not deployable): the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy.",
+  "db": "llm_selfposed_14_combi2",
+  "run_id": "llm-selfposed-14-combi2-001",
+  "sieve": false,
+  "run_dir": "/tmp/fw_work/llm_selfposed_14_combi2/runs/llm-selfposed-14-combi2-001",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

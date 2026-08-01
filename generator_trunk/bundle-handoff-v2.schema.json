@@ -1,0 +1,213 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bundle-handoff-v2.schema.json",
+  "title": "Reader -> Executor handoff (bundle.handoff/v2)",
+  "description": "Formalizes the Reader->Executor contract (STEP 16). Documents the v2 shape that bundle.handoff.HandoffV2 (de)serializes; legacy file-watch handshakes (resultsDbURL.properties/insert.sql/args/fwVar.shift/runmefirstonce.first, see py_executor.read_handshake) are converted into this same model by bundle.handoff.handoff_from_legacy — neither Reader nor Executor behaviour changes in this step.",
+  "type": "object",
+  "required": [
+    "protocol",
+    "run_id",
+    "language",
+    "candidate_transport",
+    "candidate_count",
+    "id_format",
+    "sources",
+    "result_target",
+    "result_schema_mode",
+    "verdict_mode"
+  ],
+  "properties": {
+    "protocol": {
+      "type": "string",
+      "description": "Schema identifier, \"<name>/v<major>\". Readers reject any value whose name or major differs.",
+      "const": "bundle.handoff/v2"
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "language": {
+      "type": "string",
+      "description": "Candidate runtime the Executor must launch.",
+      "enum": [
+        "python",
+        "java"
+      ]
+    },
+    "candidate_transport": {
+      "type": "string",
+      "description": "How candidate sources are delivered. \"loose-files\" is today's <combi_id>_0_0.* directory; \"sharded\" packs candidates into *.fwshard containers; \"grpc\" streams candidates live to the Executor's gRPC ingestion server (no on-disk candidate source).",
+      "enum": [
+        "loose-files",
+        "sharded",
+        "grpc"
+      ]
+    },
+    "candidate_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "id_format": {
+      "type": "string",
+      "description": "Pattern describing how candidate IDs are encoded in filenames/paths, e.g. \"<combi_id>_0_0\".",
+      "minLength": 1
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "description": "Locations the Executor reads candidates from (loose-files: a single directory; sharded: the shard directory; grpc: the endpoint the candidates were streamed to — informational, nothing to re-read locally).",
+      "items": {
+        "$ref": "#/$defs/source_location"
+      }
+    },
+    "result_target": {
+      "$ref": "#/$defs/result_target_ref"
+    },
+    "result_schema_mode": {
+      "type": "string",
+      "description": "Opaque descriptor of the results-row shape derived from the legacy insert.sql template, e.g. \"placeholders=9\". Never the SQL text itself.",
+      "minLength": 1
+    },
+    "verdict_mode": {
+      "type": "string",
+      "description": "FW_VAR vs FW_CUSTOM_VAR, chosen by legacy convention from the '?' count of insert.sql (== 6 -> custom).",
+      "enum": [
+        "FW_VAR",
+        "FW_CUSTOM_VAR"
+      ]
+    },
+    "custom_verdicts": {
+      "type": "array",
+      "description": "Explicit FW_CUSTOM_VAR code/message pairs; empty unless verdict_mode is FW_CUSTOM_VAR.",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "message"
+        ],
+        "properties": {
+          "code": {
+            "type": "integer"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "arguments": {
+      "type": "array",
+      "description": "Candidate argv tokens (legacy: arguments/args, space-joined).",
+      "items": {
+        "type": "string"
+      }
+    },
+    "shift": {
+      "type": "integer",
+      "description": "FW_VAR positional shift (legacy: arguments/fwVar.shift). P6: never empty/absent; defaults to 1.",
+      "default": 1
+    },
+    "preprocess": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Optional RunMeFirstOnce preprocessor reference (legacy: runFirstOnce/runmefirstonce.first). Java-only; ignored for Python candidates."
+    },
+    "execution_policy_ref": {
+      "type": [
+        "string",
+        "null"
+      ],
+      "description": "Reference to the execution policy governing this run (sandbox backend, resource limits — STEP 27). Not the policy body itself."
+    }
+  },
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "verdict_mode": {
+            "const": "FW_CUSTOM_VAR"
+          }
+        },
+        "required": [
+          "verdict_mode"
+        ]
+      },
+      "then": {
+        "required": [
+          "custom_verdicts"
+        ],
+        "properties": {
+          "custom_verdicts": {
+            "type": "array",
+            "minItems": 1
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "source_location": {
+      "type": "object",
+      "required": [
+        "kind",
+        "path"
+      ],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "dir",
+            "shard",
+            "grpc"
+          ]
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "result_target_ref": {
+      "type": "object",
+      "description": "Connection coordinates for the results DB. NEVER carries a password — credentials are resolved at runtime from BundleConfig/environment (legacy: resultsDbURL.properties' jdbc URL, with its password stripped).",
+      "required": [
+        "host",
+        "port",
+        "database"
+      ],
+      "properties": {
+        "host": {
+          "type": "string",
+          "minLength": 1
+        },
+        "port": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65535
+        },
+        "database": {
+          "type": "string",
+          "minLength": 1
+        },
+        "user": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

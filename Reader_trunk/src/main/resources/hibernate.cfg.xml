@@ -1,0 +1,79 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!DOCTYPE hibernate-configuration PUBLIC
+        "-//Hibernate/Hibernate Configuration DTD//EN"
+        "http://www.hibernate.org/dtd/hibernate-configuration-3.0.dtd">
+<hibernate-configuration>
+    <session-factory>
+        <property name="hibernate.connection.provider_class">org.hibernate.c3p0.internal.C3P0ConnectionProvider</property>
+        <property name="hibernate.c3p0.acquire_increment">1</property>
+        <property name="hibernate.c3p0.idle_test_period">5</property>
+        <property name="hibernate.c3p0.max_size">995</property>
+        <property name="hibernate.c3p0.max_statements">0</property><!--:22062020==50</property-->
+        <property name="hibernate.c3p0.maxStatementsPerConnection">0</property><!--:22062020==50</property-->
+        <property name="hibernate.c3p0.min_size">50</property>
+        <property name="hibernate.c3p0.timeout">5</property>
+        <property name="hibernate.c3p0.acquireRetryAttempts">1</property>
+        <property name="hibernate.c3p0.acquireRetryDelay">5</property>
+
+        <property name="hibernate.dialect">org.hibernate.dialect.PostgreSQL95Dialect</property>
+        <property name="hibernate.connection.driver_class">org.postgresql.Driver</property>
+<!--11032021: See 'HibernateSessionFactoryUtil'-class
+        <property name="hibernate.connection.url">jdbc:postgresql://localhost:5433/DB2</property>
+        <property name="hibernate.connection.username">postgres</property>
+        <property name="hibernate.connection.password"></property> :11032021-->
+        <property name="hibernate.hbm2ddl.auto">validate</property> <!-- create / create-drop / update (Y:!) / validate--><!--https://stackoverflow.com/questions/9227328/org-hibernate-exception-sqlgrammarexception-could-not-insert-com-sample-person-->
+        <property name="hibernate.connection_pool_size">995</property>
+        <property name="hibernate.jdbc.batch_size">500</property>
+
+        <property name="connection.release_mode">after_transaction</property><!--:23062020-->
+        <property name="hibernate.connection.release_mode">after_transaction</property><!--:23062020-->
+        <property name="hibernate.c3p0.breakOnAcquireFailure">true</property><!--:23062020-->
+
+        <!--property name="hibernate.jdbc.fetch_size">10</property-->
+
+        <property name="hibernate.order_inserts">true</property>
+        <property name="hibernate.order_updates">true</property>
+        <property name="hibernate.jdbc.batch_versioned_data">true</property>
+        <!--property name="hibernate.current_session_context_class">thread</property-->
+        <!--property name="hibernate.hbm2ddl.auto">update</property-->
+        <!--property name="hibernate.bytecode.use_reflection_optimizer">false</property-->
+        <property name="hibernate.show_sql">false</property><!--20042023-->
+        <property name="hibernate.format_sql">false</property><!--20042023-->
+        <property name="hibernate.use_sql_comments">false</property><!--20042023-->
+
+        <mapping resource="bigintValue.hbm.xml"/>
+        <!--mapping resource="comboKey2SheetOpt.hbm.xml"/-->
+
+    </session-factory>
+
+    <!--Y: fetch VS batch:
+     https://stackoverflow.com/questions/21257819/what-is-the-difference-between-hibernate-jdbc-fetch-size-and-hibernate-jdbc-batc
+
+Both of these options set properties within the JDBC driver.
+In the first case, hibernate.jdbc.fetch_size sets the statement's fetch size within the JDBC driver,
+that is the number of rows fetched when there is more than a one row result on select statements.
+
+In the second case, hibernate.jdbc.batch_size determines the number of updates (inserts, updates and deletes)
+that are sent to the database at one time for execution. This parameter is necessary to do batch inserts,
+but must be coupled with the ordered inserts parameter and the JDBC driver's capability to rewrite the inserts into a batch insert statement.
+
+____hibernate.jdbc.fetch_size
+
+The hibernate.jdbc.fetch_size Hibernate configuration property is used for setting the JDBC Statement#setFetchSize property
+for every statement that Hibernate uses during the currently running Persistence Context.
+Usually, you don't need to set this property as the default is fine, especially for MySQL and PostgreSQL
+which fetch the entire ResultSet in a single database roundtrip. Because Hibernate traverses the entire ResultSet,
+you are better off fetching all rows in a single shoot instead of using multiple roundtrips.
+Only for Oracle you might want to set it since the default fetch size is just 10. For more details, check out this article.:
+https://vladmihalcea.com/resultset-statement-fetching-with-jdbc-and-hibernate/
+
+____hibernate.jdbc.batch_size
+
+The hibernate.jdbc.batch_size property is used to batch multiple INSERT< UPDATE, and DELETE statements together so
+that they can be set in a single database call.
+If you set this property, you are better off setiing these two as well:
+
+hibernate.order_inserts to true
+hibernate.order_updates to true
+    -->
+</hibernate-configuration>

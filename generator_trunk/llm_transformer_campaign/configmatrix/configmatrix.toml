@@ -1,0 +1,159 @@
+title = "LLM-Transformer config matrix — Combi(1) variant × Combi(2) stressor-pair × Subsets runtime-flags"
+note  = """Functional correctness sweep over the 3 target classes (CPUTransformerSeq2Seq / MoE / Dynamic).
+Each candidate BUILDS the chosen model from a tiny config, runs a forward (+ backward when grad is live),
+and the verdict CONVICTS a defect: code1=wrong output shape, code2=non-finite logits, code3=missing grad,
+code9=unexpected crash on a VALID config. FW_VAR=0 means the model behaved correctly.
+Freedom→verb: model VARIANT is exactly-one-of-a-set -> FW_Combi(1); the STRESSORS are 'which 2 resources
+to push to the boundary at once' (k-of-n, order-irrelevant) -> FW_Combi(2); the runtime FLAGS are
+independent on/off feature-flags incl. none -> FW_Subsets (2^n)."""
+goals = ["latency_ms", "params"]
+args  = ["mode=configmatrix"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time, contextlib
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme import CPUTransformerSeq2Seq
+from llm_transformer_testme2 import CPUTransformerMoE
+from llm_transformer_testme3 import CPUTransformerDynamic
+cfg = dict(variant="seq2seq", vocab=64, d_model=16, n_layers=1, n_heads=4,
+           n_kv_heads=2, d_ffn=24, num_experts=2, max_seq_len=64,
+           batch=2, src_len=5, tgt_len=4)
+flags = dict(nograd=False, eval=False, threads=False)
+METRICS = dict(app="configmatrix", variant="seq2seq", n_layers=1, d_ffn=24,
+               src_len=5, params=0, latency_ms=0.0, code=0, defect=0)
+def build():
+    v = cfg["variant"]
+    if v == "seq2seq":
+        return CPUTransformerSeq2Seq(cfg["vocab"], cfg["d_model"], cfg["n_layers"],
+            cfg["n_heads"], cfg["n_kv_heads"], cfg["d_ffn"], max_seq_len=cfg["max_seq_len"])
+    if v == "moe":
+        return CPUTransformerMoE(cfg["vocab"], cfg["d_model"], cfg["n_layers"],
+            cfg["n_heads"], cfg["n_kv_heads"], cfg["d_ffn"], cfg["num_experts"], max_seq_len=cfg["max_seq_len"])
+    return CPUTransformerDynamic(cfg["vocab"], cfg["d_model"], cfg["n_layers"],
+        cfg["n_heads"], cfg["n_kv_heads"], cfg["d_ffn"], cfg["num_experts"], max_seq_len=cfg["max_seq_len"])
+def run_forward(M):
+    b, sl, tl = cfg["batch"], cfg["src_len"], cfg["tgt_len"]
+    src = torch.randint(0, cfg["vocab"], (b, sl))
+    if cfg["variant"] == "dynamic":
+        return M(src), (b, sl, cfg["vocab"])
+    tgt = torch.randint(0, cfg["vocab"], (b, tl))
+    return M(src, tgt), (b, tl, cfg["vocab"])
+''']
+
+[[slots]]
+sheet = "VARIANT"
+key   = "variant"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+cfg["variant"] = "seq2seq"
+''', '''
+cfg["variant"] = "moe"
+''', '''
+cfg["variant"] = "dynamic"
+''']
+
+[[slots]]
+sheet = "STRESS"
+key   = "stress"
+verb  = "FW_Combi(2)"
+raw   = true
+values = ['''
+cfg["n_layers"] = 3
+''', '''
+cfg["d_ffn"] = 64
+''', '''
+cfg["src_len"] = 16
+cfg["tgt_len"] = 12
+''', '''
+cfg["n_kv_heads"] = 1
+''']
+
+[[slots]]
+sheet = "FLAGS"
+key   = "flags"
+verb  = "FW_Subsets"
+raw   = true
+values = ['''
+flags["nograd"] = True
+''', '''
+flags["eval"] = True
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+code = 0
+err = ""
+out = None
+exp = None
+try:
+    torch.manual_seed(0)
+    if flags["threads"]:
+        torch.set_num_threads(1)
+    M = build()
+    if flags["eval"]:
+        M.eval()
+    ctx = torch.no_grad() if flags["nograd"] else contextlib.nullcontext()
+    with ctx:
+        out, exp = run_forward(M)
+    shape_ok = tuple(out.shape) == exp
+    finite_ok = bool(torch.isfinite(out).all())
+    if not shape_ok:
+        code = 1
+    elif not finite_ok:
+        code = 2
+    elif not (flags["nograd"] or flags["eval"]):
+        out.square().mean().backward()
+        g = next((p.grad for p in M.parameters() if p.grad is not None), None)
+        if g is None:
+            code = 3
+    METRICS["params"] = sum(p.numel() for p in M.parameters())
+except Exception as e:
+    code = 9
+    err = type(e).__name__
+METRICS["variant"] = cfg["variant"]
+METRICS["n_layers"] = cfg["n_layers"]
+METRICS["d_ffn"] = cfg["d_ffn"]
+METRICS["src_len"] = cfg["src_len"]
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+METRICS["err"] = err
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: forward produced wrong output shape on a valid config"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: forward produced non-finite (NaN/Inf) logits on a valid config"
+
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: backward produced no gradient on a valid config"
+
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: unexpected exception while building/running a valid config"

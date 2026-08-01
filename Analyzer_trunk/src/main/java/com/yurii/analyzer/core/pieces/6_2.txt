@@ -1,0 +1,47 @@
+// ── 6_2.txt — variant 2: ASCII fast-path with bit-OR + Locale fallback
+// Same contract. Avoids String.toLowerCase entirely for tokens that
+// are pure ASCII A-Z (the dominant case for code/log corpora) by
+// flipping the 0x20 bit on each uppercase letter. Falls back to
+// Locale.ROOT.toLowerCase only when non-ASCII or non-letter chars
+// are present — preserves semantics for Cyrillic & Latin-1 tokens.
+
+    public static List<String> tokenLowers(List<String> tokens) {
+        long __t0 = System.nanoTime();
+        Metrics.p6_invocations++;
+        Metrics.p6_total_input_size += (tokens == null ? 0 : tokens.size());
+        try {
+            if (tokens == null || tokens.isEmpty()) return List.of();
+            int n = tokens.size();
+            ArrayList<String> out = new ArrayList<>(n);
+            for (int i = 0; i < n; i++) {
+                String t = tokens.get(i);
+                int len = t.length();
+                boolean asciiOnly = true;
+                boolean hasUpper = false;
+                for (int j = 0; j < len; j++) {
+                    char c = t.charAt(j);
+                    if (c >= 128) { asciiOnly = false; break; }
+                    if (c >= 'A' && c <= 'Z') hasUpper = true;
+                }
+                String s;
+                if (asciiOnly) {
+                    if (!hasUpper) s = t;            // already lowercase ASCII
+                    else {
+                        char[] buf = new char[len];
+                        for (int j = 0; j < len; j++) {
+                            char c = t.charAt(j);
+                            buf[j] = (c >= 'A' && c <= 'Z') ? (char) (c | 0x20) : c;
+                        }
+                        s = new String(buf);
+                    }
+                } else {
+                    s = t.toLowerCase(Locale.ROOT);
+                }
+                out.add(s);
+                Metrics.p6_total_output_chars += s.length();
+            }
+            return out;
+        } finally {
+            Metrics.p6_duration_ns += System.nanoTime() - __t0;
+        }
+    }

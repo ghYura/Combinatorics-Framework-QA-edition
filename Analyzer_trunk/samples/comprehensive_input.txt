@@ -1,0 +1,307 @@
+# ════════════════════════════════════════════════════════════════════════════
+#  COMPREHENSIVE TEST CORPUS
+#  for com.yurii.analyzer.core.AnalyzerCore
+# ════════════════════════════════════════════════════════════════════════════
+#  Purpose
+#  -------
+#  Exercise every analyzer feature on a single corpus:
+#    • every line_type classifier branch
+#         empty / comment / kv_numeric / kv / templated / numeric / text / mixed
+#    • every regex bank
+#         NUMBER_RE — integers, decimals, comma-decimals, scientific, signed
+#         TOKEN_RE  — Latin & Cyrillic words (UNICODE_CHARACTER_CLASS)
+#         KV_PAIR_RE — both 'k=v' and 'k: v', Latin & Cyrillic keys
+#         PLACEHOLDER_RE — ${...} / {{...}} / [...] / <...>
+#         COMMENT_RE — '#' and '//' prefixes
+#    • multi-line shell parser
+#         heredocs, single/double quotes, parens, brace depth, control
+#         flow (if/for/while/case), backslash & operator continuations
+#    • manual-config rule bank
+#         required/forbidden tokens, token weights, required/forbidden keys,
+#         expected line_types, regex bans, numeric_ranges, line_length band,
+#         optimisations array (with new objective expressions for Brent)
+#    • multi-target optimisation pipeline
+#         min/max/target modes, Brent-derived analytical argmin,
+#         Pareto-frontier across goals, Simpson AUC of the score curve,
+#         RK4 verification of the confidence ODE C'(n)=(1-C)/100
+#
+#  Companion config: samples/comprehensive_config.json
+#  Paste it into the "Manual config JSON" panel for full-coverage analysis.
+# ════════════════════════════════════════════════════════════════════════════
+
+# ── SECTION 01 ─ empty + comment lines (line_type = 'comment' / 'empty') ────
+
+// C++/Java-style single-line comment
+# Bash-style comment
+   #   indented comment with extra leading whitespace
+// inline note: this section contributes only to lineTypeFrequency
+
+
+
+# ── SECTION 02 ─ kv_numeric: pipeline-stage operation metrics ───────────────
+#  Each line ≥ 2 K/V pairs AND ≥ 1 number → classifier returns 'kv_numeric'.
+#  These populate optMetricMin/Max/P5/P95 for the optimisation goals.
+operation=warmup        cost=0.95 latency=18.2 error_rate=0.012 throughput=42    status=ok    version=v1.0.3
+operation=ingest        cost=0.72 latency=12.4 error_rate=0.008 throughput=185   status=ok    version=v1.0.3
+operation=transform     cost=0.55 latency=7.10 error_rate=0.004 throughput=623   status=ok    version=v1.0.3
+operation=optimise      cost=0.50 latency=5.00 error_rate=0.001 throughput=1840  status=ok    version=v1.0.3
+operation=validate      cost=0.48 latency=4.80 error_rate=0.001 throughput=1925  status=ok    version=v1.0.3
+operation=publish       cost=0.61 latency=6.30 error_rate=0.003 throughput=1102  status=ok    version=v1.0.3
+operation=archive       cost=0.34 latency=3.20 error_rate=0.000 throughput=2700  status=ok    version=v1.0.3
+operation=rebuild_index cost=0.29 latency=2.40 error_rate=0.000 throughput=3540  status=ok    version=v1.0.3
+operation=hot_swap      cost=0.81 latency=15.7 error_rate=0.011 throughput=320   status=warn  version=v1.0.4
+operation=rollback      cost=0.92 latency=22.3 error_rate=0.024 throughput=88    status=warn  version=v1.0.4
+operation=replay        cost=0.66 latency=9.10 error_rate=0.006 throughput=510   status=ok    version=v1.0.4
+operation=compress      cost=0.41 latency=3.80 error_rate=0.001 throughput=2210  status=ok    version=v1.0.4
+operation=encrypt       cost=0.58 latency=6.90 error_rate=0.002 throughput=950   status=ok    version=v1.0.4
+operation=shuffle       cost=0.37 latency=3.40 error_rate=0.000 throughput=2480  status=ok    version=v1.0.5
+operation=quantize      cost=0.32 latency=2.80 error_rate=0.000 throughput=3110  status=ok    version=v1.0.5
+
+# ── SECTION 03 ─ Brent-target sweep: cost values bracketing argmin x* = 0.5 ─
+#  When config sets objective="(x-0.5)^2+0.1" with search_lo=0, search_hi=1
+#  Brent computes argmin=0.5 at construction. These trials should rank by
+#  proximity to 0.5 in the OptBrent[cost] breakdown component.
+trial=t01 cost=0.10 latency=4.0 error_rate=0.001 throughput=900  status=ok success=1
+trial=t02 cost=0.20 latency=4.2 error_rate=0.001 throughput=1100 status=ok success=1
+trial=t03 cost=0.30 latency=4.5 error_rate=0.001 throughput=1300 status=ok success=1
+trial=t04 cost=0.40 latency=4.8 error_rate=0.001 throughput=1500 status=ok success=1
+trial=t05 cost=0.45 latency=4.9 error_rate=0.001 throughput=1700 status=ok success=1
+trial=t06 cost=0.49 latency=5.0 error_rate=0.001 throughput=1900 status=ok success=1
+trial=t07 cost=0.50 latency=5.0 error_rate=0.001 throughput=2000 status=ok success=1
+trial=t08 cost=0.51 latency=5.1 error_rate=0.001 throughput=1850 status=ok success=1
+trial=t09 cost=0.55 latency=5.5 error_rate=0.001 throughput=1600 status=ok success=1
+trial=t10 cost=0.60 latency=6.2 error_rate=0.001 throughput=1380 status=ok success=1
+trial=t11 cost=0.65 latency=7.0 error_rate=0.002 throughput=1180 status=ok success=1
+trial=t12 cost=0.70 latency=8.1 error_rate=0.003 throughput=950  status=ok success=1
+trial=t13 cost=0.78 latency=10  error_rate=0.005 throughput=700  status=warn success=0
+trial=t14 cost=0.85 latency=12  error_rate=0.008 throughput=420  status=warn success=0
+trial=t15 cost=0.93 latency=16  error_rate=0.014 throughput=210  status=warn success=0
+
+# ── SECTION 04 ─ kv (no numbers) — config-style key/value lines ─────────────
+service: api-gateway
+namespace: production
+region: eu-west-1
+deployment_strategy: rolling
+runtime: jvm21
+trace_mode: distributed
+auth_provider: oidc
+storage_backend: postgres
+cache_layer: redis
+message_bus: nats
+
+# ── SECTION 05 ─ numeric: ≥3 numbers, ≤10 tokens → line_type='numeric' ──────
+24.7 18.3 22.1 19.8 25.4 21.0 23.9
+0.001 0.0034 0.012 0.0089 0.0021 0.00045
+1.234e-5 4.56E+3 -7.89e-2 1.0E10 -3.14e0
+1024 2048 4096 8192 16384 32768 65536
+-1 0 +1 -2 +2 -3 +3 -4 +4
+3.14159 2.71828 1.41421 1.73205 2.23607
+12,5 18,7 22,3 31,4 42,9
+1e-9 1e-6 1e-3 1e0 1e3 1e6 1e9
+-0.5 -0.25 0 0.25 0.5 0.75 1.0
+99.99 49.99 19.99 9.99 4.99 1.99 0.99
+
+# ── SECTION 06 ─ text: ≥10 tokens, no obvious K/V → line_type='text' ────────
+The deployment pipeline succeeded after three retries with the default rollback policy enabled
+A new corpus profile was synthesised from one hundred and forty seven thousand observations today
+After warming the JIT for ten minutes throughput stabilised within three percent of target
+The optimiser converged to a local minimum then escaped via a small simulated annealing kick
+Compaction reduced storage footprint to about forty two percent of the previous generation
+Cold start latency improved markedly when class data sharing was enabled in the runtime
+Garbage collection pause times decreased after migrating the heap to ZGC with generational mode
+Throughput per worker climbed steadily as the kernel page cache warmed during the first hour
+Replication lag stayed below the agreed service level objective during the entire incident window
+Schema migration completed without any blocking lock contention on the primary database tier
+
+# ── SECTION 07 ─ templated: ${VAR} / {{token}} / [section] / <tag> ──────────
+endpoint=${BASE_URL}/api/v2/users/{{user_id}}/profile [region=eu-west-1] <auth=oauth2>
+build_url=${CI_JOB_URL}/artifacts/{{commit_sha}}/build.tgz [stage=release] <signed=true>
+notify ${TEAM_SLACK} when {{job_name}} fails on host=${HOSTNAME} severity=<critical>
+trace_url=${OTEL_BASE}/trace/{{trace_id}}/span/{{span_id}}?parent=[ROOT] type=<server>
+config[NAMESPACE]=apps/<env>/{{cluster}}/${SERVICE_NAME}.yaml replicas={{count}}
+metric{name="<requests_total>",service="${SVC}",method="{{verb}}"} value=[counter]
+template: greet ${user.name}, your order [#{{order_id}}] ships <today>
+manifest=manifests/{{kind}}/[{{namespace}}]/${name}.json revision=<head>
+queue.${env}.{{topic}}.<partition_id>.dlq retention_days=[14]
+log_format="${time} [{{level}}] ${msg}" route=<stderr>
+
+# ── SECTION 08 ─ mixed — content that defies clean categorisation ───────────
+Order #4521 [shipped] cost=12.50 status=delivered
+session-7a8b: ttl=3600s, hits=1247, miss=18, ratio=0.014
+Build #1029 OK duration=8m32s tests_passed=487 tests_failed=0
+Customer 8821 placed order ABC-9988 for $129.99 with shipping $4.99
+Latency P50=2.3ms P95=8.7ms P99=14.2ms n=10000
+Cluster healthy, 12/12 nodes ready, last_election=42s ago
+Pull-request #2048 merged by alice into main after 3 reviews
+SHA: 9a8b7c6d5e4f3 fixed bug in cache invalidation, ~120 lines changed
+Email sent to ops@example.com regarding incident-2024-1112-007
+Memory rss=512MiB heap=384MiB cache=128MiB swap=0 oom_kills=0
+
+# ── SECTION 09 ─ Cyrillic / Russian — UNICODE_CHARACTER_CLASS coverage ──────
+операция=загрузка стоимость=0.45 задержка=8.2 ошибки=0.003 пропуск=520 статус=ок версия=в2.4.1
+операция=обработка стоимость=0.38 задержка=6.1 ошибки=0.001 пропуск=890 статус=ок версия=в2.4.1
+операция=сжатие стоимость=0.27 задержка=2.9 ошибки=0.000 пропуск=2400 статус=ок версия=в2.4.2
+сервис: аналитика
+регион: москва
+окружение: продуктив
+название "сервис аналитики" версия=2.4.1 регион=москва статус=рабочий
+запрос отправлен пользователю user_42 через шлюз gateway-3 с приоритетом высокий
+тестирование завершено за двенадцать минут с тремя предупреждениями и нулевыми ошибками
+параметры: альфа=0,95 бета=0,05 гамма=1,0 итераций=1000
+
+# ── SECTION 10 ─ multi-line shell commands — heredoc, quotes, control flow ──
+#  The forEachLogicalCommand parser must collapse each block below into a
+#  SINGLE logical command (one LineFeatures), thanks to isShellCommandComplete.
+
+cat <<EOF
+This is a heredoc body.
+It spans multiple physical lines but counts as ONE logical command.
+Numbers inside: 42 3.14 1e-5 — extracted by NUMBER_RE.
+Cyrillic тоже работает inside heredoc.
+EOF
+
+cat <<-INDENTED_HEREDOC
+	the leading dash allows the terminator (and only it) to be tab-indented
+	body text here, doesn't matter what
+	-INDENTED_HEREDOC
+
+if [ -f "/etc/hostname" ]; then
+    hostname=$(cat /etc/hostname)
+    echo "host=${hostname} resolved=true"
+fi
+
+for i in 1 2 3 4 5; do
+    echo "step=$i progress=$((i * 20))%"
+done
+
+while read -r line; do
+    echo "got=${line}"
+done < /dev/null
+
+case "${MODE:-default}" in
+    fast)   echo "mode=fast budget=10ms" ;;
+    slow)   echo "mode=slow budget=1000ms" ;;
+    *)      echo "mode=balanced budget=100ms" ;;
+esac
+
+echo "single-quoted: '\$NOT_EXPANDED' " \
+     "double-quoted: \"$VAR_EXPANDED\" " \
+     "and a backtick: \`hostname\`"
+
+(  echo "subshell start"
+   echo "key=value count=3"
+   echo "subshell end" )
+
+{  echo "brace group line 1"
+   echo "brace group line 2" ; }
+
+# ── SECTION 11 ─ structured-text formats — diversity of signatures ──────────
+{"event":"login","user":"alice","ip":"10.0.0.5","success":true,"latency_ms":42}
+{"event":"logout","user":"bob","ip":"10.0.0.7","success":true,"session_s":1834}
+{"event":"error","user":"carol","ip":"10.0.0.9","success":false,"code":503}
+SELECT id, name, email FROM users WHERE active = 1 AND created_at > '2024-01-01' LIMIT 100
+INSERT INTO orders (id, customer, total) VALUES (4521, 'alice', 129.99)
+UPDATE inventory SET stock = stock - 1 WHERE sku = 'XYZ-42' AND stock > 0
+2024-11-12T09:14:22Z [INFO] worker-7 processed batch=42 items=1024 in 1.27s
+2024-11-12T09:14:23Z [WARN] queue depth growing depth=8421 threshold=10000
+2024-11-12T09:14:24Z [DEBUG] cache_hit user=42 key=session.42 size_b=1024
+192.168.1.10 - admin [12/Nov/2024:09:14:22 +0000] "POST /login HTTP/1.1" 200 512
+192.168.1.42 - alice [12/Nov/2024:09:14:23 +0000] "GET /api/v2/orders HTTP/1.1" 200 8421
+10.0.0.5 - bob [12/Nov/2024:09:14:24 +0000] "DELETE /api/v2/cart/9 HTTP/1.1" 204 0
+[network]
+host=db.internal.example.com
+port=5432
+maxconn=200
+ssl=true
+DEBUG=1 LOGLEVEL=info NODE_ENV=production REGION=eu-west-1 RELEASE=v2.4.1
+
+# ── SECTION 12 ─ dynamic-eval payloads (require '=' AND ';' on same line) ───
+#  When 'Enable dynamic Python eval' is checked AND scipy is installed, every
+#  line below triggers a sandboxed Python sub-process that calls
+#  scipy.optimize.minimize on the 'objective'/'lambda' values.
+#  When scipy is absent the helper merely round-trips the env values.
+params = {'start_point': [0.0]} ; objective = lambda x: x*x + 3*x + 5 ; lr = 0.01
+weights = [1.0, 2.0, 3.0] ; func = lambda x: sum(weights) * x ; bounds = (-10, 10)
+target = 7.0 ; loss_func = lambda x: (x - target)**2 ; tolerance = 1e-6
+state = 'init' ; alpha = 0.95 ; beta = 0.05 ; gamma = 1.0 ; iterations = 1000
+mu = 0.5 ; sigma = 0.1 ; objective = lambda x: ((x - mu) / sigma) ** 2 ; minimize = True
+
+# ── SECTION 13 ─ pure Java ExprParser — these expressions are documented
+#  for reference; they are passed via the 'objective' field in the manual
+#  config (see comprehensive_config.json) and minimised by Brent in-process.
+#     (x - 0.5)^2 + 0.1            — quadratic, argmin at x = 0.5
+#     sin(x) + 0.1*x*x             — multimodal-ish, argmin near x ≈ -1.31
+#     abs(x - 3) + abs(x + 3)      — piecewise-linear, plateau on [-3, 3]
+#     exp(-x*x)                    — Gaussian peak at 0 (negate for argmax)
+#     (x - pi)^2 / e               — uses both pi and e constants
+
+# ── SECTION 14 ─ adversarial / edge cases ───────────────────────────────────
+x=1
+
+1234567890
+the quick brown fox jumps over the lazy dog and the lazy cat and the lazy bat and the lazy rat
+aaaaa bbbbb ccccc ddddd eeeee fffff ggggg hhhhh iiiii jjjjj kkkkk lllll mmmmm nnnnn ooooo
+тест проверка сравнение демо пример образец вариант случай контекст условие фактор параметр
+0
+0.0
+-0
++0
+NaN
+Infinity
+""
+'"'
+
+# Extreme length — exercises lenMax band:
+operation=stress_long cost=0.50 latency=5 error_rate=0.001 throughput=2000 status=ok extras=A_very_extra_long_padding_token_with_underscores_and_digits_42_42_42_for_lenMax_threshold_test_definitely_more_than_500_chars_when_combined_with_all_the_other_padding_tokens_present_in_this_single_logical_line_for_corpus_length_distribution_analysis_and_OOM_safety_validation_with_extra_padding_to_push_well_past_the_500_character_limit_and_trigger_the_TooLong_breakdown_component_in_scoreLine
+
+# ── SECTION 15 ─ rule-trigger lines — these SHOULD be rejected by config ────
+DROP TABLE users; -- forbidden_regex match
+rm -rf / --no-preserve-root  # forbidden_regex match
+status=FATAL panic=true error=core_dump   # forbidden_token match
+secret=supersecretkey password=admin123   # forbidden_key match (secret, password)
+malicious_payload=$( :(){ :|:& };: )      # fork-bomb pattern, forbidden_regex
+
+# ── SECTION 16 ─ rule-passing lines — should hit ReqToken/ReqKey/ReqRegex ───
+operation=health_check status=ok version=v3.1.0 cost=0.10 latency=0.5 error_rate=0.000 throughput=4200
+operation=health_check status=ok version=v3.1.1 cost=0.11 latency=0.6 error_rate=0.000 throughput=4150
+operation=health_check status=ok version=v3.1.2 cost=0.12 latency=0.7 error_rate=0.000 throughput=4100
+operation=metrics_pull status=ok version=v3.1.2 cost=0.18 latency=1.4 error_rate=0.000 throughput=2840
+
+# ── SECTION 17 ─ multi-objective Pareto candidates ──────────────────────────
+#  Each line varies on (cost, latency, error_rate, throughput) such that no
+#  line dominates all others on every objective. The Pareto front should
+#  contain several non-dominated lines. Watch the listener log for:
+#      "Pareto-optimal frontier: N non-dominated line(s) ..."
+pareto=p01 cost=0.20 latency=4 error_rate=0.005 throughput=1500 status=ok
+pareto=p02 cost=0.30 latency=3 error_rate=0.002 throughput=1700 status=ok
+pareto=p03 cost=0.40 latency=2 error_rate=0.001 throughput=2000 status=ok
+pareto=p04 cost=0.10 latency=8 error_rate=0.001 throughput=2200 status=ok
+pareto=p05 cost=0.50 latency=2 error_rate=0.000 throughput=2500 status=ok
+pareto=p06 cost=0.25 latency=5 error_rate=0.000 throughput=2400 status=ok
+pareto=p07 cost=0.60 latency=1 error_rate=0.003 throughput=1900 status=ok
+pareto=p08 cost=0.15 latency=6 error_rate=0.002 throughput=2300 status=ok
+pareto=p09 cost=0.35 latency=4 error_rate=0.001 throughput=2100 status=ok
+pareto=p10 cost=0.45 latency=3 error_rate=0.000 throughput=2250 status=ok
+
+# ── SECTION 18 ─ length-band probes (line_length min/max) ───────────────────
+# The two flanking lines are intentionally too short / too long for the band.
+abc                                                # too short, hits 'TooShort'
+operation=normal cost=0.50 latency=5 error_rate=0.001 throughput=2000 status=ok version=v1.0.0
+operation=padded cost=0.50 latency=5 error_rate=0.001 throughput=2000 status=ok version=v1.0.0 padding=lorem_ipsum_dolor_sit_amet_consectetur_adipiscing_elit_sed_do_eiusmod_tempor_incididunt_ut_labore_et_dolore_magna_aliqua_ut_enim_ad_minim_veniam_quis_nostrud_exercitation_ullamco_laboris_nisi_ut_aliquip_ex_ea_commodo_consequat_duis_aute_irure_dolor_in_reprehenderit_in_voluptate_velit_esse_cillum_dolore_eu_fugiat_nulla_pariatur_excepteur_sint_occaecat_cupidatat_non_proident_sunt_in_culpa_qui_officia_deserunt_mollit_anim_id_est_laborum_padding_extra_more_padding_to_exceed_max
+
+# ── SECTION 19 ─ entropy-band probes ────────────────────────────────────────
+# Low-entropy line (mostly repetition):
+aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa
+# High-entropy line (random-looking, mixed alphabet):
+8h@K3#mP9!qZ7&xR4*bN5%vL2$cF6+wT1=jH0~yE8?nA9_dG4
+# Medium-entropy structured:
+operation=middle cost=0.50 latency=5.0 error_rate=0.001 throughput=2000 status=ok hash=9a8b7c6d5e4f
+
+# ── SECTION 20 ─ closing self-description (consumed as 'text') ──────────────
+# This corpus contains roughly two hundred logical commands across nineteen
+# thematic sections. After analysis the listener log should mention:
+#   • Brent argmin at x = 0.5 for the cost objective
+#   • Simpson AUC of the score curve (a single scalar quality summary)
+#   • Pareto frontier size across the configured objectives
+#   • RK4 confidence-ODE residual at machine precision
+# End of corpus.

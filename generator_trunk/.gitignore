@@ -1,0 +1,21 @@
+# Regenerable build output — not tracked (rebuild via mvn / Python)
+target/
+__pycache__/
+face1_new/browser_runtime/
+*.pyc
+*.pyo
+*.class
+.idea/
+*.iml
+.DS_Store
+
+# STEP 14: local-only DB credential fallback for `bundle.config` — never
+# committed; see `config.DEV_DEFAULTS_PATH`/`_dev_defaults_layer`.
+/.bundle-dev-defaults.json
+
+# Evaluation gateway local auth tokens; operator-owned and never committed.
+/.bundle-gateway-tokens.json
+
+# Gateway deployment secrets (operator-owned).
+/deploy/gateway-tokens.json
+/deploy/certs/

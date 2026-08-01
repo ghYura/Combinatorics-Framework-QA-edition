@@ -1,0 +1,70 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_03_pareto_cache_design",
+  "category": "design-space / Pareto",
+  "user_problem": "I'm choosing a cache layer: eviction policy, size, TTL, and whether to prefetch. Every choice is valid; I want the best trade-offs of hit-rate, memory, and tail latency.",
+  "bundle_offer": "Bundle enumerates the full design space (one choice per axis), evaluates each with a deterministic surrogate cost model, and the Analyzer returns the non-dominated (Pareto) configs over three conflicting objectives.",
+  "hypothesis": "No single config wins all three objectives; a Pareto front of trade-offs exists.",
+  "zen_mapping": [
+    {
+      "freedom": "eviction policy",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "cache size",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "entry TTL",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "prefetch toggle",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "hit_rate",
+        "dir": "max"
+      },
+      {
+        "key": "memory_mb",
+        "dir": "min"
+      },
+      {
+        "key": "p99_latency_ms",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=0 for every config (optimization, not pass/fail); the Analyzer selects, it does not reject"
+  },
+  "pattern": "usecases/perf_opt",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/usecases/perf_opt"
+    }
+  ]
+}

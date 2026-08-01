@@ -1,0 +1,103 @@
+title = "GUI constraints reactor-commissioning e2e"
+note = """Self-contained REACTOR object for the GUI constraints/sieve acceptance tests.
+
+Each candidate commissions a reaction from a chosen quadruple
+(BASE, OXIDIZER, SOLVENT, ADDITIVE). The HEAD carries the real `Reactor` engine; a
+combination is HAZARDOUS iff it trips one of three chemistry rules:
+
+  • metal + nitrate            -> EXPLOSION    (a specific forbidden pair)
+  • same-sign charges          -> LIKE_CHARGE  (a formula over a per-reagent `charge`)
+  • {amine|alkali} base + ether-> ETHER_FLASH  (a whole-family Many:Many ban)
+
+Those three rules are EXACTLY the forbid-bonds the GUI draws, so the sieve must delete
+precisely the hazardous fw_final rows — proven against the engine's own verdict. A hazardous
+candidate that is NOT sieved out runs and reports FW_VAR=2 (the negative control); every
+candidate the sieve keeps reports FW_VAR=0."""
+
+[[goals]]
+key = "yield_pct"
+dir = "max"
+
+[[goals]]
+key = "hazard_count"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+raw = true
+values = [
+'''BASE = OXIDIZER = SOLVENT = ADDITIVE = None
+
+
+class Reactor:
+    """The reagent-compatibility model the GUI constraints are drawn against. `assess` is the
+    single source of truth for which quadruples are hazardous; the acceptance test execs this
+    very class to derive the ground-truth unsafe set the sieve is required to match."""
+
+    CHARGE = {"amine": 1, "alkali": 2, "metal": -1, "peroxide": -2, "nitrate": 1}
+
+    @staticmethod
+    def assess(base, oxidizer, solvent, additive):
+        hazards = []
+        if base == "metal" and oxidizer == "nitrate":
+            hazards.append("EXPLOSION")                  # forbid pair  (metal + nitrate)
+        if Reactor.CHARGE[base] * Reactor.CHARGE[oxidizer] > 0:
+            hazards.append("LIKE_CHARGE")                # when: BASE.charge * OXIDIZER.charge > 0
+        if base in ("amine", "alkali") and solvent == "ether":
+            hazards.append("ETHER_FLASH")               # Many:Many: {amine,alkali} x {ether}
+        stable = not hazards
+        yield_pct = (62 + (8 if additive == "accelerant" else 0)
+                     + (5 if solvent == "water" else 0)) if stable else 0
+        return {"hazards": hazards, "stable": stable, "yield_pct": yield_pct,
+                "outcome": "STABLE" if stable else "+".join(hazards)}'''
+]
+
+[[slots]]
+sheet = "BASE"
+raw = true
+values = [
+'''BASE = "amine"''',
+'''BASE = "alkali"''',
+'''BASE = "metal"''',
+]
+
+[[slots]]
+sheet = "OXIDIZER"
+raw = true
+values = [
+'''OXIDIZER = "peroxide"''',
+'''OXIDIZER = "nitrate"''',
+]
+
+[[slots]]
+sheet = "SOLVENT"
+raw = true
+values = [
+'''SOLVENT = "water"''',
+'''SOLVENT = "ether"''',
+]
+
+[[slots]]
+sheet = "ADDITIVE"
+raw = true
+values = [
+'''ADDITIVE = "none"''',
+'''ADDITIVE = "inhibitor"''',
+'''ADDITIVE = "accelerant"''',
+]
+
+[[slots]]
+sheet = "TAIL"
+raw = true
+values = [
+'''_r = Reactor.assess(BASE, OXIDIZER, SOLVENT, ADDITIVE)
+FW_VAR = 0 if _r["stable"] else 2
+FW_CUSTOM_VAR = FW_VAR
+print(
+    "app=gui_reactor "
+    "base=%s oxidizer=%s solvent=%s additive=%s "
+    "outcome=%s stable=%d yield_pct=%d hazard_count=%d FW_VAR=%d"
+    % (BASE, OXIDIZER, SOLVENT, ADDITIVE,
+       _r["outcome"], int(_r["stable"]), _r["yield_pct"], len(_r["hazards"]), FW_VAR)
+)'''
+]

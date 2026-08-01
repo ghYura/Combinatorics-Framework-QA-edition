@@ -1,0 +1,178 @@
+title = "LLM-Transformer scenario join — full brace FW_(START,,CFG,REL,SHP,,END,SEP,M:N) + FW_Separator glue"
+note  = """Second-order test design: a named test SCENARIO = (a config-pair) JOINED with (an input-shape).
+CFG = FW_Combi(2) over 3 config tweaks (its RESULT table = 3 pairs) with separator=GLUE woven between the
+pair's two elements in the dual fw2_CFG; SHP = FW_Combi(1) over 2 input shapes (fw2_SHP = 2). The brace
+joins THOSE TWO PRIOR RESULT TABLES (not the raw sheets), M:N -> 6 scenarios, weaving START/REL/SEP/END.
+Each assembled scenario mutates cfg, builds CPUTransformerSeq2Seq, runs a forward, and CONVICTS code1/2/9
+on a wrong-shape / non-finite / crash. FW_VAR=0 = the joined scenario ran correctly.
+Freedom→verb: 'join two prior result tables' is the brace; 'weave a glue token between combined pieces'
+is FW_Separator. CFG/SHP carry FW_Exclude so they appear ONLY via the join (consumed, not double-counted)."""
+args  = ["mode=scenariojoin"]
+
+# brace: TOP-LEVEL key, before any table. Joins the RESULT tables of CFG and SHP, M:N, with all four
+# formatting fields (START beginning, REL relation, SEP separator, END ending) woven in.
+seq_extra = [["SCN", "FW_Reuse", "FW_(START,,CFG,REL,SHP,,END,SEP,M:N)"]]
+
+[[goals]]
+key = "params"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme import CPUTransformerSeq2Seq
+cfg = dict(vocab=64, d_model=16, n_layers=1, n_heads=4, n_kv_heads=2,
+           d_ffn=24, max_seq_len=64, batch=2, src_len=5, tgt_len=4)
+scn = []
+METRICS = dict(app="scenariojoin", scenario="", params=0, src_len=5,
+               latency_ms=0.0, code=0, defect=0)
+''']
+
+[[slots]]
+sheet = "CFG"
+key   = "cfg"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+separator = "GLUE"
+raw   = true
+values = ['''
+cfg["n_layers"] = 3
+scn.append("deep")
+''', '''
+cfg["d_ffn"] = 64
+scn.append("wide")
+''', '''
+cfg["n_kv_heads"] = 1
+scn.append("tightgqa")
+''']
+
+[[slots]]
+sheet = "SHP"
+key   = "shp"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = ['''
+cfg["src_len"] = 6
+cfg["tgt_len"] = 5
+scn.append("short")
+''', '''
+cfg["src_len"] = 20
+cfg["tgt_len"] = 16
+scn.append("long")
+''']
+
+[[slots]]
+sheet = "SCN"
+key   = "scn_target"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+pass  # brace (seq_extra) overwrites this sheet's rows with the CFG x SHP join
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+code = 0
+out = None
+exp = None
+try:
+    torch.manual_seed(0)
+    M = CPUTransformerSeq2Seq(cfg["vocab"], cfg["d_model"], cfg["n_layers"],
+        cfg["n_heads"], cfg["n_kv_heads"], cfg["d_ffn"], max_seq_len=cfg["max_seq_len"])
+    src = torch.randint(0, cfg["vocab"], (cfg["batch"], cfg["src_len"]))
+    tgt = torch.randint(0, cfg["vocab"], (cfg["batch"], cfg["tgt_len"]))
+    out = M(src, tgt)
+    exp = (cfg["batch"], cfg["tgt_len"], cfg["vocab"])
+    if tuple(out.shape) != exp:
+        code = 1
+    elif not bool(torch.isfinite(out).all()):
+        code = 2
+    METRICS["params"] = sum(p.numel() for p in M.parameters())
+except Exception as e:
+    code = 9
+    METRICS["err"] = type(e).__name__
+METRICS["scenario"] = "|".join(scn)
+METRICS["src_len"] = cfg["src_len"]
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[slots]]
+sheet = "START"
+key   = "start"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+scn.append("<<")
+''']
+
+[[slots]]
+sheet = "REL"
+key   = "rel"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+scn.append("->")
+''']
+
+[[slots]]
+sheet = "SEP"
+key   = "sep"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+scn.append("|")
+''']
+
+[[slots]]
+sheet = "END"
+key   = "end"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+scn.append(">>")
+''']
+
+[[slots]]
+sheet = "GLUE"
+key   = "glue"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+scn.append("+GLUE+")
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a joined scenario produced the wrong output shape"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a joined scenario produced non-finite logits"
+
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: a joined scenario crashed while building/running"

@@ -1,0 +1,59 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_13_resource_multiset_combir",
+  "category": "resource allocation multiset (FW_CombiR)",
+  "user_problem": "I allocate 3 worker slots from instance types {cpu, gpu, mem}, and I can pick the same type more than once. Which allocation mixes are safe for batch vs serving, and how do diversity and cost trade off?",
+  "bundle_offer": "Bundle models the allocation as FW_CombiR(3): a size-3 MULTISET over the instance types (repetition allowed) crossed with the workload class; a resource-mix oracle flags zero-diversity (single point of failure) and serving-without-gpu; the Analyzer returns a diversity-vs-cost Pareto front.",
+  "hypothesis": "All-identical allocations are single points of failure (DOMAIN_FAIL); serving with no gpu slot fails; the rest pass; cost rises with gpu slots.",
+  "zen_mapping": [
+    {
+      "freedom": "3 worker slots from 3 instance types, repetition allowed",
+      "shape": "k of n WITH repetition",
+      "verb": "FW_CombiR(3)",
+      "cardinality": "C(5,3) = 10"
+    },
+    {
+      "freedom": "workload class",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "resource-mix policy",
+      "shape": "runtime domain policy",
+      "verb": "TAIL oracle (FW_VAR)",
+      "cardinality": "oracle DOMAIN_FAIL"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_CombiR",
+      "FW_Combi",
+      "TAIL oracle ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "diversity",
+        "dir": "max"
+      },
+      {
+        "key": "cost_units",
+        "dir": "min"
+      }
+    ],
+    "oracle": "FW_VAR=2 zero diversity (all slots same type); FW_VAR=3 serving without a gpu slot; FW_VAR=0 safe (codes kept small to fit combo-column capacity)"
+  },
+  "pattern": "resource multiset allocation",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/resource multiset allocation"
+    }
+  ]
+}

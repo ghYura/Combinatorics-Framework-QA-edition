@@ -1,0 +1,47 @@
+# Resolved Python dependency lock for the release extras.
+#
+# Generated with:
+#     python3 -m venv .venv && . .venv/bin/activate
+#     pip install setuptools==83.0.0
+#     pip install -e '.[test,science,deploy]'
+#     pip freeze --all --exclude-editable --exclude pip > requirements-release.lock
+#
+# Install a release environment from it with:
+#     pip install -r requirements-release.lock
+#
+# SCOPE AND LIMITS (read before trusting this file):
+#   * It records what resolved on ONE platform (linux x86_64, CPython 3.12) at one
+#     moment. Platform-specific wheels are not pinned per platform, so this is not a
+#     universal lock and must not be presented as one.
+#   * It has no hashes. Adding --require-hashes needs a hash-complete resolution;
+#     until then this pins VERSIONS, not artifact bytes.
+#   * pyproject.toml remains the human-maintained direct-dependency declaration.
+#     This file is the machine-resolved output. Edit pyproject.toml, regenerate this.
+#   * PROFILE SCOPE: this lock covers ONLY the Tier-3 release profiles
+#     `test,science,deploy`. It does NOT cover every published feature surface —
+#     the `ui`, `gateway`, `ml`, `browser` and `test-full` extras, nor
+#     generator_trunk/face1_new/requirements.txt, are outside it. Running those
+#     features installs unlocked dependencies. `bundle_run.py release` reports
+#     each uncovered declaration; do not read this file as "the Python surface is
+#     locked". Widening it is a deliberate profile decision, not a regeneration.
+#
+# Refresh policy: docs/34_RELEASE_REPRODUCIBILITY.md
+# Platform: Linux-7.0.0-28-generic-x86_64-with-glibc2.39 CPython 3.12.3
+
+asn1crypto==1.5.1
+et_xmlfile==2.0.0
+iniconfig==2.3.0
+numpy==2.5.1
+openpyxl==3.1.5
+packaging==26.2
+pg8000==1.31.5
+pluggy==1.6.0
+Pygments==2.20.0
+pytest==9.1.1
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+scipy==1.18.0
+scramp==1.4.15
+setuptools==83.0.0
+shapely==2.1.2
+six==1.17.0

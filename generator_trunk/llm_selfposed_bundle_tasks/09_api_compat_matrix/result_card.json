@@ -1,0 +1,131 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_09_api_compat_matrix",
+  "category": "API compatibility matrix",
+  "user_problem": "I maintain an API with v1/v2/v3 versions and several client SDK generations. I need to test which client/auth/payload combinations are compatible, which pairs are structurally unsupported, and which trade-offs are best for compatibility, latency, and migration effort.",
+  "bundle_offer": "Bundle enumerates API version, client SDK, auth scheme, and payload shape; the binary sieve removes unsupported legacy-SDK/v3 pairs before execution; the TAIL oracle catches executable but incompatible payload/auth cases; the Analyzer returns a compatibility/latency/migration-effort Pareto front.",
+  "zen_mapping": [
+    {
+      "freedom": "API version",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "client SDK generation",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "auth scheme",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "payload shape",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "legacy SDK against v3 API is forbidden",
+      "shape": "a binary pre-execution contract bond",
+      "verb": "[[constraints]] sieve v1",
+      "cardinality": "removes 9"
+    }
+  ],
+  "oracle": "sieve removes legacy_sdk+v3 API pre-execution; FW_VAR=2 for v1 API with bulk_json payload; FW_VAR=3 for beta_sdk+jwt+legacy_json; FW_VAR=0 compatible combination",
+  "spec_path": "llm_selfposed_bundle_tasks/09_api_compat_matrix/scenario.toml",
+  "spec_sha256": "a42969c8e824c6ec3a7218a64b0bef8b36544c675ff0d876da15ea5e59bc9f61",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 0,
+    "mode": "BOUNDED",
+    "reasons": [
+      "each FW_Optional slot independently multiplies the post-sieve candidate space",
+      "product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)"
+    ],
+    "upper": 81,
+    "value": 81
+  },
+  "run_class": "S",
+  "ran": true,
+  "candidate_count": 72,
+  "verdict_distribution": {
+    "PASS (compatible API/client/auth/payload combination)": 60,
+    "v1 API cannot accept bulk_json payloads": 9,
+    "beta SDK JWT path requires modern/bulk payload claims": 3
+  },
+  "goals": [
+    {
+      "key": "compat_score",
+      "dir": "max"
+    },
+    {
+      "key": "latency_ms",
+      "dir": "min"
+    },
+    {
+      "key": "migration_effort",
+      "dir": "min"
+    }
+  ],
+  "best_candidates": [
+    {
+      "candidate_id": "10_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "compat_score": 97.0,
+        "latency_ms": 35.0,
+        "migration_effort": 4.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 27 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "11_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "compat_score": 102.0,
+        "latency_ms": 40.0,
+        "migration_effort": 6.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 27 front points (better than each on ≥1 objective)"
+    },
+    {
+      "candidate_id": "14_0_0",
+      "outcome": "PASS",
+      "fw_var": 0,
+      "objectives": {
+        "compat_score": 107.0,
+        "latency_ms": 53.0,
+        "migration_effort": 9.0
+      },
+      "reason_non_dominated": "Pareto trade-off: not dominated by any of the 27 front points (better than each on ≥1 objective)"
+    }
+  ],
+  "pareto_front_size": 27,
+  "pareto_front_pass_count": 25,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [
+    "app=api_compat api_version=v1 client=current_sdk auth=api_key payload=bulk_json compat_score=104 latency_ms=57 migration_effort=9 FW_VAR=2",
+    "app=api_compat api_version=v1 client=beta_sdk auth=jwt payload=legacy_json compat_score=106 latency_ms=46 migration_effort=11 FW_VAR=3"
+  ],
+  "pass_example": "app=api_compat api_version=v1 client=current_sdk auth=api_key payload=legacy_json compat_score=97 latency_ms=35 migration_effort=4 FW_VAR=0",
+  "teaching_summary": "User problem (API compatibility matrix). Ran 72 candidates: 60x PASS (compatible API/client/auth/payload combination), 9x v1 API cannot accept bulk_json payloads, 3x beta SDK JWT path requires modern/bulk payload claims. Formal Pareto front of 27. Verbs: API version -> FW_Combi(1); client SDK generation -> FW_Combi(1); auth scheme -> FW_Combi(1); payload shape -> FW_Combi(1); legacy SDK against v3 API is forbidden -> [[constraints]] sieve v1. NOTE: 2 of 27 Pareto-front candidates are DOMAIN_FAIL (findings, not deployable): the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy.",
+  "db": "llm_selfposed_09_api_compat",
+  "run_id": "llm-selfposed-09-api-compat-001",
+  "sieve": true,
+  "run_dir": "/tmp/fw_work/llm_selfposed_09_api_compat/runs/llm-selfposed-09-api-compat-001",
+  "evidence_files": [
+    "run.json",
+    "state.json",
+    "executor-summary.json",
+    "metrics.kv",
+    "provenance.json"
+  ]
+}

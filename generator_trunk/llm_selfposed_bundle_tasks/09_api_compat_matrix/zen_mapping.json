@@ -1,0 +1,77 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_09_api_compat_matrix",
+  "category": "API compatibility matrix",
+  "user_problem": "I maintain an API with v1/v2/v3 versions and several client SDK generations. I need to test which client/auth/payload combinations are compatible, which pairs are structurally unsupported, and which trade-offs are best for compatibility, latency, and migration effort.",
+  "bundle_offer": "Bundle enumerates API version, client SDK, auth scheme, and payload shape; the binary sieve removes unsupported legacy-SDK/v3 pairs before execution; the TAIL oracle catches executable but incompatible payload/auth cases; the Analyzer returns a compatibility/latency/migration-effort Pareto front.",
+  "hypothesis": "The sieve removes 9 legacy-SDK/v3 rows from 81 raw combinations; the oracle catches v1+bulk payloads and beta-SDK JWT legacy payloads; Analyzer exposes the compatibility/latency/migration trade-off.",
+  "zen_mapping": [
+    {
+      "freedom": "API version",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "client SDK generation",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "auth scheme",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "payload shape",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "legacy SDK against v3 API is forbidden",
+      "shape": "a binary pre-execution contract bond",
+      "verb": "[[constraints]] sieve v1",
+      "cardinality": "removes 9"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "[[constraints]] sieve v1",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "compat_score",
+        "dir": "max"
+      },
+      {
+        "key": "latency_ms",
+        "dir": "min"
+      },
+      {
+        "key": "migration_effort",
+        "dir": "min"
+      }
+    ],
+    "oracle": "sieve removes legacy_sdk+v3 API pre-execution; FW_VAR=2 for v1 API with bulk_json payload; FW_VAR=3 for beta_sdk+jwt+legacy_json; FW_VAR=0 compatible combination"
+  },
+  "pattern": "API/client/payload contract matrix",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/API/client/payload contract matrix"
+    }
+  ]
+}

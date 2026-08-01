@@ -1,0 +1,62 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_05_sieve_deploy_matrix",
+  "category": "constraint / sieve",
+  "user_problem": "I deploy across regions, plan tiers, and replica counts, but some combinations are illegal before I even run them (the free tier isn't allowed in data-residency-restricted regions). I also want a runtime check that enterprise tiers are sufficiently replicated.",
+  "bundle_offer": "Bundle declares value attributes ([[params]]) and a binary when-rule ([[constraints]]); the SIEVE deletes the illegal region/tier combinations from the space BEFORE any execution, then the oracle catches the remaining runtime policy (enterprise under-replication).",
+  "hypothesis": "The sieve removes free-tier x restricted-region rows pre-execution; the oracle flags enterprise tier with < 3 replicas at runtime.",
+  "zen_mapping": [
+    {
+      "freedom": "region",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "4"
+    },
+    {
+      "freedom": "plan tier",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "replica count",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1)",
+      "cardinality": "3"
+    },
+    {
+      "freedom": "free-tier-in-restricted-region is FORBIDDEN",
+      "shape": "a bond (pre-execution invalidity)",
+      "verb": "[[constraints]] sieve (NOT a verb)",
+      "cardinality": "removes 6 rows"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "FW_Combi",
+      "[[constraints]] sieve ",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "replicas",
+        "dir": "max"
+      }
+    ],
+    "oracle": "sieve removes structurally-invalid combos pre-exec; FW_VAR=2 enterprise under-replicated (replicas<3) at runtime; FW_VAR=0 valid"
+  },
+  "pattern": "constraints/diff_fuzz_when",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/constraints/diff_fuzz_when"
+    }
+  ]
+}

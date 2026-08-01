@@ -1,0 +1,55 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_06_secondorder_release_join",
+  "category": "second-order composition (brace)",
+  "user_problem": "I want to build candidate pairs of migration steps (choose 2 of 3) and then JOIN each pair with a target region to get composed release plans.",
+  "bundle_offer": "Bundle's brace FW_(...) is a second-order JOIN of two PRIOR result tables: operand A = choose-2-of-3 steps (its result table is 3 pairs), operand B = choose-1-of-2 regions (2 rows); the M:N brace joins those result tables into 6 composed plans.",
+  "hypothesis": "The brace consumes the combination-RESULTS of earlier rows (not raw sheets); the join yields 3 x 2 = 6 plans.",
+  "zen_mapping": [
+    {
+      "freedom": "choose 2 of 3 migration steps",
+      "shape": "k of n, order irrelevant",
+      "verb": "FW_Combi(2) (FW_Exclude'd operand)",
+      "cardinality": "C(3,2)=3 pairs"
+    },
+    {
+      "freedom": "choose 1 of 2 regions",
+      "shape": "exactly one of a set",
+      "verb": "FW_Combi(1) (FW_Exclude'd operand)",
+      "cardinality": "2"
+    },
+    {
+      "freedom": "join the two prior result tables",
+      "shape": "join two prior results",
+      "verb": "brace FW_(,,A,,B,,,,M:N)",
+      "cardinality": "3 x 2 = 6 (UNKNOWN to planner -> class X)"
+    }
+  ],
+  "entities": {
+    "sheets": [
+      "HEAD",
+      "FW_Combi",
+      "FW_Combi",
+      "brace FW_",
+      "TAIL"
+    ],
+    "goals": [
+      {
+        "key": "steps",
+        "dir": "max"
+      }
+    ],
+    "oracle": "FW_VAR=0 (this scenario demonstrates the second-order join shape, not a pass/fail oracle)"
+  },
+  "pattern": "brace_demo",
+  "evidence": [
+    {
+      "kind": "zen",
+      "path": "ZEN_OF_COMBINATORICS.md"
+    },
+    {
+      "kind": "pattern",
+      "path": "generator_trunk/brace_demo"
+    }
+  ]
+}

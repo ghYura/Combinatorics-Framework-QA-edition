@@ -1,0 +1,57 @@
+{
+  "schema": "bundle.selfposed-result-card/v1",
+  "scenario_id": "selfposed_15_secondorder_group_rewrite",
+  "category": "second-order recombination (FW_Group + FW_ReplaceRE + FW_Separator)",
+  "user_problem": "I want to take audit-tag subsets and RE-COMBINE those results into groups, rewriting the codes and gluing tokens between elements -- combinations of combinations. What does Bundle do, and can I run it safely?",
+  "bundle_offer": "Bundle's UNARY second-order operator: FW_Group re-combines a sheet's PRIOR result rows (combinations of combinations), FW_ReplaceRE rewrites the Core code-string, and FW_Separator weaves a glue token. Authored with fwgen first-class group_replace= and separator= fields. Like the brace, it is a second-order verb the planner cannot estimate, so it is PLAN + GRAPH only in the safe path.",
+  "zen_mapping": [
+    {
+      "freedom": "tag subsets (prior result rows)",
+      "shape": "any subset",
+      "verb": "FW_Subsets",
+      "cardinality": "2^3 = 8 rows"
+    },
+    {
+      "freedom": "re-combine + rewrite those prior rows",
+      "shape": "re-combine + rewrite a prior result",
+      "verb": "FW_Group + FW_ReplaceRE",
+      "cardinality": "second-order (UNKNOWN to planner)"
+    },
+    {
+      "freedom": "glue token between elements",
+      "shape": "weave a glue token",
+      "verb": "FW_Separator(GLUE)",
+      "cardinality": "row-preserving modifier"
+    }
+  ],
+  "oracle": "FW_VAR=0 (this scenario demonstrates the second-order recombination shape, not a pass/fail oracle)",
+  "spec_path": "llm_selfposed_bundle_tasks/15_secondorder_group_rewrite/scenario.toml",
+  "spec_sha256": "3c32a2ae96d7325dbe09256da96a14df9bd602ca24d90bd96fd7fe85f42ed04e",
+  "plan_cardinality": {
+    "assumptions": [],
+    "formula": "post_sieve × optional_multiplier",
+    "lower": 8,
+    "mode": "EXACT",
+    "reasons": [],
+    "upper": 8,
+    "value": 8
+  },
+  "run_class": "S",
+  "ran": false,
+  "candidate_count": 0,
+  "verdict_distribution": {},
+  "goals": [
+    {
+      "key": "groups",
+      "dir": "max"
+    }
+  ],
+  "best_candidates": [],
+  "pareto_front_size": 0,
+  "pareto_front_pass_count": 0,
+  "pareto_front_note": "the formal front is over ALL executed candidates; DOMAIN_FAIL members are findings, not deployable — pick the best PASS candidate to deploy",
+  "domain_fail_examples": [],
+  "pass_example": null,
+  "teaching_summary": "User problem (second-order recombination (FW_Group + FW_ReplaceRE + FW_Separator)). Plan + graph only (planner reports S from the base FW_Subsets=8, but safe policy treats FW_Group as effective class X because Core materializes the second-order space). Verbs: tag subsets (prior result rows) -> FW_Subsets; re-combine + rewrite those prior rows -> FW_Group + FW_ReplaceRE; glue token between elements -> FW_Separator(GLUE).",
+  "plan_only_reason": "Second-order FW_Group: the planner estimates only the base verb (FW_Subsets=8) and cannot fold in FW_Group's recombination, so it under-counts. A forced full run materialized fw_final=206 in Core (vs estimate 8) and tripped the CRITICAL reader_emitted_eq_expected invariant (expected 8, got 206). Hence PLAN + GRAPH only in the safe path (like the brace, scenario 06); a real second-order run needs explicit handling, not the default invariant chain."
+}

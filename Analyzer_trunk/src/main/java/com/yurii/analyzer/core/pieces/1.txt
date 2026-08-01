@@ -1,0 +1,22 @@
+// ── 1.txt — initial implementation of mean(List<Double>) ─────────────
+// Contract:
+//   in   List<Double> values  (may be null or empty)
+//   out  arithmetic mean (0.0 if empty)
+//
+// Original AnalyzerCore.java realisation: simple double accumulator.
+
+    public static double mean(List<Double> values) {
+        long __t0 = System.nanoTime();
+        Metrics.p1_invocations++;
+        Metrics.p1_total_input_size += (values == null ? 0 : values.size());
+        try {
+            if (values == null || values.isEmpty()) return 0.0;
+            double sum = 0.0;
+            for (double v : values) sum += v;
+            double out = sum / values.size();
+            Metrics.p1_sum_of_outputs += out;
+            return out;
+        } finally {
+            Metrics.p1_duration_ns += System.nanoTime() - __t0;
+        }
+    }

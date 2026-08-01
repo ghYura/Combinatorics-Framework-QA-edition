@@ -1,0 +1,43 @@
+// graphspec.js — the graph→sidecar compile model, mirroring the VERIFIED Python
+// constraints/graphspec.py. Node id encodes [sheet, value] as compact JSON; an edge between two
+// value-nodes = a forbidden bond. Edges are grouped by unordered sheet-pair into one constraint
+// each — the exact sidecar that constraints/sieve.py + `bundle_run --sieve` consume.
+
+export const nid = (sheet, value) => JSON.stringify([sheet, value]);
+
+export function parseNodeId(id) {
+  try {
+    const parsed = JSON.parse(id);
+    return Array.isArray(parsed) && parsed.length === 2 ? parsed : null;
+  } catch (_) {
+    return null;
+  }
+}
+
+export function graphToSidecar(edges) {
+  const groups = {};
+  for (const e of edges) {
+    const a = parseNodeId(e.source);
+    const b = parseNodeId(e.target);
+    if (!a || !b) continue;
+    const [s1, v1] = a;
+    const [s2, v2] = b;
+    if (s1 === s2) continue; // a bond is between two DIFFERENT sheets
+    const ps = [s1, s2].sort();
+    const gk = ps.join("");
+    if (!groups[gk]) groups[gk] = { sheets: ps, pairs: [] };
+    const o = {};
+    o[s1] = v1;
+    o[s2] = v2;
+    groups[gk].pairs.push(o);
+  }
+  const constraints = Object.values(groups).map((g, i) => ({
+    id: "bond" + i + "_" + g.sheets[0] + "_" + g.sheets[1],
+    polarity: "forbid",
+    sheets: g.sheets,
+    pairs: g.pairs,
+    gate: {},
+    desc: g.pairs.length + " forbid " + g.sheets[0] + "x" + g.sheets[1] + " bond(s)",
+  }));
+  return { version: 1, params: {}, constraints };
+}

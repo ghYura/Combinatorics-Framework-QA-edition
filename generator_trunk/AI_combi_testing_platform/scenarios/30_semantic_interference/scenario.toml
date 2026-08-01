@@ -1,0 +1,91 @@
+spec_version = "1"
+title = "Semantic-interference and irrelevant-noise study"
+note = "Equivalent canonical tasks vary familiar mathematical words used as labels, context costumes, paraphrases, and optional irrelevant facts."
+args = ["suite=ai_combi_testing", "study=semantic-interference"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "semantic_invariance_ok"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+PLAN = initialize_candidate(family="cancellation", seed=14142, complexity=5)
+''']
+
+[[slots]]
+sheet = "SEMANTIC_MODE"
+key = "semantic_mode"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.semantic_mode = "neutral"
+PLAN.costume = "neutral"
+''',
+'''PLAN.semantic_mode = "loaded"
+PLAN.costume = "loaded"
+'''
+]
+
+[[slots]]
+sheet = "PARAPHRASE"
+key = "paraphrase"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.paraphrase = "direct"
+''',
+'''PLAN.paraphrase = "compact"
+''',
+'''PLAN.paraphrase = "inverted"
+'''
+]
+
+[[slots]]
+sheet = "OPTIONAL_NOISE"
+key = "optional_noise"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = [
+'''PLAN.distractor = "neutral"
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

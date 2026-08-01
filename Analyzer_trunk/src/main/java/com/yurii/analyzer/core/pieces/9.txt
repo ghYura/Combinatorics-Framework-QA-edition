@@ -1,0 +1,38 @@
+// ── 9.txt — initial: lineKind(...) (HOT) ─────────────────────────────
+// Hot path: called once per analysed line at the end of extractFeatures.
+// Classifies a line into one of 7 categories based on its features.
+//
+// Contract:
+//   in   line          — trimmed text
+//        tokens        — raw tokens (Latin/Cyrillic words)
+//        kv            — key-value pairs already extracted
+//        numbers       — numbers already extracted
+//        placeholders  — count of ${...}/{{...}}/[...]/<...> matches
+//   out  one of: empty | comment | kv_numeric | kv | templated |
+//                numeric | text | mixed
+//
+// Original AnalyzerCore.java realisation: if/else cascade in priority
+// order (most specific match wins).
+
+    public static String lineKind(String line, List<String> tokens, Map<String, String> kv,
+                                  List<Double> numbers, int placeholders) {
+        long __t0 = System.nanoTime();
+        Metrics.p9_invocations++;
+        Metrics.p9_total_input_chars += (line == null ? 0 : line.length());
+        try {
+            String t = line == null ? "" : line.trim();
+            if (t.isEmpty()) return "empty";
+            if (COMMENT_RE.matcher(t).lookingAt()) return "comment";
+            if (kv.size() >= 2 && !numbers.isEmpty()) {
+                Metrics.p9_kv_numeric_count++;
+                return "kv_numeric";
+            }
+            if (kv.size() >= 2) return "kv";
+            if (placeholders > 0) return "templated";
+            if (numbers.size() >= 3 && tokens.size() <= 10) return "numeric";
+            if (tokens.size() >= 10) return "text";
+            return "mixed";
+        } finally {
+            Metrics.p9_duration_ns += System.nanoTime() - __t0;
+        }
+    }

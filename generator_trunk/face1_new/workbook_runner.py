@@ -1,0 +1,69 @@
+"""Run Bundle with an exact Face 1 workbook instead of regenerating one.
+
+The normal launcher remains authoritative for preflight, budgets, stage journals,
+Core/Reader/Executor/Analyzer behavior, cancellation semantics and results.  The
+only substitution is ``stage_gen``: it validates and copies the workbook already
+authored by the user into the run directory.
+"""
+
+from __future__ import annotations
+
+import argparse
+from pathlib import Path
+import shutil
+import sys
+
+
+def install_exact_workbook_stage(workbook: Path) -> None:
+    import bundle.cli as bundle_cli
+    from bundle.errors import StageError, ok
+    import fwgen
+
+    source = workbook.resolve()
+
+    def stage_exact_workbook(_spec_dir, scratch):
+        print("\n[1/5] USE exact Face 1 workbook (generation bypassed)")
+        out = Path(scratch) / "wb"
+        out.mkdir(parents=True, exist_ok=True)
+        destination = out / source.name
+        shutil.copy2(source, destination)
+        errors = fwgen.validate_workbook(destination)
+        if errors:
+            raise StageError("Face 1 workbook failed Core linter: " + "; ".join(errors[:10]))
+        ok(f"exact workbook -> {destination.name} (validated; directive positions preserved)")
+        return destination
+
+    bundle_cli.stage_gen = stage_exact_workbook
+
+
+def parse_args(argv: list[str] | None = None) -> tuple[Path, list[str]]:
+    values = list(sys.argv[1:] if argv is None else argv)
+    try:
+        divider = values.index("--")
+    except ValueError as exc:
+        raise SystemExit("workbook_runner requires '--' before bundle arguments") from exc
+    parser = argparse.ArgumentParser(description="Run Bundle using an existing validated Core workbook")
+    parser.add_argument("--workbook", required=True, type=Path)
+    own = parser.parse_args(values[:divider])
+    bundle_args = values[divider + 1:]
+    if not bundle_args:
+        raise SystemExit("no Bundle arguments supplied after '--'")
+    return own.workbook, bundle_args
+
+
+def main(argv: list[str] | None = None) -> None:
+    workbook, bundle_args = parse_args(argv)
+    if not workbook.is_file():
+        raise SystemExit(f"workbook not found: {workbook}")
+    install_exact_workbook_stage(workbook)
+    import bundle.cli as bundle_cli
+    old_argv = sys.argv
+    try:
+        sys.argv = ["bundle_run.py", *bundle_args]
+        bundle_cli.main()
+    finally:
+        sys.argv = old_argv
+
+
+if __name__ == "__main__":
+    main()

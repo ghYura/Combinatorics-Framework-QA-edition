@@ -1,0 +1,31 @@
+title = "optrun"
+goals = ["x"]
+args  = ["mode=optrun"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''x = 1
+''']
+
+[[slots]]
+sheet = "SURP"
+key   = "surp"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''x = x + 10
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''verdict = 0 if x == 1 else 1
+FW_VAR = verdict
+FW_CUSTOM_VAR = verdict
+print("x=%d FW_VAR=%d" % (x, verdict))
+''']

@@ -1,0 +1,131 @@
+# Bundle dogfooding: tune the real FX-8320 SSE4.1 ternary kernel.
+#
+# 2 algorithms x 4 thread counts x 2 SIMD unroll choices x 3 parallel thresholds x 3 grains
+# = 144 measured candidates. Every candidate uses an exact int32 reference
+# oracle before its latency enters the Analyzer corpus.
+
+title = "FX-8320 advanced ternary kernel — real measured scheduling optimization"
+note = "Real compiled kernel, exact equality oracle, serial candidate execution required for benchmark rigor."
+args = ["mode=ternary_kernel_opt"]
+
+[[goals]]
+key = "latency_ms"
+dir = "min"
+
+[[goals]]
+key = "throughput_mops"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme" / "testme5upgraded").resolve()))
+from benchmark_ternary_kernel import run_benchmark
+
+ALGORITHM = "maddubs"
+THREADS = 8
+UNROLL = 2
+PARALLEL_THRESHOLD = 262144
+GRAIN_OPS = 32768
+''']
+
+[[slots]]
+sheet = "ALGORITHM"
+key = "algorithm"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "ALGORITHM = \"tuned\"\n",
+  "ALGORITHM = \"maddubs\"\n",
+]
+
+[[slots]]
+sheet = "THREADS"
+key = "threads"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "THREADS = 1\n",
+  "THREADS = 2\n",
+  "THREADS = 4\n",
+  "THREADS = 8\n",
+]
+
+[[slots]]
+sheet = "UNROLL"
+key = "unroll"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "UNROLL = 1\n",
+  "UNROLL = 2\n",
+]
+
+[[slots]]
+sheet = "PARALLEL_THRESHOLD"
+key = "parallel_threshold"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "PARALLEL_THRESHOLD = 65536\n",
+  "PARALLEL_THRESHOLD = 262144\n",
+  "PARALLEL_THRESHOLD = 1048576\n",
+]
+
+[[slots]]
+sheet = "GRAIN_OPS"
+key = "grain_ops"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  "GRAIN_OPS = 8192\n",
+  "GRAIN_OPS = 32768\n",
+  "GRAIN_OPS = 131072\n",
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''_result = run_benchmark(
+    threads=THREADS,
+    unroll=UNROLL,
+    parallel_threshold=PARALLEL_THRESHOLD,
+    grain_ops=GRAIN_OPS,
+    mode=ALGORITHM,
+    warmup=2,
+    repeats=5,
+)
+_shapes = _result["shapes"]
+FW_VAR = 0 if _result["correct"] and _result["max_abs_diff"] == 0 else 2
+FW_CUSTOM_VAR = FW_VAR
+print(
+    "app=ternary_kernel_opt algorithm=%s threads=%d unroll=%d parallel_threshold=%d grain_ops=%d "
+    "latency_ms=%.6f throughput_mops=%.3f attn_ms=%.6f expert_ms=%.6f "
+    "vocab_ms=%.6f max_abs_diff=%d FW_VAR=%d"
+    % (
+        ALGORITHM,
+        THREADS,
+        UNROLL,
+        PARALLEL_THRESHOLD,
+        GRAIN_OPS,
+        _result["latency_ms"],
+        _result["throughput_mops"],
+        _shapes["attn"]["latency_ms"],
+        _shapes["expert"]["latency_ms"],
+        _shapes["vocab"]["latency_ms"],
+        _result["max_abs_diff"],
+        FW_VAR,
+    )
+)
+''']

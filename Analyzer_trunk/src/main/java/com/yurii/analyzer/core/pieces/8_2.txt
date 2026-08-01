@@ -1,0 +1,56 @@
+// ── 8_2.txt — variant 2: hand-rolled scanner (no regex) ──────────────
+// Same contract. Walks the text once with a state machine that
+// recognises optional sign, integer / fractional / exponent parts.
+// Substantially faster than the regex on JIT-warm code because it
+// avoids backtracking and ResultMatcher object allocation entirely.
+// Slightly different lexing edge cases — combinatorics framework
+// should treat this as behaviour-divergent and benchmark against the
+// regex variant on the corpus.
+
+    public static List<Double> extractNumbers(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p8_invocations++;
+        Metrics.p8_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return new ArrayList<>();
+            List<Double> out = new ArrayList<>();
+            int n = text.length();
+            int i = 0;
+            while (i < n) {
+                char c = text.charAt(i);
+                boolean canStart = (c == '+' || c == '-' || c == '.' || (c >= '0' && c <= '9'));
+                // not preceded by word char (matches NUMBER_RE's \b lookbehind)
+                if (!canStart || (i > 0 && Character.isLetterOrDigit(text.charAt(i - 1))
+                                  && !Character.isDigit(text.charAt(i - 1)))) {
+                    i++;
+                    continue;
+                }
+                int start = i;
+                if (c == '+' || c == '-') i++;
+                int digitStart = i;
+                while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') i++;
+                boolean haveInt = i > digitStart;
+                if (i < n && (text.charAt(i) == '.' || text.charAt(i) == ',')) {
+                    i++;
+                    int fracStart = i;
+                    while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') i++;
+                    if (!haveInt && i == fracStart) { i = start + 1; continue; }
+                }
+                if (i < n && (text.charAt(i) == 'e' || text.charAt(i) == 'E')) {
+                    int eStart = i;
+                    i++;
+                    if (i < n && (text.charAt(i) == '+' || text.charAt(i) == '-')) i++;
+                    int eDigitStart = i;
+                    while (i < n && text.charAt(i) >= '0' && text.charAt(i) <= '9') i++;
+                    if (i == eDigitStart) i = eStart;     // bare 'e' — back off
+                }
+                String s = text.substring(start, i).replace(',', '.');
+                try { out.add(Double.parseDouble(s)); }
+                catch (NumberFormatException nfe) { out.add(0.0); }
+            }
+            Metrics.p8_total_numbers_extracted += out.size();
+            return out;
+        } finally {
+            Metrics.p8_duration_ns += System.nanoTime() - __t0;
+        }
+    }

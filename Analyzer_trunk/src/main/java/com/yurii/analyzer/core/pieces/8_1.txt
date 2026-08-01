@@ -1,0 +1,26 @@
+// ── 8_1.txt — variant 1: Matcher.results() stream + collector ────────
+// Same contract. Single fluent expression; lets the JIT vectorise the
+// inner pipeline at the cost of slightly heavier setup. Wins on long
+// lines with many numbers.
+
+    public static List<Double> extractNumbers(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p8_invocations++;
+        Metrics.p8_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return new ArrayList<>();
+            List<Double> out = NUMBER_RE.matcher(text)
+                    .results()
+                    .map(MatchResult::group)
+                    .map(s -> {
+                        String t = s.replace(',', '.').trim();
+                        try { return Double.parseDouble(t); }
+                        catch (NumberFormatException e) { return 0.0; }
+                    })
+                    .collect(Collectors.toCollection(ArrayList::new));
+            Metrics.p8_total_numbers_extracted += out.size();
+            return out;
+        } finally {
+            Metrics.p8_duration_ns += System.nanoTime() - __t0;
+        }
+    }

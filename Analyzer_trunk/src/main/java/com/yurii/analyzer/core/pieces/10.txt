@@ -1,0 +1,31 @@
+// ── 10.txt — initial: delimiterCounts(String) (HOT) ──────────────────
+// Hot path: called once per analysed line. Counts occurrences of each
+// of the 16 punctuation chars in DELIMITERS within the line. Hot
+// because it's a per-char loop over the entire line text.
+//
+// Contract:
+//   in   String text
+//   out  Map<String,Integer>  — single-char keys to occurrence counts
+//                                (only chars present appear as keys)
+//
+// Original AnalyzerCore.java realisation: char loop with String.indexOf.
+
+    public static Map<String, Integer> delimiterCounts(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p10_invocations++;
+        Metrics.p10_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            Map<String, Integer> out = new LinkedHashMap<>();
+            if (text == null || text.isEmpty()) return out;
+            for (int i = 0; i < text.length(); i++) {
+                char ch = text.charAt(i);
+                if (DELIMITERS.indexOf(ch) >= 0) {
+                    out.merge(String.valueOf(ch), 1, Integer::sum);
+                    Metrics.p10_total_delimiters++;
+                }
+            }
+            return out;
+        } finally {
+            Metrics.p10_duration_ns += System.nanoTime() - __t0;
+        }
+    }

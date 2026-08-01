@@ -1,0 +1,47 @@
+# ============================================================================
+# FILLED landing example — what a decomposition looks like AFTER you (the LLM)
+# add rewrites. Start from code_decompose.py output (baseline-only), then add
+# '''...''' rewrites per piece and pick a verb. The Core combines them.
+#
+#   est. Core rows = P01(1) × P02(FW_Combi(1) of 3 = 3) × P03(FW_Permut of 3 = 6)
+#                  = 18 reassembled programs   (bounded — check `fwgen_cli.py list`)
+# ============================================================================
+title = "filled decomposition example — rewrite & combine (bounded = 18)"
+note  = "3 pieces: a constant header, a compute body rewritten 3 ways, and an order-sensitive init sequence (FW_Permut). The cartesian of {compute rewrite} × {init order} surfaces indirect interactions (e.g. a streaming sum that breaks if warm() ran before load())."
+goals = ["correctness", "latency_ms"]
+args  = ["mode=decompose_rewrite"]
+
+# --- PIECE 1/3: header — kept CONSTANT (one value) ---
+[[slots]]
+sheet  = "P01_header"
+key    = "p01"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''import java.util.*;
+''',
+]
+
+# --- PIECE 2/3: the compute body — 3 REWRITES (each tried against every init order) ---
+[[slots]]
+sheet  = "P02_compute"
+key    = "p02"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''int sum(int[] a){ int s=0; for (int x : a) s += x; return s; }
+''',
+'''int sum(int[] a){ return java.util.Arrays.stream(a).sum(); }
+''',
+'''int sum(int[] a){ int s=0,i=0; while (i < a.length) s += a[i++]; return s; }
+''',
+]
+
+# --- PIECE 3/3: init steps — ORDER may matter → FW_Permut (hunts order-dependent bugs) ---
+# interacts with P02 indirectly: a rewrite that lazily caches can break under reordering.
+[[slots]]
+sheet  = "P03_init"
+key    = "p03"
+verb   = "FW_Permut"
+raw    = true
+values = ["load();", "validate();", "warm();"]

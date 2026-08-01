@@ -1,0 +1,154 @@
+spec_version = "1"
+title = "sieve3d combinatorial action-law proof suite"
+note = "Uses Bundle combinatorics to generate metamorphic action-algebra tests over complex body/sieve cells. This is intentionally not Claude's hand-picked campaign harness."
+args = ["mode=sieve3d_action_laws"]
+
+[[goals]]
+key = "law_evals"
+dir = "max"
+[[goals]]
+key = "oracle_checks"
+dir = "max"
+[[goals]]
+key = "preconditions_met"
+dir = "max"
+[[goals]]
+key = "precondition_skips"
+dir = "min"
+[[goals]]
+key = "violations"
+dir = "min"
+[[goals]]
+key = "record_steps"
+dir = "max"
+[[goals]]
+key = "api_calls"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import os, sys
+from pathlib import Path
+_candidates = []
+_env = os.environ.get("SIEVE3D_COMBI_PRINCIPLES_ROOT")
+if _env:
+    _candidates.append(Path(_env))
+_cwd = Path(os.getcwd())
+_candidates.extend([
+    _cwd / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+    _cwd / "generator_trunk" / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+    Path(os.environ.get("BUNDLE_REPO_ROOT", _cwd)) / "generator_trunk" / "combinatorial_tests" / "sieve3d_complex_bodies" / "combinatorial_principles",
+])
+for _p in _candidates:
+    if _p.exists():
+        sys.path.insert(0, str(_p))
+        break
+import metamorphic_laws as laws
+laws.reset()
+# Required by the SUT recorder contract: start through API at the very end of HEAD.
+laws.start_recording()
+''']
+
+[[slots]]
+sheet = "CASESET"
+key = "caseset"
+verb = "FW_Combi(2)"
+raw = true
+values = [
+  'laws.select_case("flower_fit");',
+  'laws.select_case("cube_square");',
+  'laws.select_case("wave_slot");',
+]
+
+[[slots]]
+sheet = "ACTION_WORD"
+key = "action_word"
+verb = "FW_PermutR(2)"
+raw = true
+values = [
+  'laws.add_atom("dx");',
+  'laws.add_atom("dy");',
+  'laws.add_atom("turn");',
+  'laws.add_atom("z");',
+]
+
+[[slots]]
+sheet = "FAULT"
+key = "fault"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'laws.select_fault("unknown_action");',
+  'laws.select_fault("bad_hole");',
+  'laws.select_fault("unassigned_wiggle");',
+]
+
+[[slots]]
+sheet = "SCALE"
+key = "scale"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'laws.select_scale("fine");',
+  'laws.select_scale("coarse");',
+]
+
+[[slots]]
+sheet = "LAW"
+key = "law"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'laws.run_law("commutation");',
+  'laws.run_law("path_independence");',
+  'laws.run_law("batch_equivalence");',
+  'laws.run_law("reset_idempotence");',
+  'laws.run_law("rejected_atomicity");',
+]
+
+[[slots]]
+sheet = "OBS"
+key = "obs"
+verb = "FW_Subsets"
+raw = true
+values = [
+  'laws.observe("events");',
+  'laws.observe("metrics");',
+]
+
+[[slots]]
+sheet = "OPT_RECORD_STATUS"
+key = "opt_record_status"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['laws.observe("record_status");']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_REC_INFO = laws.finish_recording(laws.label())
+try:
+    FW_VAR = laws.fw_var()
+except Exception as _exc:
+    FW_VAR = 6
+FW_CUSTOM_VAR = FW_VAR
+print(laws.kv_line("sieve3d_action_laws", "sieve3d_action_laws_v1", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "a generated metamorphic action-law oracle was violated"
+[[custom_vars]]
+code = 4
+msg = "metamorphic law precondition was not satisfied for this generated candidate"
+[[custom_vars]]
+code = 6
+msg = "recording was not captured/saved or candidate infrastructure failed"

@@ -1,0 +1,136 @@
+syntax = "proto3";
+package fw.eval.v1;
+
+service EvaluationGateway {
+  rpc Submit       (EvaluationJob) returns (JobHandle);
+  rpc GetStatus    (JobRef)        returns (JobStatus);
+  rpc WatchStatus  (JobRef)        returns (stream JobStatus);
+  rpc GetResults   (JobRef)        returns (EvaluationResults);
+  rpc Cancel       (JobRef)        returns (JobStatus);
+  rpc ListJobs     (ListFilter)    returns (JobList);
+  rpc Capabilities (Empty)         returns (CapabilitiesDoc);
+  rpc Health       (Empty)         returns (HealthDoc);
+}
+
+message EvaluationJob {
+  string spec_toml = 1;
+  string language = 2;
+  string analyzer_goals = 3;
+  int32 iterations = 4;
+  int32 executor_pool = 5;
+  string candidate_sink = 6;
+  string analysis_mode = 7;
+  string execution_policy_profile = 8;
+  map<string,string> config_overrides = 9;
+  string idempotency_key = 10;
+}
+
+message JobRef { string job_id = 1; }
+message JobHandle { string job_id = 1; JobState state = 2; }
+
+enum JobState {
+  QUEUED = 0;
+  RUNNING = 1;
+  SUCCEEDED = 2;
+  FAILED = 3;
+  CANCELLED = 4;
+}
+
+message JobStatus {
+  string job_id = 1;
+  JobState state = 2;
+  repeated StageStatus stages = 3;
+  string current_iteration = 4;
+  string error = 5;
+}
+
+message StageStatus {
+  string name = 1;
+  string status = 2;
+  map<string,int64> counts = 3;
+}
+
+message EvaluationResults {
+  string job_id = 1;
+  JobState state = 2;
+  Outcomes outcomes = 3;
+  repeated ParetoCandidate front = 4;
+  repeated MetricPoint points = 5;
+  CountReconciliation counts = 6;
+  bool provenance_ok = 7;
+  string seed_json = 8;
+  IterateLineage iterate = 9;
+}
+
+message Outcomes {
+  int64 pass = 1;
+  int64 domain_fail = 2;
+  int64 broken = 3;
+  int64 timeout = 4;
+  int64 infra_fail = 5;
+  map<string,int64> raw = 6;
+}
+
+message ParetoCandidate {
+  string id = 1;
+  string source_ref = 2;
+  map<string,double> objectives = 3;
+  string outcome = 4;
+  string reason = 5;
+  map<string,string> dimensions = 6;
+}
+
+message MetricPoint {
+  map<string,double> objectives = 1;
+}
+
+message CountReconciliation {
+  int64 mandatory = 1;
+  int64 post_sieve = 2;
+  int64 candidates = 3;
+  int64 processed = 4;
+  int64 inserted = 5;
+}
+
+message IterateLineage {
+  string status = 1;
+  int32 requested = 2;
+  int32 completed = 3;
+  repeated int64 candidates = 4;
+  repeated int64 front_sizes = 5;
+  repeated string plan_statuses = 6;
+}
+
+message ListFilter {
+  string state = 1;
+}
+
+message JobSummary {
+  string job_id = 1;
+  JobState state = 2;
+  string submitted_at = 3;
+  string terminal_at = 4;
+}
+
+message JobList {
+  repeated JobSummary jobs = 1;
+}
+
+message CapabilitiesDoc {
+  string transport = 1;
+  bool grpc_python_available = 2;
+  repeated string supported_languages = 3;
+  repeated string supported_candidate_sinks = 4;
+  repeated string supported_execution_policy_profiles = 5;
+  map<string,int64> limits = 6;
+  map<string,string> components = 7;
+}
+
+message HealthDoc {
+  bool live = 1;
+  bool ready = 2;
+  repeated string reasons = 3;
+  map<string,string> deps = 4;
+}
+
+message Empty {}

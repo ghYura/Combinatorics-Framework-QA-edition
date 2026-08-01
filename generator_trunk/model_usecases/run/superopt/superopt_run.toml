@@ -1,0 +1,175 @@
+title = "Superoptimization #2 (RUN) — exhaustive branchless abs search, full Bundle"
+note  = "Each candidate is a length-3 straight-line program; FW_VAR=0 iff it equals abs on all 256 inputs. The Bundle runs the whole space; the Analyzer correct:max surfaces the needles (the branchless-abs programs)."
+args = ["target=abs", "mode=superopt_run"]
+[[goals]]
+key = "correct"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+def _s(b):
+    b &= 0xFF
+    return b - 256 if b >= 128 else b
+def candidate(x):
+    x = _s(x)
+''',
+]
+
+[[slots]]
+sheet = "R1"
+key   = "r1"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r1 = x >> 7
+''',
+'''
+    r1 = _s((x & 255) ^ (x & 255))
+''',
+'''
+    r1 = _s(x + x)
+''',
+'''
+    r1 = _s(x - x)
+''',
+]
+
+[[slots]]
+sheet = "R2"
+key   = "r2"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r2 = x >> 7
+''',
+'''
+    r2 = r1 >> 7
+''',
+'''
+    r2 = _s((x & 255) ^ (x & 255))
+''',
+'''
+    r2 = _s((x & 255) ^ (r1 & 255))
+''',
+'''
+    r2 = _s((r1 & 255) ^ (r1 & 255))
+''',
+'''
+    r2 = _s(x + x)
+''',
+'''
+    r2 = _s(x + r1)
+''',
+'''
+    r2 = _s(r1 + r1)
+''',
+'''
+    r2 = _s(x - x)
+''',
+'''
+    r2 = _s(x - r1)
+''',
+'''
+    r2 = _s(r1 - r1)
+''',
+]
+
+[[slots]]
+sheet = "R3"
+key   = "r3"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    r3 = x >> 7
+''',
+'''
+    r3 = r1 >> 7
+''',
+'''
+    r3 = r2 >> 7
+''',
+'''
+    r3 = _s((x & 255) ^ (x & 255))
+''',
+'''
+    r3 = _s((x & 255) ^ (r1 & 255))
+''',
+'''
+    r3 = _s((x & 255) ^ (r2 & 255))
+''',
+'''
+    r3 = _s((r1 & 255) ^ (r1 & 255))
+''',
+'''
+    r3 = _s((r1 & 255) ^ (r2 & 255))
+''',
+'''
+    r3 = _s((r2 & 255) ^ (r2 & 255))
+''',
+'''
+    r3 = _s(x + x)
+''',
+'''
+    r3 = _s(x + r1)
+''',
+'''
+    r3 = _s(x + r2)
+''',
+'''
+    r3 = _s(r1 + r1)
+''',
+'''
+    r3 = _s(r1 + r2)
+''',
+'''
+    r3 = _s(r2 + r2)
+''',
+'''
+    r3 = _s(x - x)
+''',
+'''
+    r3 = _s(x - r1)
+''',
+'''
+    r3 = _s(x - r2)
+''',
+'''
+    r3 = _s(r1 - r1)
+''',
+'''
+    r3 = _s(r1 - r2)
+''',
+'''
+    r3 = _s(r2 - r2)
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+    return _s(r3)
+
+_dom = list(range(-128, 128))
+_ref = [_s(abs(v)) for v in _dom]
+_ok = all(candidate(v) == _ref[i] for i, v in enumerate(_dom))
+FW_VAR = 0 if _ok else 2
+print("app=superopt target=abs correct=%d instructions=3 cycles=3 FW_VAR=%d"
+      % (1 if _ok else 0, FW_VAR))
+''',
+]
+
+[[custom_vars]]
+code = 2
+msg  = "program does NOT equal abs (not a solution)"

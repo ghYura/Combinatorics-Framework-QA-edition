@@ -1,0 +1,104 @@
+spec_version = "1"
+title = "Shared router, prompt-CI, and verified-dataset evidence matrix"
+note = "The same exact task engine varies product mode, prompt revision, and deterministic controls; dataset export still admits only exact-oracle PASS records."
+args = ["suite=ai_combi_testing", "study=product-modes"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+PLAN = initialize_candidate(family="ordering", seed=27182, complexity=5)
+PLAN.semantic_mode = "loaded"
+PLAN.costume = "loaded"
+''']
+
+[[slots]]
+sheet = "PRODUCT_MODE"
+key = "product_mode"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.product_mode = "router"
+''',
+'''PLAN.product_mode = "prompt-ci"
+''',
+'''PLAN.product_mode = "dataset"
+'''
+]
+
+[[slots]]
+sheet = "ADAPTER_CONTROL"
+key = "adapter_control"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.adapter_id = "oracle-control"
+''',
+'''PLAN.adapter_id = "fragile-control"
+'''
+]
+
+[[slots]]
+sheet = "PROMPT_VERSION"
+key = "prompt_version"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.prompt_version = "v1"
+''',
+'''PLAN.prompt_version = "v2"
+'''
+]
+
+[[slots]]
+sheet = "TASK_FAMILY"
+key = "task_family"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.task_family = "ordering"
+''',
+'''PLAN.task_family = "cancellation"
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

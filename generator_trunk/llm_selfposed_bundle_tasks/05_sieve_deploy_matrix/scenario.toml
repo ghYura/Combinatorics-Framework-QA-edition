@@ -1,0 +1,99 @@
+# Self-posed scenario 05 — deployment config matrix with a pre-execution constraint sieve.
+# Category 5 (constraint/sieve), pattern like constraints/diff_fuzz_when.
+# 4(REGION) x 3(TIER) x 3(REPLICAS) = 36 mandatory; sieve forbids free-tier-in-restricted-region
+# (1x2x3 = 6 rows) BEFORE Executor -> 30 post-sieve; runtime oracle flags ent under-replication.
+title = "Deployment config matrix — pre-execution sieve forbids invalid region/tier combos"
+note  = "FW_Combi(1) region x tier x replicas; [[constraints]] sieve removes data-residency-invalid combos BEFORE Executor; oracle flags ent-tier under-replication at runtime."
+args  = ["mode=deploy_matrix"]
+
+[[goals]]
+key = "replicas"
+dir = "max"
+
+[[slots]]   # HEAD: defaults
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''REGION = "us"
+TIER = "free"
+REPLICAS = 1
+''']
+
+[[slots]]   # deployment region
+sheet  = "REGION"
+key    = "region"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["REGION = \"us\"\n", "REGION = \"eu\"\n", "REGION = \"ap\"\n", "REGION = \"sa\"\n"]
+
+[[slots]]   # plan tier
+sheet  = "TIER"
+key    = "tier"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TIER = \"free\"\n", "TIER = \"pro\"\n", "TIER = \"ent\"\n"]
+
+[[slots]]   # replica count
+sheet  = "REPLICAS"
+key    = "replicas"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["REPLICAS = 1\n", "REPLICAS = 3\n", "REPLICAS = 5\n"]
+
+[[slots]]   # TAIL: runtime oracle (the sieve already removed structurally-invalid combos)
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_under = int(TIER == "ent" and REPLICAS < 3)
+if _under:
+    FW_VAR = 2          # enterprise tier requires >=3 replicas (a RUNTIME policy, not a pre-exec bond)
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=deploy_matrix region=%s tier=%s replicas=%d under_replicated=%d FW_VAR=%d"
+      % (REGION, TIER, REPLICAS, _under, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "enterprise tier under-replicated (replicas < 3)"
+
+# --- params + a binary WHEN-predicate constraint for the --sieve (bonds layer) ---
+# Each TIER/REGION value carries attributes; forbid the free tier in data-residency-restricted regions.
+[[params]]
+sheet = "TIER"
+value = 'TIER = "free"'
+is_free = 1
+[[params]]
+sheet = "TIER"
+value = 'TIER = "pro"'
+is_free = 0
+[[params]]
+sheet = "TIER"
+value = 'TIER = "ent"'
+is_free = 0
+[[params]]
+sheet = "REGION"
+value = 'REGION = "us"'
+restricted = 0
+[[params]]
+sheet = "REGION"
+value = 'REGION = "eu"'
+restricted = 1
+[[params]]
+sheet = "REGION"
+value = 'REGION = "ap"'
+restricted = 1
+[[params]]
+sheet = "REGION"
+value = 'REGION = "sa"'
+restricted = 0
+
+[[constraints]]
+id = "no_free_tier_in_restricted_region"
+sheets = ["TIER", "REGION"]
+when = "TIER.is_free == 1 and REGION.restricted == 1"
+gate = {}
+desc = "data-residency policy forbids the free tier in restricted regions (eu, ap) before execution"

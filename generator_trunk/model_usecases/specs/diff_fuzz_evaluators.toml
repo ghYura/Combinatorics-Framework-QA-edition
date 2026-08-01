@@ -1,0 +1,79 @@
+title = "Differential fuzzing #4 — two expression evaluators (precedence bug hunt)"
+note  = "Same combinatorially-bred expression fed to a CORRECT precedence evaluator and a NAIVE left-to-right one; FW_VAR=2 marks a DIVERGENCE (logical bug). FW_Subsets toggles leading-minus and parentheses; FW_Combi(1) breeds operands/operators. Analyzer divergences:max returns the simplest counterexample."
+args  = ["impl_a=precedence_correct", "impl_b=naive_left_to_right"]
+[[goals]]
+key = "divergences"
+dir = "max"
+[[goals]]
+key = "expr_len"
+dir = "min"
+
+[[slots]]
+sheet = "UNARY"
+key   = "unary"
+verb  = "FW_Subsets"
+values = [
+  "neg",
+]
+
+[[slots]]
+sheet = "O1"
+key   = "o1"
+verb  = "FW_Combi(1)"
+values = [
+  "1",
+  "2",
+  "3",
+]
+
+[[slots]]
+sheet = "OP1"
+key   = "op1"
+verb  = "FW_Combi(1)"
+values = [
+  "+",
+  "-",
+  "*",
+]
+
+[[slots]]
+sheet = "O2"
+key   = "o2"
+verb  = "FW_Combi(1)"
+values = [
+  "1",
+  "2",
+  "3",
+]
+
+[[slots]]
+sheet = "PAREN"
+key   = "paren"
+verb  = "FW_Subsets"
+values = [
+  "grp",
+]
+
+[[slots]]
+sheet = "OP2"
+key   = "op2"
+verb  = "FW_Combi(1)"
+values = [
+  "+",
+  "-",
+  "*",
+]
+
+[[slots]]
+sheet = "O3"
+key   = "o3"
+verb  = "FW_Combi(1)"
+values = [
+  "1",
+  "2",
+  "3",
+]
+
+[[custom_vars]]
+code = 2
+msg  = "implementations DIVERGED on this input (precedence/grouping bug)"

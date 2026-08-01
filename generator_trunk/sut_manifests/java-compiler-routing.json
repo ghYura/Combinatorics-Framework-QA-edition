@@ -1,0 +1,67 @@
+{
+  "schema": "bundle.sut-manifest/v1",
+  "id": "java-compiler-routing",
+  "title": "Java adaptive compiler routing",
+  "maturity": "canonical",
+  "summary": "Reviewed Java candidate spaces that force the lightweight Janino path and the modern ECJ path, include an external dependency JAR, and are checked both without a database and through a bounded full Generator-to-Results run.",
+  "source": {
+    "kind": "in-repository",
+    "path": "generator_trunk/java_e2e",
+    "revision_resolution": "Moves with the Framework checkout and is identified by the engine revision."
+  },
+  "lifecycle": {
+    "install": "mvn -B --no-transfer-progress clean package",
+    "start": "none — each candidate is compiled and run by the Java Executor",
+    "health": "python -m pytest -q generator_trunk/test_java_e2e_specs.py",
+    "stop": "none — candidate JVM/compiler work is bounded by the Executor"
+  },
+  "determinism": {
+    "deterministic": true,
+    "reset": "Each generated source is compiled in a fresh probe directory; the full-chain gate uses an isolated CI database and run id.",
+    "seed": "No random source is used; both spaces enumerate exactly 48 candidates."
+  },
+  "oracle": {
+    "kind": "exact-differential",
+    "description": "Each assembled source has an expected compiler route and deterministic output; ECJ-only language features are also required to fail under forced Janino and succeed under ECJ/adaptive routing.",
+    "independence": "Expected routing and output are asserted by the Python test harness outside AdaptiveJavaCompiler; negative controls force the wrong backend rather than asking the router to judge itself.",
+    "implementation": "generator_trunk/test_java_e2e_specs.py"
+  },
+  "controls": {
+    "known_pass": [
+      "all 48 janino_max sources compile and run under forced Janino",
+      "all 48 ecj_modern sources compile and run under forced ECJ and adaptive routing"
+    ],
+    "known_fail": [
+      "every ecj_modern source is rejected by forced Janino",
+      "a missing external rules-api dependency makes the compile probe fail"
+    ],
+    "intentional_defects": [
+      {
+        "id": "modern-java-on-lightweight-backend",
+        "description": "record/lambda/method-reference/switch-expression combinations exceed the Janino language subset.",
+        "detected_by": "forced-Janino negative control plus adaptive-route assertion",
+        "interaction_only": true
+      }
+    ]
+  },
+  "access": {"read": ["{scratch}", "Executor dependency JAR directory"], "write": ["{scratch}"], "network": []},
+  "limits": {"wall_seconds_per_candidate": 30, "memory_mb": 512, "max_candidates_per_gate": 96},
+  "trusted_artifacts": [],
+  "capability_row": {
+    "language": "java", "candidate_sink": "loose-files", "handoff": "v2",
+    "run_mode": "verdict", "execution_policy": "trusted-local",
+    "executor_pool": "single", "repeat": "k1", "analyzer": "none"
+  },
+  "candidate_origin": "reviewed-checked-in",
+  "cleanup": "CI uses an isolated database/run id and an ephemeral runner; local run directories are removed with bundle cleanup.",
+  "ci": {
+    "tier": 2,
+    "workflow_gate": "canonical-sut-java-compiler-routing",
+    "tests": ["generator_trunk/test_java_e2e_specs.py"],
+    "scenarios": ["generator_trunk/java_e2e/janino_max", "generator_trunk/java_e2e/ecj_modern"]
+  },
+  "caveats": [
+    "The full-chain gate uses trusted-local only because all Java fragments are reviewed and checked in. It is not evidence for untrusted generated Java sandboxing.",
+    "The bounded database smoke runs janino_max; the DB-free compiler suite exhaustively checks both 48-case spaces and both backends."
+  ]
+}

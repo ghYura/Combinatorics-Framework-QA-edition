@@ -1,0 +1,737 @@
+<!doctype html><html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1"><title>Bundle — связи между значениями / value links</title>
+<style>
+ :root{
+  --bg:#f6f7f9; --card:#fff; --ink:#1c2430; --muted:#6b7686; --line:#e3e7ee;
+  --forbid:#e5484d; --forbid-soft:#fdecec; --require:#2f9e54; --require-soft:#e7f6ec;
+  --accent:#3b6ef5; --accent-soft:#eaf0ff; --hub:#7b6cf6; --shadow:0 1px 3px rgba(20,30,50,.08),0 6px 16px rgba(20,30,50,.06);
+ }
+ *{box-sizing:border-box}
+ body{margin:0;font:14px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;color:var(--ink);background:var(--bg)}
+ header{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+   padding:10px 16px;background:rgba(255,255,255,.92);backdrop-filter:blur(6px);border-bottom:1px solid var(--line)}
+ header h1{font-size:15px;margin:0;font-weight:650;letter-spacing:.2px}
+ header .grow{flex:1}
+ .seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+ .seg button{border:0;background:#fff;padding:7px 12px;font:inherit;cursor:pointer;color:var(--muted);display:flex;gap:6px;align-items:center}
+ .seg button.on[data-pol=forbid]{background:var(--forbid-soft);color:var(--forbid);font-weight:650}
+ .seg button.on[data-pol=require]{background:var(--require-soft);color:var(--require);font-weight:650}
+ .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+ .dot.f{background:var(--forbid)} .dot.r{background:var(--require)}
+ select,input[type=number],input[type=text]{font:inherit;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+ button.btn{font:inherit;padding:8px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--ink)}
+ button.btn:hover{border-color:#c7cedb}
+ button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:650;box-shadow:var(--shadow)}
+ button.primary:hover{filter:brightness(1.05)}
+ button.ghost{background:transparent;border-color:transparent;color:var(--muted)}
+ .chip{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;background:var(--accent-soft);color:var(--accent);font-size:12.5px}
+ .toggle{display:inline-flex;align-items:center;gap:7px;color:var(--muted);cursor:pointer;user-select:none}
+ main{display:flex;gap:0;height:calc(100vh - 53px)}
+ #stagewrap{flex:1;overflow:hidden;position:relative;touch-action:none;cursor:grab;
+   background:radial-gradient(circle,#e7ebf2 1px,transparent 1px) 0 0/22px 22px}
+ #stagewrap.panning{cursor:grabbing}
+ #viewport{position:absolute;left:0;top:0;transform-origin:0 0;will-change:transform}
+ #canvas{position:relative}
+ svg#edges{position:absolute;left:0;top:0;pointer-events:none;overflow:visible}
+ #zoomctl{position:absolute;right:14px;bottom:14px;z-index:25;display:flex;flex-direction:column;gap:6px;align-items:center}
+ #zoomctl button{width:34px;height:34px;border:1px solid var(--line);background:#fff;border-radius:9px;cursor:pointer;font-size:17px;line-height:1;box-shadow:var(--shadow);color:var(--ink)}
+ #zoomctl button:hover{border-color:#c7cedb}
+ #zoomctl .zlbl{font-size:11px;color:var(--muted);background:#fff;border:1px solid var(--line);border-radius:6px;padding:1px 5px}
+ .warnbar{background:var(--forbid-soft);color:var(--forbid);border:1px solid var(--forbid);border-radius:9px;padding:7px 10px;margin-bottom:10px;font-size:12.5px;font-weight:600;line-height:1.45}
+ .warnbar:empty{display:none}
+ .col-h{position:absolute;transform:translateX(-50%);top:14px;font-weight:650;color:#41506a;font-size:13px;
+   background:#fff;border:1px solid var(--line);padding:4px 12px;border-radius:999px;box-shadow:var(--shadow);white-space:nowrap}
+ .opt-badge{display:inline-flex;margin-left:6px;padding:1px 5px;border-radius:999px;background:#fff7df;color:#8a5a00;border:1px solid #f1cf77;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+ .cond-build{margin:2px 0 6px;padding:3px 0 3px 8px;border-left:2px solid var(--accent-soft)}
+ .ct-row select,.ct-row input{padding:3px 5px;font-size:12px}
+ .ct-row .ct-del{margin-left:auto}
+ .ct-multi{display:inline-flex;flex-wrap:wrap;gap:4px;align-items:center}
+ .cj.on{background:var(--accent-soft);color:var(--accent);font-weight:650}
+ .le-cond-json summary{cursor:pointer;font-size:11px;color:var(--muted);margin:3px 0}
+ .node{position:absolute;transform:translate(-50%,-50%);padding:7px 13px;border:1px solid #c8d0de;border-radius:12px;
+   background:#fff;cursor:grab;touch-action:none;white-space:nowrap;font-size:13px;user-select:none;box-shadow:var(--shadow);max-width:230px;overflow:hidden;text-overflow:ellipsis}
+ .node:hover{border-color:var(--accent)}
+ .node:focus{outline:2px solid var(--accent);outline-offset:1px}
+ .node.sel{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 3px var(--accent-soft)}
+ .node.tray{border-color:var(--hub);background:#f1eefe}
+ .node.dragging{cursor:grabbing;border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft);z-index:6}
+ line.edge{stroke-width:2.6;pointer-events:stroke;cursor:pointer;stroke-linecap:round}
+ line.edge:hover{stroke-width:5}
+ .edge.f{stroke:var(--forbid)} .edge.r{stroke:var(--require)}
+ .edge.dim{opacity:.35} .edge.hot{stroke-width:5}
+ .edge.bad{stroke-dasharray:5 3;stroke-width:4;filter:drop-shadow(0 0 2px var(--forbid))}
+ .hub{cursor:pointer}
+ aside{width:360px;min-width:360px;border-left:1px solid var(--line);background:var(--bg);overflow:auto;padding:14px}
+ .card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 13px;margin-bottom:12px;box-shadow:var(--shadow)}
+ .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin:0 0 9px}
+ .impact b{font-size:22px;font-weight:700}
+ .bar{height:8px;border-radius:5px;background:#eef0f4;overflow:hidden;margin:8px 0}
+ .bar > i{display:block;height:100%;background:linear-gradient(90deg,var(--forbid),#f08)}
+ .row{display:flex;align-items:center;gap:8px;padding:7px 6px;border-radius:9px}
+ .row:hover{background:#f4f6f9}
+ .row.sel{background:var(--accent-soft)}
+ .row .txt{flex:1;font-size:13px}
+ .row .txt small{color:var(--muted)}
+ .row select{padding:3px 5px;font-size:12px}
+ .pill{font-size:11px;font-weight:700;padding:2px 7px;border-radius:6px}
+ .pill.f{background:var(--forbid-soft);color:var(--forbid)} .pill.r{background:var(--require-soft);color:var(--require)}
+ .x{border:0;background:transparent;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:2px 6px;border-radius:6px}
+ .x:hover{background:var(--forbid-soft);color:var(--forbid)}
+ .empty{color:var(--muted);font-size:13px;padding:6px 2px}
+ .hint{color:var(--muted);font-size:12.5px}
+ details summary{cursor:pointer;font-size:12px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-bottom:8px}
+ table.params{width:100%;border-collapse:collapse;font-size:12.5px}
+ table.params td{padding:3px 4px;border-bottom:1px solid var(--line);vertical-align:middle}
+ table.params input{width:100%}
+ #tray{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);z-index:40;display:none;gap:10px;align-items:center;
+   background:#fff;border:1px solid var(--line);border-radius:12px;padding:9px 12px;box-shadow:var(--shadow)}
+ #tray.show{display:flex}
+ #overlay{position:fixed;inset:0;background:rgba(246,247,249,.96);z-index:99;display:none;align-items:center;justify-content:center}
+ #overlay.show{display:flex}
+ #overlay .ok{text-align:center;background:#fff;border:1px solid var(--line);border-radius:16px;padding:34px 40px;box-shadow:var(--shadow);max-width:460px}
+ #overlay .mark{width:64px;height:64px;border-radius:50%;background:var(--require-soft);color:var(--require);display:flex;
+   align-items:center;justify-content:center;font-size:34px;margin:0 auto 14px}
+ .toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%);background:#1c2430;color:#fff;padding:9px 16px;
+   border-radius:10px;z-index:60;opacity:0;transition:opacity .2s;pointer-events:none;font-size:13px}
+ .toast.show{opacity:1}
+ dialog{border:1px solid var(--line);border-radius:14px;padding:0;box-shadow:var(--shadow);max-width:520px;width:92%}
+ dialog .dlg{padding:18px 20px}
+ dialog h3{margin:0 0 10px;font-size:15px}
+ dialog label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+ dialog .multi{display:flex;flex-wrap:wrap;gap:6px}
+ dialog .multi label{display:inline-flex;align-items:center;gap:5px;margin:0;color:var(--ink);background:#f4f6f9;padding:4px 9px;border-radius:8px;cursor:pointer}
+ .dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+ #linkedit{border:1px solid var(--accent);background:var(--accent-soft);border-radius:10px;padding:9px 11px;margin-bottom:10px}
+ #linkedit:empty{display:none}
+ #linkedit .le-head{display:flex;justify-content:space-between;align-items:center}
+ #linkedit .le-txt{font-size:12.5px;margin:3px 0 7px}
+ .le-row{display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap}
+ .le-lbl{font-size:12px;color:var(--muted);min-width:60px}
+ .le-chips{display:flex;gap:5px;flex-wrap:wrap}
+ .seg.sm button{padding:4px 10px;font-size:12.5px}
+ .chip .chx{border:0;background:transparent;color:var(--accent);cursor:pointer;font-size:12px;padding:0 0 0 4px}
+ .le-add{font-size:12px;padding:3px 5px}
+ .fpal{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:5px 0}
+ .btn.fp{padding:3px 9px;font-size:13px;min-width:30px}
+ #fbuilt{background:#111;color:#7fdc7f;padding:2px 7px;border-radius:4px;font-size:12.5px;min-height:18px;display:inline-block}
+ .ftree{padding:6px 2px;min-height:36px;line-height:2}
+ .blk{display:inline-flex;align-items:center;gap:5px;border:1px solid #c8d0de;border-radius:9px;padding:3px 6px;margin:2px;background:#fff}
+ .blk.leaf{background:#eef3ff;border-color:#aebde0}
+ .slot{border:1px dashed #9aa6bd;background:#f6f7f9;color:#6b7686;border-radius:7px;padding:2px 9px;cursor:pointer;font-size:13px;margin:2px}
+ .slot:hover{border-color:var(--accent);color:var(--accent)}
+ .fmenu{display:inline-flex;gap:4px;flex-wrap:wrap;border:1px solid var(--accent);border-radius:8px;padding:3px;background:var(--accent-soft);margin:2px}
+ .blk select,.blk input{font-size:12.5px;padding:1px 3px}
+ .fpalette{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:4px 0;padding:6px;border:1px dashed var(--line);border-radius:9px;background:#fbfcfe}
+ .palitem{cursor:grab;border:1px solid #aebde0;background:#eef3ff;border-radius:8px;padding:3px 10px;font-size:12.5px;user-select:none}
+ .palitem:active{cursor:grabbing}
+ .blk[draggable]{cursor:grab}
+ .drop-ok{outline:2px solid var(--require);outline-offset:1px;background:var(--require-soft)!important}
+ .drop-no{outline:2px solid var(--forbid);outline-offset:1px}
+</style></head><body>
+<header>
+ <h1 id="t-title">Bundle · связи между значениями</h1>
+ <div class="seg" role="group" aria-label="link type">
+   <button id="m-forbid" data-pol="forbid" class="on"><span class="dot f"></span><span id="t-forbid">Запрещать</span></button>
+   <button id="m-require" data-pol="require"><span class="dot r"></span><span id="t-require">Требовать</span></button>
+ </div>
+ <label class="hint" style="display:flex;align-items:center;gap:6px">
+   <span id="t-gate">Позиция</span>
+   <select id="gate"><option value="any">любая</option><option value="adjacent">рядом</option><option value="within">в пределах…</option></select>
+   <input id="within" type="number" min="1" value="2" style="width:58px;display:none">
+ </label>
+ <label class="toggle"><input type="checkbox" id="multi"><span id="t-multi">Связь 3+ листов</span></label>
+ <div class="grow"></div>
+ <span class="hint" id="srcinfo"></span>
+ <button class="btn ghost" id="lang">EN</button>
+ <button class="btn" id="dl" title="sidecar.json">⤓ sidecar.json</button>
+ <button class="btn primary" id="submit"><span id="t-submit">Отправить</span> ⏎</button>
+</header>
+<main>
+ <div id="stagewrap"><div id="viewport"><div id="canvas"></div></div>
+   <div id="zoomctl"><button id="zin" title="приблизить · + · колесо вверх">＋</button><button id="zout" title="отдалить · − · колесо вниз">－</button><button id="zfit" title="вписать · 0">⤢</button><div class="zlbl" id="zpct">100%</div></div></div>
+ <aside>
+  <div class="card impact"><h2 id="t-impact">Влияние (предпросмотр)</h2><div class="warnbar" id="warn"></div><div id="impact"></div><div class="bar"><i id="bar" style="width:0"></i></div><div class="hint" id="impacthint"></div></div>
+  <div class="card"><h2 id="t-links">Связи</h2><div id="linkedit"></div><div id="links"></div></div>
+  <div class="card"><details id="advanced"><summary id="t-adv">Формулы и параметры (продвинутое)</summary>
+    <div style="margin:6px 0 12px"><button class="btn" id="addformula">＋ <span id="t-addf">формула-связь</span></button></div>
+    <div id="formulas"></div>
+    <div style="margin-top:12px"><div class="hint" id="t-params" style="margin-bottom:6px">Параметры значений (для формул): <code>charge=2, n=1</code></div>
+      <table class="params"><tbody id="params"></tbody></table></div>
+  </details></div>
+ </aside>
+</main>
+<div id="tray"><span class="hint" id="t-tray">Выбрано:</span><span id="traychips"></span>
+  <button class="btn primary" id="makebond"><span id="t-make">Создать связь</span></button>
+  <button class="btn ghost" id="cleartray">✕</button></div>
+<div id="overlay"><div class="ok"><div class="mark">✓</div><h3 id="t-okh">Связи отправлены в конвейер</h3>
+  <p class="hint" id="okmsg"></p><button class="btn" onclick="location.reload()" id="t-edit">Изменить ещё</button></div></div>
+<div class="toast" id="toast"></div>
+<dialog id="fdlg"><div class="dlg"><h3 id="t-fdlg">Формула-связь (when)</h3>
+  <label id="t-fsheets">Листы (≥2):</label><div class="multi" id="fsheets"></div>
+  <label id="t-fexpr">Формула над параметрами (булева):</label>
+  <div class="seg sm" id="fmode" style="margin:4px 0">
+    <button id="fmode-text" class="on"><span id="t-ftext">Текст</span></button>
+    <button id="fmode-blocks"><span id="t-fblocks">Блоки</span></button></div>
+  <input type="text" id="fexpr" placeholder="A.charge * C.charge > 0">
+  <div id="fblocks" style="display:none">
+    <div class="hint" id="t-fhint2" style="margin:2px 0 6px">Перетащите блок из палитры в слот ＋ (или кликните слот). Блоки вкладываются и переставляются.</div>
+    <div id="fpalette" class="fpalette"></div>
+    <div id="ftree" class="ftree"></div>
+    <div class="fpal"><span class="le-lbl" id="t-fbuilt">формула:</span><code id="fbuilt"></code></div>
+  </div>
+  <div class="hint" id="fhint" style="margin-top:6px"></div>
+  <div class="dlg-actions"><button class="btn ghost" id="fcancel">Отмена</button><button class="btn primary" id="fadd">Добавить</button></div>
+</div></dialog>
+<script>
+const D={"sheets": [["A", ["a1", "a2", "a3"]], ["B", ["b1", "b2"]], ["C", ["c1", "c2", "c3"]]], "params": {"A": {"a1": {"charge": 2}}, "C": {"c1": {"charge": 3}}}, "bonds": [{"polarity": "forbid", "sides": {"A": ["a1"], "C": ["c1"]}, "gate": {}, "when": null, "condition": null, "mapping": null, "desc": ""}, {"polarity": "forbid", "sides": {"A": ["a2", "a3"], "C": ["c2", "c3"]}, "gate": {}, "when": null, "condition": null, "mapping": null, "desc": ""}, {"polarity": "require", "sides": {"B": ["b2"], "C": ["c3"]}, "gate": {"adjacent": true}, "when": null, "condition": null, "mapping": null, "desc": ""}], "optional_sheets": [], "sheet_meta": {"A": {"optional": false}, "B": {"optional": false}, "C": {"optional": false}}, "full": 18, "post": "", "impact": "", "lang": "ru"};
+const COLW=210, ROWH=52, PADX=130, PADY=66;
+const I18N={
+ ru:{title:"Bundle · связи между значениями",forbid:"Запрещать",require:"Требовать",gate:"Позиция",
+   multi:"Группа (M:M)",combosW:"комбинаций",submit:"Отправить",impact:"Влияние (предпросмотр)",links:"Связи",
+   adv:"Формулы и параметры (продвинутое)",addf:"формула-связь",params:"Параметры значений (для формул):",
+   tray:"Выбрано:",make:"Создать связь",okh:"Связи отправлены в конвейер",edit:"Изменить ещё",
+   fdlg:"Формула-связь (when)",fsheets:"Листы (≥2):",fexpr:"Формула над параметрами (булева):",
+   emptyLinks:"Пока нет связей. Кликните значение, затем значение в другом столбце — протянется линия.",
+   emptyStage:"Нет листов с ≥2 значениями для связывания.",
+   forbidW:"запрет",requireW:"нужно",together:"вместе",adjW:"рядом",withinW:"в пределах",
+   pos:"любая позиция",hintDraw:"Кликните значение, затем — значение в ДРУГОМ столбце. Красная = запрет, зелёная = нужно. Для связи ГРУПП значений (Many:Many) включите «Группа». Нет связей? Просто «Отправить».",
+   okmsg:n=>`${n} связь(ей) отправлено. Можно закрыть вкладку.`,
+   removes:(n,m)=>`убирает ${n} из ${m}`,kept:k=>`${k} останется`,big:"Полный продукт слишком велик для точного подсчёта — точную цифру даст прогон --sieve.",
+   nodraw:"эта формула-связь применяется к листам целиком (не к конкретным значениям)",saved:"Отправлено ✓",dlsaved:"sidecar.json скачан",
+   editLink:"Условие связи",deselect:"снять",pol:"тип",apply:"OK",addVal:"добавить",badFormula:"недопустимая формула",gAny:"любая",gAdj:"рядом",gWithin:"в пределах",formulaLbl:"формула",
+   fText:"Текст",fBlocks:"Блоки",fbuilt:"формула:",palLbl:"палитра:",mCmp:"сравнение",mLogic:"и / или",mNot:"не",mArith:"+ − ×",mParam:"лист.параметр",mNum:"число",
+   exactBadge:"точно",exactNote:"точно по реальной БД (fw_final × fw_optX)",optionalW:"опц.",
+   onlyWhen:"только когда",combine:"если",cAll:"всё",cAny:"любое",addCond:"＋ условие",condAdv:"сложное условие — правьте JSON",
+   opIs:"равно",opIsNot:"не равно",opHas:"содержит",opIn:"любое из",opNin:"ни одно из",opGe:"кол-во ≥",opLe:"кол-во ≤",opEqS:"равно столбцу",
+   mapAdd:"зависимость (mapping)",mapDlg:"Зависимость: значение одного столбца ограничивает другой",mapIf:"если",mapThen:"то допустимо",mapPick:"выберите два столбца",mapAddBtn:"Добавить зависимость",condLbl:"условие связи"},
+ en:{title:"Bundle · value links",forbid:"Forbid",require:"Require",gate:"Position",
+   multi:"Group (M:M)",combosW:"combos",submit:"Submit",impact:"Impact (preview)",links:"Links",
+   adv:"Formulas & parameters (advanced)",addf:"formula link",params:"Value parameters (for formulas):",
+   tray:"Selected:",make:"Make link",okh:"Links sent to the pipeline",edit:"Edit again",
+   fdlg:"Formula link (when)",fsheets:"Sheets (≥2):",fexpr:"Boolean formula over parameters:",
+   emptyLinks:"No links yet. Click a value, then a value in another column — a line is drawn.",
+   emptyStage:"No sheets with ≥2 values to bond.",
+   forbidW:"forbid",requireW:"require",together:"together",adjW:"adjacent",withinW:"within",
+   pos:"any position",hintDraw:"Click a value, then a value in a DIFFERENT column. Red = forbid, green = require. For GROUP (Many:Many) links turn on «Group». Nothing to link? Just press Submit.",
+   okmsg:n=>`${n} link(s) sent. You can close this tab.`,
+   removes:(n,m)=>`removes ${n} of ${m}`,kept:k=>`${k} kept`,big:"Full product too large to count live — run --sieve for the exact figure.",
+   nodraw:"this formula link applies to whole sheets (not to specific values)",saved:"Submitted ✓",dlsaved:"sidecar.json downloaded",
+   editLink:"Link condition",deselect:"clear",pol:"type",apply:"OK",addVal:"add",badFormula:"unsafe formula",gAny:"any",gAdj:"adjacent",gWithin:"within",formulaLbl:"formula",
+   fText:"Text",fBlocks:"Blocks",fbuilt:"formula:",palLbl:"palette:",mCmp:"compare",mLogic:"and / or",mNot:"not",mArith:"+ − ×",mParam:"sheet.param",mNum:"number",
+   exactBadge:"exact",exactNote:"exact over the real DB (fw_final × fw_optX)",optionalW:"optional",
+   onlyWhen:"only when",combine:"if",cAll:"all",cAny:"any",addCond:"＋ condition",condAdv:"complex condition — edit JSON",
+   opIs:"is",opIsNot:"is not",opHas:"contains",opIn:"any of",opNin:"none of",opGe:"count ≥",opLe:"count ≤",opEqS:"equals column",
+   mapAdd:"dependency (mapping)",mapDlg:"Dependency: one column's value constrains another",mapIf:"if",mapThen:"then allow",mapPick:"pick the two columns",mapAddBtn:"Add dependency",condLbl:"link condition"}
+};
+let lang=(D.lang in I18N)?D.lang:"ru";
+const T=()=>I18N[lang];
+const OPTIONAL=new Set(D.optional_sheets||[]);
+let bonds=(D.bonds||[]).map(b=>({polarity:b.polarity||"forbid",sides:Object.fromEntries(Object.entries(b.sides||{}).map(([s,v])=>[s,(v||[]).slice()])),gate:b.gate||{},when:b.when||null,condition:b.condition||null,mapping:b.mapping||null,desc:b.desc||""}));
+let params=JSON.parse(JSON.stringify(D.params||{}));
+let mode="forbid", gate={}, multi=false, sel=null, tray=[], selBond=null;   // multi = group / Many:Many mode
+// vertical-drag overrides (node id -> world y), the pan/zoom viewport, transient drag/pan, contradiction state
+let nodeY={}, view={scale:1,tx:0,ty:0}, drag=null, pan=null, suppressClick=false, emptyResult=false, conflictBonds=new Set();
+const ZMIN=0.25, ZMAX=4, clampZ=z=>Math.max(ZMIN,Math.min(ZMAX,z));
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const attr=s=>esc(s).replace(/'/g,"&#39;");
+const nid=(s,v)=>JSON.stringify([s,v]);
+const SHEETS=D.sheets;                                   // [[sheet,[values]]...]
+const SI={};SHEETS.forEach((s,i)=>SI[s[0]]=i);
+function pos(si,vi){return {x:PADX+si*COLW,y:PADY+vi*ROWH};}
+const NI={};SHEETS.forEach((s,si)=>s[1].forEach((v,vi)=>NI[nid(s[0],v)]={si,vi}));
+function stageH(){const rows=Math.max(...SHEETS.map(s=>s[1].length),1);return PADY+rows*ROWH+24;}
+function clampY(y){return Math.max(20,Math.min(Math.max(stageH(),240)+ROWH,y));}
+// a node's LIVE position: x is LOCKED to its slot's column; y is the dragged override, else the default row.
+function nodeXY(s,v){const i=NI[nid(s,v)];if(!i)return null;const k=nid(s,v);
+ return {x:PADX+i.si*COLW, y:(k in nodeY)?nodeY[k]:PADY+i.vi*ROWH};}
+// ---- contradiction guard (mirror of editor.py find_contradictions): same sheets+gate+members, opposite polarity ----
+function canonGate(g){g=g||{};return g.adjacent?"a":("within"in g?"w"+(+g.within):"");}
+function condKey(c){return JSON.stringify(c||{});}
+function conflictKey(b){const sh=bondSheets(b).slice().sort();
+ return JSON.stringify([sh, sh.map(s=>(b.sides[s]||[]).slice().sort()), canonGate(b.gate), condKey(b.condition)]);}   // polarity-agnostic
+function findConflicts(){const seen={},bad=new Set();
+ bonds.forEach((b,i)=>{if(b.when||b.mapping)return;const k=conflictKey(b);(seen[k]=seen[k]||[]).push([i,b.polarity]);});
+ Object.values(seen).forEach(g=>{if(new Set(g.map(x=>x[1])).size>1)g.forEach(([i])=>bad.add(i));});
+ return bad;}
+function checkAdd(nb){const k=conflictKey(nb);                       // {ok} | {conflict} | {dup,at}
+ for(let i=0;i<bonds.length;i++){const b=bonds[i];if(b.when||b.mapping)continue;if(conflictKey(b)!==k)continue;
+   if(b.polarity!==nb.polarity)return {conflict:true};return {dup:true,at:i};}
+ return {ok:true};}
+const bondSheets=b=>Object.keys(b.sides);
+function bondNodes(b){const out=[];for(const s of bondSheets(b))for(const v of (b.sides[s]||[]))if(v!=null)out.push([s,v]);return out;}
+function bondCombos(b){let n=1;for(const s of bondSheets(b))n*=Math.max(1,(b.sides[s]||[]).length);return n;}
+function anyMulti(b){return bondSheets(b).some(s=>(b.sides[s]||[]).length>1);}
+const SHEETVALS={};SHEETS.forEach(s=>SHEETVALS[s[0]]=s[1]);
+function gateSel(g){return g&&g.adjacent?"adjacent":(g&&"within"in g?"within":"any");}
+function mkGate(kind,n){return kind==="adjacent"?{adjacent:true}:kind==="within"?{within:+n||2}:{};}
+
+// ---- bonds -> sidecar (mirror of editor.py bonds_to_sidecar) ----
+function bondsToSidecar(){
+ const groups={},setsCons=[],whens=[],mappings=[];
+ for(const b of bonds){const sheets=bondSheets(b);const cond=b.condition||null;
+  if(b.mapping){mappings.push({sheets:[...sheets].sort(),gate:b.gate||{},polarity:b.polarity,mapping:b.mapping,condition:cond});continue;}
+  if(b.when){whens.push({sheets:[...sheets].sort(),gate:b.gate||{},polarity:b.polarity,when:b.when,condition:cond});continue;}
+  if(anyMulti(b)){setsCons.push({sheets:[...sheets].sort(),gate:b.gate||{},polarity:b.polarity,condition:cond,
+    sets:Object.fromEntries(sheets.map(s=>[s,b.sides[s].slice()]))});continue;}
+  const ss=[...new Set(sheets)].sort();const key=JSON.stringify([ss,b.gate||{},b.polarity,cond||{}]);
+  (groups[key]=groups[key]||{sheets:ss,gate:b.gate||{},polarity:b.polarity,condition:cond,pairs:[]});
+  const e={};sheets.forEach(s=>e[s]=b.sides[s][0]);groups[key].pairs.push(e);}
+ const cons=[];let i=0;
+ for(const k in groups){const g=groups[k];const c={id:"bond"+(i++)+"_"+g.sheets.join("_"),polarity:g.polarity,
+   sheets:g.sheets,pairs:g.pairs,gate:g.gate,desc:g.pairs.length+" "+g.polarity+" "+g.sheets.join("×")+" bond(s)"};
+   if(g.condition)c.condition=g.condition;cons.push(c);}
+ setsCons.forEach((s,j)=>{const body=s.sheets.map(sh=>sh+"∈{"+s.sets[sh].join(",")+"}").join(" × ");
+   const c={id:"mm"+j+"_"+s.sheets.join("_"),polarity:s.polarity,sheets:s.sheets,sets:s.sets,gate:s.gate,desc:s.polarity+" "+body};
+   if(s.condition)c.condition=s.condition;cons.push(c);});
+ whens.forEach((w,j)=>{const c={id:"when"+j+"_"+w.sheets.join("_"),polarity:w.polarity,sheets:w.sheets,
+   when:w.when,gate:w.gate,desc:w.polarity+" "+w.sheets.join("/")+" when "+w.when};
+   if(w.condition)c.condition=w.condition;cons.push(c);});
+ mappings.forEach((m,j)=>{const c={id:"map"+j+"_"+m.sheets.join("_"),polarity:m.polarity,sheets:m.sheets,
+   mapping:m.mapping,gate:m.gate,desc:"mapping "+m.mapping.source+"->"+m.mapping.target};
+   if(m.condition)c.condition=m.condition;cons.push(c);});
+ return {version:1,params:cleanParams(),constraints:cons};
+}
+function cleanParams(){const out={};for(const s in params){const vv={};for(const v in params[s]){if(Object.keys(params[s][v]||{}).length)vv[v]=params[s][v];}if(Object.keys(vv).length)out[s]=vv;}return out;}
+
+// ---- plain language ----
+function gateWord(g){if(!g||!Object.keys(g).length)return T().pos;if(g.adjacent)return T().adjW;if("within"in g)return T().withinW+" "+g.within;return T().pos;}
+function describeCond(c){if(!c)return "";if(c.sheet&&("eq" in c))return `${c.sheet}=${c.eq}`;return JSON.stringify(c);}
+function bondText(b){const pol=b.polarity==="forbid"?T().forbidW:T().requireW;
+ const cond=b.condition?` <small>only when ${esc(describeCond(b.condition))}</small>`:"";
+ if(b.mapping){return `<b>mapping</b> ${esc(b.mapping.source)} → ${esc(b.mapping.target)}${cond}`;}
+ if(b.when){return `<b>${esc(bondSheets(b).join(" · "))}</b> — ${esc(b.when)}${cond}`;}
+ const mm=anyMulti(b);
+ const parts=bondSheets(b).map(s=>{const vs=b.sides[s];return vs.length===1?`${esc(s)}:${esc(vs[0])}`:`${esc(s)}∈{${vs.map(esc).join(", ")}}`;});
+ const cnt=mm?` <small>= ${bondCombos(b)} ${T().combosW}</small>`:"";
+ return `<b>${pol}</b> ${parts.join(mm?" × ":" + ")}${cnt} <small>(${gateWord(b.gate)})</small>${cond}`;}
+
+
+// ---- safe-ish when eval for preview only ----
+const BAN=/__|import|lambda|:=|=>|;|\bexec\b|\beval\b|\bopen\b|\bglobals\b|\blocals\b|\bwhile\b|\bfor\b/;
+const SAFE_FUNCS={abs:Math.abs,min:Math.min,max:Math.max,round:Math.round,len:x=>(x&&x.length)||0,
+  int:x=>parseInt(x,10),float:x=>parseFloat(x),bool:x=>!!x,True:true,False:false,None:null};
+function evalWhen(expr,ns){try{if(BAN.test(expr))return null;          // preview-only; sieve is the source of truth
+  const js=expr.replace(/\band\b/g,"&&").replace(/\bor\b/g,"||").replace(/\bnot\b/g,"!");
+  const scope=Object.assign({},SAFE_FUNCS,ns);const keys=Object.keys(scope);
+  return !!Function(...keys,'"use strict";return ('+js+');')(...keys.map(k=>scope[k]));}catch(e){return null;}}
+function evalCondition(c,sel){
+ if(!c||!Object.keys(c).length)return true;
+ if(c.all)return c.all.every(x=>evalCondition(x,sel));
+ if(c.any)return c.any.some(x=>evalCondition(x,sel));
+ if(c.not)return !evalCondition(c.not,sel);
+ const vals=sel[c.sheet]||[],set=new Set(vals);
+ if("eq" in c)return vals.length===1&&vals[0]===c.eq;
+ if("ne" in c)return !(vals.length===1&&vals[0]===c.ne);
+ if("has" in c)return set.has(c.has);
+ if("hasnt" in c)return !set.has(c.hasnt);
+ if("in" in c)return vals.every(v=>(c.in||[]).includes(v));
+ if("nin" in c)return vals.every(v=>!(c.nin||[]).includes(v));
+ if("hasAny" in c)return (c.hasAny||[]).some(v=>set.has(v));
+ if("eqSheet" in c){const other=new Set(sel[c.eqSheet]||[]);return set.size===other.size&&[...set].every(v=>other.has(v));}
+ if("neSheet" in c){const other=new Set(sel[c.neSheet]||[]);return !(set.size===other.size&&[...set].every(v=>other.has(v)));}
+ if("count" in c)return vals.length===+c.count;
+ if("countGe" in c)return vals.length>=+c.countGe;
+ if("countLe" in c)return vals.length<=+c.countLe;
+ return true;
+}
+function mappingViolated(m,sel){const tvals=new Set(sel[m.target]||[]),allow=m.allow||{};
+ for(const sv of (sel[m.source]||[])){if(sv in allow){for(const tv of tvals){if(!allow[sv].includes(tv))return true;}}}
+ return false;}
+
+
+
+// ---- live impact over the sheets' cartesian (co-occurrence preview) ----
+function impact(){
+ const sizes=SHEETS.map(s=>OPTIONAL.has(s[0])?s[1].length+1:s[1].length),prod=sizes.reduce((a,b)=>a*b,1);
+ if(prod>50000||!prod)return {exact:false,full:prod};
+ let removed=0;const idx=SHEETS.map(()=>0);
+ for(let n=0;n<prod;n++){const combo={};SHEETS.forEach((s,i)=>{if(OPTIONAL.has(s[0])){if(idx[i]>0)combo[s[0]]=s[1][idx[i]-1];}else combo[s[0]]=s[1][idx[i]];});
+   if(rowViolated(combo))removed++;
+   for(let i=SHEETS.length-1;i>=0;i--){if(++idx[i]<sizes[i])break;idx[i]=0;}}
+ return {exact:true,removed,full:prod};
+}
+function gateOkMulti(g,P){if(!g||!Object.keys(g).length)return true;const span=Math.max(...P)-Math.min(...P);
+ if(g.adjacent)return span===P.length-1;if("within"in g)return span<=+g.within;return true;}
+function rowViolated(combo){            // combo: {sheet:value}; optional absent sheets are omitted
+ const sel={};Object.keys(combo).forEach(s=>sel[s]=[combo[s]]);
+ for(const b of bonds){const sheets=bondSheets(b);if(b.condition&&!evalCondition(b.condition,sel))continue;
+   if(b.mapping){if(mappingViolated(b.mapping,sel))return true;continue;}
+   if(sheets.some(s=>!(s in combo)))continue;
+   const P=sheets.map(s=>SI[s]);if(!gateOkMulti(b.gate,P))continue;
+   let holds;
+   if(b.when){const ns={};sheets.forEach(s=>{const v=combo[s];ns[s]=Object.assign({value:v,pos:SI[s]},(params[s]||{})[v]||{});});
+     const r=evalWhen(b.when,ns);if(r===null)continue;holds=r;}
+   else{holds=sheets.every(s=>b.sides[s].includes(combo[s]));}   // cross product membership
+   const forbid=b.polarity==="forbid";
+   if((forbid&&holds)||(!forbid&&!holds))return true;}
+ return false;
+}
+
+
+// ---- render ----  (build = full DOM; edgesInner/layoutDrag = cheap re-layout while a node is dragged)
+function render(){conflictBonds=findConflicts();renderCanvas();renderPanel();}
+function edgesInner(){let s="";
+ bonds.forEach((b,bi)=>{if(b.when)return;const pts=bondNodes(b).map(([sh,v])=>nodeXY(sh,v)).filter(Boolean);
+   if(pts.length<2)return;const cls=b.polarity==="forbid"?"f":"r";
+   const bad=conflictBonds.has(bi)?" bad":"";const hot=(bi===selBond)?" hot":(selBond!==null?" dim":"");
+   if(pts.length===2){s+=`<line class="edge ${cls}${hot}${bad}" data-bi="${bi}" x1="${pts[0].x}" y1="${pts[0].y}" x2="${pts[1].x}" y2="${pts[1].y}"></line>`;}
+   else{const cx=pts.reduce((a,p)=>a+p.x,0)/pts.length,cy=pts.reduce((a,p)=>a+p.y,0)/pts.length;   // hub = n-ary tuple OR Many:Many cross product
+     pts.forEach(p=>s+=`<line class="edge ${cls}${hot}${bad}" data-bi="${bi}" x1="${p.x}" y1="${p.y}" x2="${cx}" y2="${cy}"></line>`);
+     s+=`<rect class="hub" data-bi="${bi}" x="${cx-7}" y="${cy-7}" width="14" height="14" transform="rotate(45 ${cx} ${cy})" fill="var(--${b.polarity==='forbid'?'forbid':'require'})"></rect>`;}
+ });
+ return s;}
+function bindEdges(cv){cv.querySelectorAll("#edges [data-bi]").forEach(el=>el.onclick=()=>{
+  if(suppressClick){suppressClick=false;return;}selBond=+el.dataset.bi;render();});}
+function renderCanvas(){
+ const cv=$("canvas");
+ if(!SHEETS.length){cv.innerHTML="<div class='empty' style='padding:40px'>"+T().emptyStage+"</div>";return;}
+ const rows=Math.max(...SHEETS.map(s=>s[1].length),1);
+ const W=PADX+(SHEETS.length-1)*COLW+PADX, H=Math.max(stageH(),PADY+rows*ROWH+24);
+ let html=`<svg id="edges" width="${W}" height="${H}">`+edgesInner()+`</svg>`;
+ SHEETS.forEach((s,si)=>{const opt=OPTIONAL.has(s[0]);html+=`<div class="col-h" style="left:${pos(si,0).x}px">${esc(s[0])}${opt?`<span class="opt-badge">${esc(T().optionalW)}</span>`:""}</div>`;
+   s[1].forEach((v,vi)=>{const id=nid(s[0],v);const p=nodeXY(s[0],v);
+     const c=(sel===id?" sel":"")+(tray.includes(id)?" tray":"");
+     html+=`<div class="node${c}" tabindex="0" role="button" data-id='${attr(id)}' style="left:${p.x}px;top:${p.y}px" title="${attr(s[0])}: ${attr(v)}">${esc(v)}</div>`;});});
+ cv.style.width=W+"px";cv.style.height=H+"px";cv.innerHTML=html;
+ cv.querySelectorAll(".node").forEach(n=>{
+   n.onpointerdown=e=>startNodeDrag(e,n);
+   n.onclick=()=>{if(suppressClick){suppressClick=false;return;}clickNode(n.dataset.id);};
+   n.onkeydown=e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();clickNode(n.dataset.id);}};});
+ bindEdges(cv);
+ applyView();
+}
+// ---- visual "only when" builder: dropdown terms <-> the sieve's `condition` AST (the sub-list whose
+// values come from another column). Simple shapes (one leaf, or all/any of leaves) edit visually;
+// anything nested falls back to the JSON field. ----
+const COND_OPS=[{k:"eq",t:"opIs"},{k:"ne",t:"opIsNot"},{k:"has",t:"opHas"},{k:"in",t:"opIn"},
+  {k:"nin",t:"opNin"},{k:"countGe",t:"opGe"},{k:"countLe",t:"opLe"},{k:"eqSheet",t:"opEqS"}];
+const COND_OP_KEYS=COND_OPS.map(o=>o.k);
+const COND_MULTI=new Set(["in","nin"]),COND_COUNT=new Set(["countGe","countLe"]),COND_XCOL=new Set(["eqSheet","neSheet"]);
+function leafToTerm(l){if(!l||typeof l!=="object"||l.sheet==null)return null;for(const o of COND_OP_KEYS)if(o in l)return {sheet:l.sheet,op:o,val:l[o]};return null;}
+function termToLeaf(t){if(!t||t.sheet==null)return null;const l={sheet:t.sheet};l[t.op]=t.val;return l;}
+function condToTerms(cond){if(!cond)return {join:"all",terms:[]};
+  if(cond.all||cond.any){const join=cond.all?"all":"any",arr=cond.all||cond.any,terms=arr.map(leafToTerm);return terms.some(t=>!t)?null:{join,terms};}
+  if(cond.not)return null;const t=leafToTerm(cond);return t?{join:"all",terms:[t]}:null;}
+function termsToCond(join,terms){const leaves=terms.map(termToLeaf).filter(Boolean);
+  if(!leaves.length)return null;if(leaves.length===1)return leaves[0];const c={};c[join]=leaves;return c;}
+function defaultVal(sheet,op){if(COND_COUNT.has(op))return 1;
+  if(COND_XCOL.has(op))return (SHEETS.find(s=>s[0]!==sheet)||SHEETS[0]||[""])[0];
+  const vs=SHEETVALS[sheet]||[];return COND_MULTI.has(op)?(vs.length?[vs[0]]:[]):(vs[0]||"");}
+function setCondTerms(b,fn){const tt=condToTerms(b.condition)||{join:"all",terms:[]};fn(tt);b.condition=termsToCond(tt.join,tt.terms);render();}
+function condValControl(t,ti){
+  if(COND_COUNT.has(t.op))return `<input class="ct-val" data-i="${ti}" type="number" min="0" value="${attr(t.val||0)}" style="width:58px">`;
+  if(COND_XCOL.has(t.op))return `<select class="ct-val" data-i="${ti}">`+SHEETS.filter(s=>s[0]!==t.sheet).map(s=>`<option value="${attr(s[0])}"${s[0]===t.val?" selected":""}>${esc(s[0])}</option>`).join("")+`</select>`;
+  const all=SHEETVALS[t.sheet]||[];
+  if(COND_MULTI.has(t.op)){const cur=Array.isArray(t.val)?t.val:[],uns=all.filter(v=>!cur.includes(v));
+    return `<span class="ct-multi le-chips" data-i="${ti}">`+cur.map(v=>`<span class="chip">${esc(v)}${cur.length>1?`<button class="ct-rm" data-i="${ti}" data-v="${attr(v)}">✕</button>`:""}</span>`).join("")
+      +(uns.length?`<select class="ct-addv" data-i="${ti}"><option value="">＋</option>${uns.map(v=>`<option value="${attr(v)}">${esc(v)}</option>`).join("")}</select>`:"")+`</span>`;}
+  return `<select class="ct-val" data-i="${ti}">`+all.map(v=>`<option value="${attr(v)}"${v===t.val?" selected":""}>${esc(v)}</option>`).join("")+`</select>`;}
+function condTermRow(t,ti){const x=T();
+  const sh=`<select class="ct-sheet" data-i="${ti}">`+SHEETS.map(s=>`<option value="${attr(s[0])}"${s[0]===t.sheet?" selected":""}>${esc(s[0])}${OPTIONAL.has(s[0])?" ·opt":""}</option>`).join("")+`</select>`;
+  const op=`<select class="ct-op" data-i="${ti}">`+COND_OPS.map(o=>`<option value="${o.k}"${o.k===t.op?" selected":""}>${esc(x[o.t])}</option>`).join("")+`</select>`;
+  return `<div class="le-row ct-row">${sh}${op}${condValControl(t,ti)}<button class="x ct-del" data-i="${ti}">✕</button></div>`;}
+function condBuilderHTML(b){const x=T(),tt=condToTerms(b.condition);
+  if(!tt)return `<div class="hint">${esc(x.condAdv)}</div>`;
+  let h=`<div class="cond-build">`;
+  if(tt.terms.length>=2)h+=`<div class="le-row"><span class="le-lbl">${esc(x.combine)}</span><span class="seg sm">`
+    +`<button class="cj${tt.join==="all"?" on":""}" data-cj="all">${esc(x.cAll)}</button>`
+    +`<button class="cj${tt.join==="any"?" on":""}" data-cj="any">${esc(x.cAny)}</button></span></div>`;
+  h+=tt.terms.map((t,ti)=>condTermRow(t,ti)).join("");
+  return h+`<div class="le-row"><button class="btn sm le-add-cond">${esc(x.addCond)}</button></div></div>`;}
+function bindCondBuilder(box,b){
+  box.querySelectorAll(".cj").forEach(btn=>btn.onclick=()=>setCondTerms(b,tt=>tt.join=btn.dataset.cj));
+  const add=box.querySelector(".le-add-cond");if(add)add.onclick=()=>setCondTerms(b,tt=>{const s=SHEETS[0][0];tt.terms.push({sheet:s,op:"eq",val:defaultVal(s,"eq")});});
+  box.querySelectorAll(".ct-del").forEach(btn=>btn.onclick=()=>setCondTerms(b,tt=>tt.terms.splice(+btn.dataset.i,1)));
+  box.querySelectorAll(".ct-sheet").forEach(se=>se.onchange=()=>setCondTerms(b,tt=>{const t=tt.terms[+se.dataset.i];t.sheet=se.value;t.val=defaultVal(t.sheet,t.op);}));
+  box.querySelectorAll(".ct-op").forEach(se=>se.onchange=()=>setCondTerms(b,tt=>{const t=tt.terms[+se.dataset.i];t.op=se.value;t.val=defaultVal(t.sheet,t.op);}));
+  box.querySelectorAll("select.ct-val").forEach(se=>se.onchange=()=>setCondTerms(b,tt=>{tt.terms[+se.dataset.i].val=se.value;}));
+  box.querySelectorAll("input.ct-val").forEach(inp=>inp.onchange=()=>setCondTerms(b,tt=>{tt.terms[+inp.dataset.i].val=+inp.value||0;}));
+  box.querySelectorAll(".ct-addv").forEach(se=>se.onchange=()=>{if(se.value)setCondTerms(b,tt=>{const t=tt.terms[+se.dataset.i];t.val=[...(t.val||[]),se.value];});});
+  box.querySelectorAll(".ct-rm").forEach(btn=>btn.onclick=()=>setCondTerms(b,tt=>{const t=tt.terms[+btn.dataset.i];t.val=(t.val||[]).filter(v=>v!==btn.dataset.v);}));}
+
+// per-link condition editor: polarity, gate (any/adjacent/within N), the `when` formula, and the
+// member value sets of the SELECTED link — edits bonds[selBond] in place, live impact recomputes.
+function renderLinkEditor(){
+ const box=$("linkedit");
+ if(selBond===null||!bonds[selBond]){box.innerHTML="";return;}
+ const b=bonds[selBond],x=T(),gk=gateSel(b.gate);
+ let h=`<div class="le-head"><b>${x.editLink}</b><button class="x" id="le-x" title="${esc(x.deselect)}">✕</button></div>`;
+ h+=`<div class="le-txt">${bondText(b)}</div>`;
+ h+=`<div class="le-row"><span class="le-lbl">${esc(x.pol)}</span><span class="seg sm">`
+   +`<button id="le-forbid" class="${b.polarity==='forbid'?'on':''}" data-pol="forbid"><span class="dot f"></span>${esc(x.forbidW)}</button>`
+   +`<button id="le-require" class="${b.polarity==='require'?'on':''}" data-pol="require"><span class="dot r"></span>${esc(x.requireW)}</button></span></div>`;
+ h+=`<div class="le-row"><span class="le-lbl">${esc(x.gate)}</span>`
+   +`<select id="le-gate"><option value="any"${gk==='any'?' selected':''}>${esc(x.gAny)}</option>`
+   +`<option value="adjacent"${gk==='adjacent'?' selected':''}>${esc(x.gAdj)}</option>`
+   +`<option value="within"${gk==='within'?' selected':''}>${esc(x.gWithin)}…</option></select>`
+   +`<input id="le-num" type="number" min="1" value="${(b.gate&&b.gate.within)||2}" style="width:54px;display:${gk==='within'?'':'none'}"></div>`;
+ h+=`<div class="le-row"><span class="le-lbl">${esc(x.onlyWhen)}</span></div>`;
+ h+=condBuilderHTML(b);
+ h+=`<details class="le-cond-json"${condToTerms(b.condition)?"":" open"}><summary class="hint">JSON</summary><div class="le-row">`
+   +`<input id="le-cond" type="text" value="${attr(b.condition?JSON.stringify(b.condition):'')}" placeholder='{"sheet":"DatasetFamily","eq":"Mobility"}' style="flex:1;min-width:120px">`
+   +`<button class="btn" id="le-cond-apply">${esc(x.apply)}</button></div><div class="hint" id="le-condhint"></div></details>`;
+ if(b.mapping){
+   h+=`<div class="hint">${esc(JSON.stringify(b.mapping))}</div>`;
+ }else if(b.when!=null){
+   h+=`<div class="le-row"><span class="le-lbl">${esc(x.formulaLbl)}</span>`
+     +`<input id="le-when" type="text" value="${attr(b.when)}" style="flex:1;min-width:120px">`
+     +`<button class="btn" id="le-apply">${esc(x.apply)}</button></div><div class="hint" id="le-whenhint"></div>`;
+ }else{
+   h+=`<div>`;
+   bondSheets(b).forEach(s=>{const sel=b.sides[s]||[],unsel=(SHEETVALS[s]||[]).filter(v=>!sel.includes(v));
+     h+=`<div class="le-row"><span class="le-lbl">${esc(s)}</span><span class="le-chips">`
+       +sel.map(v=>`<span class="chip">${esc(v)}${sel.length>1?`<button class="chx" data-s="${attr(s)}" data-v="${attr(v)}">✕</button>`:''}</span>`).join("")
+       +`</span>`
+       +(unsel.length?`<select class="le-add" data-s="${attr(s)}"><option value="">＋ ${esc(x.addVal)}</option>${unsel.map(v=>`<option value="${attr(v)}">${esc(v)}</option>`).join("")}</select>`:'')
+       +`</div>`;});
+   h+=`</div>`;
+ }
+ box.innerHTML=h;
+ $("le-x").onclick=()=>{selBond=null;render();};
+ $("le-forbid").onclick=()=>{b.polarity="forbid";render();};
+ $("le-require").onclick=()=>{b.polarity="require";render();};
+ $("le-gate").onchange=e=>{b.gate=mkGate(e.target.value,$("le-num").value);render();};
+ $("le-num").onchange=e=>{if(gateSel(b.gate)==="within"){b.gate={within:+e.target.value||2};render();}};
+ const applyCond=()=>{const raw=$("le-cond").value.trim();if(!raw){b.condition=null;render();return;}
+   try{const parsed=JSON.parse(raw);b.condition=parsed;render();}catch(e){$("le-condhint").textContent="bad JSON";}};
+ $("le-cond-apply").onclick=applyCond;$("le-cond").onkeydown=e=>{if(e.key==="Enter")applyCond();};
+ bindCondBuilder(box,b);
+ if(b.when!=null){const apply=()=>{const v=$("le-when").value.trim();if(!v||BAN.test(v)){$("le-whenhint").textContent=x.badFormula;return;}b.when=v;render();};
+   $("le-apply").onclick=apply;$("le-when").onkeydown=e=>{if(e.key==="Enter")apply();};}
+ box.querySelectorAll(".chx").forEach(btn=>btn.onclick=()=>{b.sides[btn.dataset.s]=b.sides[btn.dataset.s].filter(v=>v!==btn.dataset.v);render();});
+ box.querySelectorAll(".le-add").forEach(se=>se.onchange=()=>{if(se.value){b.sides[se.dataset.s].push(se.value);render();}});
+}
+// the always-on warning banner: contradictory links and/or an over-constrained (empty) result
+function refreshWarn(){const w=$("warn");if(!w)return;const m=[];
+ if(conflictBonds&&conflictBonds.size)m.push(lang==="ru"
+   ?`⚠ противоречие: ${conflictBonds.size} связь(и) задают forbid и require для одного и того же — уберите одну`
+   :`⚠ contradiction: ${conflictBonds.size} link(s) set both forbid & require for the same — remove one`);
+ if(emptyResult)m.push(lang==="ru"?"⚠ связи слишком строгие — не остаётся ни одной комбинации"
+                                   :"⚠ links over-constrain — no combination survives");
+ w.innerHTML=m.join("<br>");}
+// impact: offline in-browser estimate, OR (opt-in) exact from the live DB via D.impact endpoint
+function renderImpactLocal(){const im=impact();
+ if(im.exact){const kept=im.full-im.removed;$("impact").innerHTML=`<b>${im.removed}</b> / ${im.full} · <span class="hint">${T().kept(kept)}</span>`;
+   $("bar").style.width=(im.full?100*im.removed/im.full:0)+"%";$("impacthint").textContent="";emptyResult=(kept===0&&im.full>0&&bonds.length>0);}
+ else{$("impact").innerHTML=`<b>${bonds.length}</b> <span class="hint">${T().links.toLowerCase()}</span>`;$("bar").style.width="0";$("impacthint").textContent=T().big;emptyResult=false;}
+ refreshWarn();}
+function showImpactExact(d){$("impact").innerHTML=`<b>${d.removed}</b> / ${d.total} · <span class="hint">${T().kept(d.kept)}</span> <span class="pill r" style="font-size:10px;vertical-align:middle">${esc(T().exactBadge)}</span>`;
+ $("bar").style.width=(d.total?100*d.removed/d.total:0)+"%";$("impacthint").textContent=T().exactNote;
+ emptyResult=(d.kept===0&&d.total>0&&bonds.length>0);refreshWarn();}
+let _impactTimer=null;
+function updateImpact(){if(!D.impact){renderImpactLocal();return;}clearTimeout(_impactTimer);$("impacthint").textContent="…";
+ _impactTimer=setTimeout(()=>fetch(D.impact,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(bondsToSidecar())})
+   .then(r=>r.json()).then(d=>{if(d&&d.exact){showImpactExact(d);}else{renderImpactLocal();}}).catch(()=>renderImpactLocal()),300);}
+function renderPanel(){
+ const lt=$("links");
+ updateImpact();refreshWarn();
+ // links
+ const enr=bonds.map((b,i)=>[b,i]).filter(([b])=>!b.when);
+ if(!enr.length)lt.innerHTML=`<div class="empty">${T().emptyLinks}</div>`;
+ else lt.innerHTML=enr.map(([b,i])=>{const cls=b.polarity==="forbid"?"f":"r";const word=b.polarity==="forbid"?T().forbidW:T().requireW;
+   return `<div class="row ${i===selBond?'sel':''}" data-bi="${i}"><span class="pill ${cls}">${esc(word)}</span>
+     <span class="txt">${bondText(b)}</span>
+     <button class="x" data-del="${i}" aria-label="delete">✕</button></div>`;}).join("");
+ lt.querySelectorAll(".row").forEach(r=>r.onclick=e=>{if(e.target.closest("button"))return;selBond=(selBond===+r.dataset.bi?null:+r.dataset.bi);render();});
+ lt.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{bonds.splice(+b.dataset.del,1);selBond=null;render();});
+ // formulas
+ const fr=bonds.map((b,i)=>[b,i]).filter(([b])=>b.when);
+ $("formulas").innerHTML=fr.length?fr.map(([b,i])=>{const cls=b.polarity==="forbid"?"f":"r";
+   return `<div class="row ${i===selBond?'sel':''}" data-bi="${i}"><span class="pill ${cls}">${b.polarity==='forbid'?T().forbidW:T().requireW}</span>
+     <span class="txt">${bondText(b)}<br><small>${esc(bondSheets(b).join(", "))} · ${T().nodraw}</small></span>
+     <button class="x" data-delf="${i}">✕</button></div>`;}).join(""):`<div class="empty">—</div>`;
+ $("formulas").querySelectorAll(".row").forEach(r=>r.onclick=e=>{if(e.target.closest("button"))return;selBond=(selBond===+r.dataset.bi?null:+r.dataset.bi);render();});
+ $("formulas").querySelectorAll("[data-delf]").forEach(b=>b.onclick=()=>{bonds.splice(+b.dataset.delf,1);selBond=null;render();});
+ renderLinkEditor();
+ renderParams();
+}
+function renderParams(){const tb=$("params");let rows="";
+ SHEETS.forEach(s=>s[1].forEach(v=>{const cur=(params[s[0]]||{})[v]||{};const txt=Object.entries(cur).map(([k,x])=>k+"="+x).join(", ");
+   rows+=`<tr><td style="color:var(--muted);white-space:nowrap">${esc(s[0])}:${esc(v)}</td><td><input data-s="${attr(s[0])}" data-v="${attr(v)}" value="${attr(txt)}" placeholder="charge=2, n=1"></td></tr>`;}));
+ tb.innerHTML=rows;
+ tb.querySelectorAll("input").forEach(inp=>inp.onchange=()=>{const d={};inp.value.split(",").forEach(p=>{const m=p.split("=");if(m.length===2){const k=m[0].trim(),x=m[1].trim();if(k)d[k]=isNaN(+x)?x:+x;}});
+   params[inp.dataset.s]=params[inp.dataset.s]||{};params[inp.dataset.s][inp.dataset.v]=d;renderPanel();});}
+
+// ---- interactions ----
+function clickNode(id){
+ if(multi){const i=tray.indexOf(id);if(i>=0)tray.splice(i,1);else tray.push(id);updateTray();render();return;}
+ if(sel===null){sel=id;}
+ else if(sel===id){sel=null;}
+ else{const a=JSON.parse(sel),b=JSON.parse(id);
+   if(a[0]!==b[0]){addSingleton(a,b);}else{toast(lang==="ru"?"Нужны значения из РАЗНЫХ листов":"Pick values from DIFFERENT sheets");}
+   sel=null;}
+ render();
+}
+// a quick 2-click line = a singleton-sided bond {A:[a], C:[c]} — blocked if it contradicts/dupes one
+function addSingleton(a,b){const sides={};sides[a[0]]=[a[1]];sides[b[0]]=[b[1]];
+ const nb={polarity:mode,sides,gate:Object.assign({},gate),when:null,desc:""},c=checkAdd(nb);
+ if(c.conflict){toast(lang==="ru"?"Противоречие: та же связь уже задана с противоположным типом":"Contradiction: the same link already exists with the opposite type");return;}
+ if(c.dup){selBond=c.at;toast(lang==="ru"?"Такая связь уже есть":"That link already exists");return;}
+ bonds.push(nb);selBond=bonds.length-1;}
+// group / Many:Many = tray grouped by sheet -> one bond whose sides hold value SETS (cross product)
+function makeGroupBond(){const sides={};tray.forEach(id=>{const[s,v]=JSON.parse(id);(sides[s]=sides[s]||[]).push(v);});
+ if(Object.keys(sides).length<2){toast(lang==="ru"?"Нужны значения из ≥2 листов":"Need values from ≥2 sheets");return;}
+ const nb={polarity:mode,sides,gate:Object.assign({},gate),when:null,desc:""},c=checkAdd(nb);
+ if(c.conflict){toast(lang==="ru"?"Противоречие: та же группа-связь уже задана с противоположным типом":"Contradiction: the same group link already exists with the opposite type");return;}
+ if(c.dup){selBond=c.at;tray=[];updateTray();render();toast(lang==="ru"?"Такая группа-связь уже есть":"That group link already exists");return;}
+ bonds.push(nb);selBond=bonds.length-1;tray=[];updateTray();render();}
+function updateTray(){const bySheet={};tray.forEach(id=>{const[s,v]=JSON.parse(id);(bySheet[s]=bySheet[s]||[]).push(v);});
+ $("traychips").innerHTML=Object.keys(bySheet).map(s=>`<span class="chip">${esc(s)}∈{${bySheet[s].map(esc).join(", ")}}</span>`).join("")
+   ||`<span class="hint">${lang==="ru"?"кликайте значения (можно несколько в листе)":"click values (several per sheet OK)"}</span>`;
+ $("tray").classList.toggle("show",multi);
+ $("makebond").disabled=!(Object.keys(bySheet).length>=2);}
+
+// ---- gate control ----
+function readGate(){const g=$("gate").value;if(g==="adjacent")return{adjacent:true};if(g==="within")return{within:+$("within").value||2};return{};}
+$("gate").onchange=()=>{$("within").style.display=$("gate").value==="within"?"":"none";gate=readGate();};
+$("within").onchange=()=>gate=readGate();
+
+// ---- mode ----
+function setMode(m){mode=m;$("m-forbid").classList.toggle("on",m==="forbid");$("m-require").classList.toggle("on",m==="require");}
+$("m-forbid").onclick=()=>setMode("forbid");$("m-require").onclick=()=>setMode("require");
+$("multi").onchange=e=>{multi=e.target.checked;tray=[];sel=null;updateTray();render();};
+$("makebond").onclick=()=>makeGroupBond();
+$("cleartray").onclick=()=>{tray=[];updateTray();render();};
+
+// ---- canvas: vertical node drag · background pan · wheel/keys zoom (mouse pointer events) ----
+function applyView(){const vp=$("viewport");if(vp)vp.style.transform=`translate(${view.tx}px,${view.ty}px) scale(${view.scale})`;
+ const z=$("zpct");if(z)z.textContent=Math.round(view.scale*100)+"%";}
+let _raf=null;
+function layoutDrag(){if(_raf)return;_raf=requestAnimationFrame(()=>{_raf=null;if(!drag)return;   // cheap: move the node + redraw edges
+ const[s,v]=JSON.parse(drag.id),xy=nodeXY(s,v);if(drag.el&&xy)drag.el.style.top=xy.y+"px";
+ const sv=$("edges");if(sv){sv.innerHTML=edgesInner();bindEdges($("canvas"));}});}
+function startNodeDrag(e,el){if(e.button!==undefined&&e.button!==0)return;const id=el.dataset.id;
+ drag={id,sy:e.clientY,y0:(id in nodeY)?nodeY[id]:nodeXY(...JSON.parse(id)).y,moved:false,el};
+ el.classList.add("dragging");try{el.setPointerCapture(e.pointerId);}catch(_){}}
+$("stagewrap").addEventListener("pointerdown",e=>{          // empty-canvas drag = pan the viewport
+ if(e.target.closest(".node")||e.target.closest("#edges [data-bi]")||e.target.closest("#zoomctl"))return;
+ pan={sx:e.clientX,sy:e.clientY,tx:view.tx,ty:view.ty};$("stagewrap").classList.add("panning");});
+document.addEventListener("pointermove",e=>{
+ if(drag){if(Math.abs(e.clientY-drag.sy)>3)drag.moved=true;
+   nodeY[drag.id]=clampY(drag.y0+(e.clientY-drag.sy)/view.scale);layoutDrag();return;}   // x stays in-column; y follows
+ if(pan){view.tx=pan.tx+(e.clientX-pan.sx);view.ty=pan.ty+(e.clientY-pan.sy);applyView();}});
+document.addEventListener("pointerup",()=>{
+ if(drag){if(drag.el)drag.el.classList.remove("dragging");if(drag.moved){suppressClick=true;render();}drag=null;}
+ if(pan){pan=null;$("stagewrap").classList.remove("panning");}});
+function zoomAt(sx,sy,f){const wx=(sx-view.tx)/view.scale,wy=(sy-view.ty)/view.scale;   // zoom toward a screen point
+ view.scale=clampZ(view.scale*f);view.tx=sx-wx*view.scale;view.ty=sy-wy*view.scale;applyView();}
+function zoomCenter(f){const r=$("stagewrap").getBoundingClientRect();zoomAt(r.width/2,r.height/2,f);}
+function fitView(){const r=$("stagewrap").getBoundingClientRect(),rows=Math.max(...SHEETS.map(s=>s[1].length),1);
+ const W=PADX+(SHEETS.length-1)*COLW+PADX,H=Math.max(stageH(),PADY+rows*ROWH+24);
+ view.scale=clampZ(Math.min(r.width/W,r.height/H,1.5)||1);view.tx=Math.max(8,(r.width-W*view.scale)/2);view.ty=10;applyView();}
+$("stagewrap").addEventListener("wheel",e=>{e.preventDefault();const r=$("stagewrap").getBoundingClientRect();
+ zoomAt(e.clientX-r.left,e.clientY-r.top,e.deltaY<0?1.12:1/1.12);},{passive:false});
+$("zin").onclick=()=>zoomCenter(1.2);$("zout").onclick=()=>zoomCenter(1/1.2);$("zfit").onclick=()=>fitView();
+
+// ---- formula dialog ----
+// ── nested block formula builder (Blockly-grade): a typed AST of blocks plugged into slots; the
+// "Блоки" mode (parallel to the text field). No deps; compiles the block tree to a `when` string. ──
+let fmode="text", ftree=null, fmenu=null, dragData=null;
+function paramsOf(sheet){const set=new Set(["value","pos"]);const sv=params[sheet]||{};for(const v in sv)for(const k in sv[v])set.add(k);return [...set];}
+function produces(t){return (t==="cmp"||t==="logic"||t==="not")?"bool":"arith";}   // a block's result type
+function clearDrop(){document.querySelectorAll(".drop-ok,.drop-no").forEach(e=>e.classList.remove("drop-ok","drop-no"));}
+function dragProduces(){return !dragData?null:(dragData.kind==="new"?produces(dragData.t):produces(getAt(dragData.path).t));}
+function dropOK(el){if(!dragData||dragProduces()!==el.dataset.droptype)return false;     // type must match the slot
+ if(dragData.kind==="move"){const s=dragData.path,d=el.dataset.droppath;if(s===""||d===s||d.startsWith(s+".")||getAt(d)!==null)return false;} // no cycle; move only into empty slots
+ return true;}
+function doDrop(el){if(!dropOK(el))return;const d=el.dataset.droppath;
+ if(dragData.kind==="new")setAt(d,newNode(dragData.t));                                  // palette block -> (replace) slot
+ else{const sub=getAt(dragData.path);setAt(dragData.path,null);setAt(d,sub);}            // move an existing subtree
+ dragData=null;renderFtree();}
+function buildPalette(){const x=T();const items=[["cmp",x.mCmp],["logic",x.mLogic],["not",x.mNot],["arith",x.mArith],["param",x.mParam],["num",x.mNum]];
+ $("fpalette").innerHTML=`<span class="le-lbl">${esc(x.palLbl)}</span>`+items.map(([t,l])=>`<span class="palitem" draggable="true" data-new="${t}">${esc(l)}</span>`).join("");
+ $("fpalette").querySelectorAll(".palitem").forEach(p=>{p.ondragstart=e=>{dragData={kind:"new",t:p.dataset.new};try{e.dataTransfer.setData("text/plain",p.dataset.new);}catch(_){}e.dataTransfer.effectAllowed="copy";};p.ondragend=()=>{dragData=null;clearDrop();};});}
+function setFmode(m){fmode=m;$("fmode-text").classList.toggle("on",m==="text");$("fmode-blocks").classList.toggle("on",m==="blocks");$("fexpr").style.display=m==="text"?"":"none";$("fblocks").style.display=m==="blocks"?"":"none";}
+function getAt(p){if(!p)return ftree;let n=ftree;for(const k of p.split("."))n=n?n[k]:null;return n;}
+function setAt(p,v){if(!p){ftree=v;return;}const ks=p.split(".");let n=ftree;for(let i=0;i<ks.length-1;i++)n=n[ks[i]];n[ks[ks.length-1]]=v;}
+function newNode(t){const S=SHEETS.length?SHEETS[0][0]:"";return t==="cmp"?{t,op:">",a:null,b:null}:t==="logic"?{t,op:"and",a:null,b:null}:t==="not"?{t,x:null}:t==="arith"?{t,op:"*",a:null,b:null}:t==="param"?{t,sheet:S,param:(paramsOf(S)[0]||"value")}:{t:"num",val:"0"};}
+function compileT(n){if(!n)return null;if(n.t==="param")return n.sheet+"."+n.param;if(n.t==="num")return String(n.val);
+ if(n.t==="not"){const x=compileT(n.x);return x==null?null:"not ("+x+")";}
+ const a=compileT(n.a),b=compileT(n.b);return (a==null||b==null)?null:"("+a+" "+n.op+" "+b+")";}
+function opsOf(t){return t==="cmp"?[[">",">"],[">=","≥"],["<","<"],["<=","≤"],["==","="],["!=","≠"]]:t==="logic"?[["and","and"],["or","or"]]:[["+","+"],["-","−"],["*","×"]];}
+function selH(cls,path,val,opts){return `<select class="${cls}" data-path="${attr(path)}">`+opts.map(([v,l])=>`<option value="${attr(v)}"${v==val?" selected":""}>${esc(l)}</option>`).join("")+`</select>`;}
+function nodeH(n,path,slot){const x=T();
+ if(!n){if(fmenu===path){const o=slot==="bool"?[["cmp",x.mCmp],["logic",x.mLogic],["not",x.mNot]]:[["arith",x.mArith],["param",x.mParam],["num",x.mNum]];
+   return `<span class="fmenu">`+o.map(([t,l])=>`<button class="btn fp" data-ins="${attr(path)}" data-t="${t}">${esc(l)}</button>`).join("")+`<button class="btn fp" data-cancel="1">✕</button></span>`;}
+   return `<button class="slot" data-open="${attr(path)}" data-droppath="${attr(path)}" data-droptype="${slot}">＋</button>`;}
+ const rm=`<button class="chx" data-rm="${attr(path)}">✕</button>`,cp=k=>path?path+"."+k:k,
+   da=`draggable="true" data-droppath="${attr(path)}" data-droptype="${produces(n.t)}"`;
+ if(n.t==="param")return `<span class="blk leaf" ${da}>${selH("ssel",path,n.sheet,SHEETS.map(s=>[s[0],s[0]]))}.${selH("psel",path,n.param,paramsOf(n.sheet).map(p=>[p,p]))}${rm}</span>`;
+ if(n.t==="num")return `<span class="blk leaf" ${da}><input class="bnum" data-path="${attr(path)}" type="number" value="${attr(n.val)}" style="width:58px">${rm}</span>`;
+ if(n.t==="not")return `<span class="blk" ${da}>${esc(x.mNot)} ${nodeH(n.x,cp("x"),"bool")}${rm}</span>`;
+ const cs=n.t==="logic"?"bool":"arith";
+ return `<span class="blk" ${da}>${nodeH(n.a,cp("a"),cs)} ${selH("opsel",path,n.op,opsOf(n.t))} ${nodeH(n.b,cp("b"),cs)}${rm}</span>`;}
+function renderFtree(){$("ftree").innerHTML=nodeH(ftree,"","bool");$("fbuilt").textContent=compileT(ftree)||"…";const t=$("ftree");
+ t.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{fmenu=b.dataset.open;renderFtree();});
+ t.querySelectorAll("[data-cancel]").forEach(b=>b.onclick=()=>{fmenu=null;renderFtree();});
+ t.querySelectorAll("[data-ins]").forEach(b=>b.onclick=()=>{setAt(b.dataset.ins,newNode(b.dataset.t));fmenu=null;renderFtree();});
+ t.querySelectorAll("[data-rm]").forEach(b=>b.onclick=()=>{setAt(b.dataset.rm,null);fmenu=null;renderFtree();});
+ t.querySelectorAll(".opsel").forEach(s=>s.onchange=()=>{getAt(s.dataset.path).op=s.value;renderFtree();});
+ t.querySelectorAll(".ssel").forEach(s=>s.onchange=()=>{const n=getAt(s.dataset.path);n.sheet=s.value;n.param=paramsOf(s.value)[0]||"value";renderFtree();});
+ t.querySelectorAll(".psel").forEach(s=>s.onchange=()=>{getAt(s.dataset.path).param=s.value;renderFtree();});
+ t.querySelectorAll(".bnum").forEach(i=>i.oninput=()=>{getAt(i.dataset.path).val=i.value;$("fbuilt").textContent=compileT(ftree)||"…";});
+ t.querySelectorAll("[data-droppath]").forEach(el=>{                                     // drop targets (slots + blocks)
+   el.ondragover=e=>{e.preventDefault();e.stopPropagation();const ok=dropOK(el);el.classList.remove("drop-ok","drop-no");el.classList.add(ok?"drop-ok":"drop-no");e.dataTransfer.dropEffect=ok?(dragData&&dragData.kind==="move"?"move":"copy"):"none";};
+   el.ondragleave=()=>el.classList.remove("drop-ok","drop-no");
+   el.ondrop=e=>{e.preventDefault();e.stopPropagation();el.classList.remove("drop-ok","drop-no");doDrop(el);};});
+ t.querySelectorAll(".blk[draggable]").forEach(b=>{b.ondragstart=e=>{e.stopPropagation();dragData={kind:"move",path:b.dataset.droppath};try{e.dataTransfer.setData("text/plain","m");}catch(_){}e.dataTransfer.effectAllowed="move";};b.ondragend=()=>{dragData=null;clearDrop();};});
+ buildPalette();}
+$("fmode-text").onclick=()=>setFmode("text");$("fmode-blocks").onclick=()=>{setFmode("blocks");renderFtree();};
+$("addformula").onclick=()=>{const box=$("fsheets");box.innerHTML=SHEETS.map(s=>`<label><input type="checkbox" value="${esc(s[0])}">${esc(s[0])}</label>`).join("");
+ $("fexpr").value="";$("fhint").textContent="";ftree=null;fmenu=null;setFmode("text");renderFtree();$("fdlg").showModal();};
+$("fcancel").onclick=()=>$("fdlg").close();
+$("fadd").onclick=()=>{const sh=[...$("fsheets").querySelectorAll("input:checked")].map(c=>c.value);const expr=(fmode==="blocks"?(compileT(ftree)||""):$("fexpr").value).trim();
+ if(sh.length<2){$("fhint").textContent=lang==="ru"?"Выберите ≥2 листа":"Pick ≥2 sheets";return;}
+ if(!expr){$("fhint").textContent=fmode==="blocks"?(lang==="ru"?"Достройте формулу (есть пустые слоты)":"Complete the formula (empty slots)"):(lang==="ru"?"Введите формулу":"Enter a formula");return;}
+ if(BAN.test(expr)){$("fhint").textContent=lang==="ru"?"Недопустимая формула":"Unsafe formula";return;}
+ bonds.push({polarity:mode,sides:Object.fromEntries(sh.map(s=>[s,[]])),gate:Object.assign({},gate),when:expr,desc:""});
+ $("fdlg").close();$("advanced").open=true;render();};
+
+// ---- submit / download ----
+function sidecarJSON(){return JSON.stringify(bondsToSidecar(),null,2);}
+function download(){const b=new Blob([sidecarJSON()],{type:"application/json"});const u=URL.createObjectURL(b);
+ const a=document.createElement("a");a.href=u;a.download="sidecar.json";a.click();URL.revokeObjectURL(u);}
+$("dl").onclick=()=>{download();toast(T().dlsaved);};
+function showOK(){$("okmsg").textContent=T().okmsg(bondsToSidecar().constraints.length);$("overlay").classList.add("show");}
+$("submit").onclick=()=>{
+ if(conflictBonds&&conflictBonds.size){toast(lang==="ru"?"Сначала уберите противоречивые связи":"Resolve the contradictory links first");return;}
+ const payload=sidecarJSON();
+ if(D.post){fetch(D.post,{method:"POST",headers:{"Content-Type":"application/json"},body:payload})
+   .then(r=>{if(!r.ok)throw 0;showOK();}).catch(()=>{download();showOK();});}
+ else{download();showOK();}};
+
+// ---- lang ----
+function applyLang(){const x=T();$("lang").textContent=lang==="ru"?"EN":"RU";document.documentElement.lang=lang;
+ $("t-title").textContent=x.title;$("t-forbid").textContent=x.forbid;$("t-require").textContent=x.require;
+ $("t-gate").textContent=x.gate;$("t-multi").textContent=x.multi;$("t-submit").textContent=x.submit;
+ $("t-impact").textContent=x.impact;$("t-links").textContent=x.links;$("t-adv").textContent=x.adv;
+ $("t-addf").textContent=x.addf;$("t-params").innerHTML=x.params+' <code>charge=2, n=1</code>';$("t-tray").textContent=x.tray;
+ $("t-make").textContent=x.make;$("t-okh").textContent=x.okh;$("t-edit").textContent=x.edit;
+ $("t-fdlg").textContent=x.fdlg;$("t-fsheets").textContent=x.fsheets;$("t-fexpr").textContent=x.fexpr;
+ $("t-ftext").textContent=x.fText;$("t-fblocks").textContent=x.fBlocks;$("t-fbuilt").textContent=x.fbuilt;
+ const g=$("gate");g.options[0].text=lang==="ru"?"любая":"any";g.options[1].text=lang==="ru"?"рядом":"adjacent";g.options[2].text=lang==="ru"?"в пределах…":"within…";
+ $("srcinfo").textContent=(lang==="ru"?"листов: ":"sheets: ")+SHEETS.length+" · "+x.hintDraw;
+ render();}
+$("lang").onclick=()=>{lang=lang==="ru"?"en":"ru";applyLang();};
+
+// ---- keyboard ----
+document.addEventListener("keydown",e=>{if(e.target.matches("input,select,textarea"))return;
+ const PAN=60;
+ if(e.key==="Escape"){sel=null;selBond=null;tray=[];updateTray();render();}
+ else if((e.key==="Delete"||e.key==="Backspace")&&selBond!==null){bonds.splice(selBond,1);selBond=null;render();}
+ else if(e.key==="Enter"&&(e.ctrlKey||e.metaKey)){$("submit").click();}
+ else if(e.ctrlKey&&/^Arrow/.test(e.key)){e.preventDefault();          // Ctrl+Arrows = pan the viewport
+   if(e.key==="ArrowLeft")view.tx+=PAN;else if(e.key==="ArrowRight")view.tx-=PAN;
+   else if(e.key==="ArrowUp")view.ty+=PAN;else view.ty-=PAN;applyView();}
+ else if((e.key==="ArrowUp"||e.key==="ArrowDown")&&sel){e.preventDefault();   // Arrows = nudge the picked node along its slot
+   const cur=(sel in nodeY)?nodeY[sel]:(nodeXY(...JSON.parse(sel))||{y:PADY}).y;
+   nodeY[sel]=clampY(cur+(e.key==="ArrowUp"?-ROWH/2:ROWH/2));render();}
+ else if(e.key==="+"||e.key==="="){e.preventDefault();zoomCenter(1.2);}
+ else if(e.key==="-"||e.key==="_"){e.preventDefault();zoomCenter(1/1.2);}
+ else if(e.key==="0"){e.preventDefault();view={scale:1,tx:0,ty:0};applyView();}});
+
+let toastT;function toast(m){const el=$("toast");el.textContent=m;el.classList.add("show");clearTimeout(toastT);toastT=setTimeout(()=>el.classList.remove("show"),1600);}
+applyLang();
+</script></body></html>

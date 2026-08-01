@@ -1,0 +1,453 @@
+# ============================================================================
+# api_health_probe — DISPERSED across the Core's combinatorial verbs.
+#
+# The seed (api_probe/api_health_probe.py) is split into logical pieces; each
+# piece is rewritten several ways while PRESERVING THE CONTRACT it has with the
+# others (the module-level names it must define for downstream pieces). The
+# pieces are then dispersed across the Core's verbs so that COMBINING the
+# rewrites breeds — and scores — variations:
+#
+#   HEAD / TAIL       → FW_Combi(1)  constant frame. HEAD pre-declares EVERY
+#                                    working name with a safe default, so ANY
+#                                    combination reassembles into a runnable .py.
+#   FETCH / PARSE     → FW_Combi(1)  several implementations each (cartesian leaf).
+#   AGG / PERSIST     → FW_Combi(1)  several implementations each; one of each is
+#                                    deliberately divergent (off-by-one sum;
+#                                    dropped histogram bucket) → invariant breaks.
+#   CLEAN             → FW_Subsets   optional refinements present/absent (2² = 4).
+#   TRANSFORM         → FW_Permut    ORDER-sensitive score steps (3! = 6); some
+#                                    orders push the health score out of band.
+#
+# CONTRACT (module-level names, in slot order):
+#   HEAD     → defines  METRICS, pctl, nowms, histof, OFFLINE, API_URL, DB_*,
+#                       TOL_ABS, SCORE_LO/HI, RUN_ID, COMBO_ID + safe defaults for
+#                       payload,status,source,latms,temps,hours,nulls,m_*,score,
+#                       rows_written,db_ok,db_ms,bucket_sum.
+#   FETCH    → sets     payload, status, source, latms        (uses API_URL/OFFLINE)
+#   PARSE    → sets     temps, hours, nulls + METRICS counters (uses payload)
+#   CLEAN    → mutates  temps                                  (uses temps; safe if absent)
+#   AGG      → sets     m_min..m_iqr, m_sum, score            (uses temps)
+#   TRANSFORM→ mutates  score                                  (uses score)
+#   PERSIST  → sets     rows_written, db_ok, db_ms, bucket_sum (uses temps,m_*,score → local DB)
+#   TAIL     → publishes m_*→METRICS, recomputes the oracle, sets FW_VAR, prints ONE K=V line.
+#
+# SECURITY: FETCH is inbound-only READ (public coords → public numbers, cached so
+# at most one real GET); PERSIST writes ONLY locally-computed numbers into a fresh
+# local DB via PARAMETERIZED SQL (API values are bound params coerced to float/int,
+# never interpolated). The API has no access to the DB, filesystem, or credentials.
+#
+# raw=true ⇒ verbatim; run the Reader with reader.core.concatenator='' so the
+# pieces concatenate back into a valid module. No data cell starts with "FW_".
+# est. fw_final = FETCH(2)·PARSE(2)·CLEAN(2²=4)·AGG(3)·TRANSFORM(3!=6)·PERSIST(2) = 576.
+# ============================================================================
+title = "api_health_probe — decomposed & dispersed (Combi(1) impls × Subsets clean × Permut transform-order × divergent rewrites)"
+note  = "Data-quality invariant fuzz over a safe public API: the combinatorics finds impl/clean/order combos that break the in-program oracle (sum/bucket/score/range/finite)."
+goals = ["dq_score", "coverage", "rows", "latency_ms", "db_ms", "violations", "t_stdev"]
+args  = ["mode=api_health_probe"]
+
+# --- HEAD: constant frame. Pre-declares ALL working names with safe defaults so
+#     every combination is runnable. Starts with "import" (not "FW_"). ---
+[[slots]]
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import json, math, os, time, statistics
+import urllib.parse, urllib.request
+
+RUN_ID = int(time.time())
+COMBO_ID = os.environ.get("FW_COMBO_ID") or ("%d_%d" % (RUN_ID, os.getpid()))
+API_URL = ("https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41"
+           "&hourly=temperature_2m&forecast_days=2&timezone=UTC")
+HTTP_TIMEOUT_S = 8.0
+CACHE_PATH = os.path.join(os.environ.get("TMPDIR", "/tmp"), "api_health_probe.cache.json")
+DB_HOST = "127.0.0.1"
+DB_PORT = 5433
+DB_NAME = "apiweather_app"
+DB_USER = "postgres"
+DB_PASS = "pass"
+TOL_ABS = 1e-6
+SCORE_LO = -50.0
+SCORE_HI = 80.0
+OFFLINE = {"hourly": {"time": ["2026-05-31T%02d:00" % h for h in range(12)],
+                      "temperature_2m": [9.3, 8.7, 8.1, 7.9, 8.4, 10.2,
+                                         12.8, 15.1, 17.6, 19.0, 19.8, 19.4]}}
+def nowms():
+    return time.monotonic() * 1000.0
+def pctl(s, q):
+    if not s:
+        return float("nan")
+    if len(s) == 1:
+        return float(s[0])
+    pos = q * (len(s) - 1)
+    lo = int(pos)
+    hi = min(lo + 1, len(s) - 1)
+    fr = pos - lo
+    return float(s[lo]) * (1 - fr) + float(s[hi]) * fr
+def histof(values, nbins):
+    if not values:
+        return []
+    lo = min(values)
+    hi = max(values)
+    span = (hi - lo) or 1.0
+    counts = [0] * nbins
+    for v in values:
+        idx = min(nbins - 1, int((v - lo) / span * nbins))
+        counts[idx] += 1
+    return list(enumerate(counts))
+METRICS = {"app": "api_health_probe", "schema_ver": 3, "run_id": RUN_ID, "combo_id": COMBO_ID,
+           "api_provider": "open-meteo", "hourly_var": "temperature_2m",
+           "http_status": 0, "latency_ms": 0.0, "bytes_in": 0, "source": "none",
+           "rows": 0, "nulls": 0, "distinct_hours": 0, "coverage": 0.0,
+           "t_min": float("nan"), "t_max": float("nan"), "t_mean": float("nan"),
+           "t_median": float("nan"), "t_stdev": float("nan"), "t_var": float("nan"),
+           "t_range": float("nan"), "t_p05": float("nan"), "t_p95": float("nan"),
+           "t_iqr": float("nan"), "t_sum": 0.0, "monotonic_breaks": 0, "zero_crossings": 0,
+           "score": 0.0, "dq_score": 0.0, "violations": 0,
+           "sum_ok": 1, "count_ok": 1, "range_ok": 1, "bucket_ok": 1, "score_ok": 1,
+           "db_ms": 0.0, "rows_written": 0, "bucket_sum": 0, "db_ok": 0, "FW_VAR": 0}
+payload = {}
+status = 0
+source = "none"
+latms = 0.0
+temps = []
+hours = []
+nulls = 0
+m_min = m_max = m_mean = m_median = m_stdev = m_var = m_range = m_p05 = m_p95 = m_iqr = float("nan")
+m_sum = 0.0
+score = 0.0
+rows_written = 0
+db_ok = 0
+db_ms = 0.0
+bucket_sum = 0
+''']
+
+# --- FETCH: 2 implementations (cartesian leaf). v0 offline-deterministic (no net);
+#     v1 live HTTP, cached to a temp file so at most ONE real GET happens. ---
+[[slots]]
+sheet  = "FETCH"
+key    = "fetch"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''payload = OFFLINE
+status = 0
+source = "offline"
+latms = 0.0
+''',
+'''_t = nowms()
+try:
+    if os.path.isfile(CACHE_PATH):
+        payload = json.loads(open(CACHE_PATH, "rb").read().decode("utf-8"))
+        status = 200
+        source = "cache"
+    else:
+        _rq = urllib.request.Request(API_URL, method="GET",
+                                     headers={"User-Agent": "api-health-probe/3"})
+        with urllib.request.urlopen(_rq, timeout=HTTP_TIMEOUT_S) as _rs:
+            _body = _rs.read()
+            status = _rs.getcode()
+        open(CACHE_PATH, "wb").write(_body)
+        payload = json.loads(_body.decode("utf-8"))
+        source = "live"
+except Exception:
+    payload = OFFLINE
+    status = 0
+    source = "offline"
+latms = nowms() - _t
+''',
+]
+
+# --- PARSE: 2 implementations (cartesian leaf). v0 full precision; v1 rounds each
+#     reading to 1 decimal (lossy). Both coerce to float and skip non-numeric. ---
+[[slots]]
+sheet  = "PARSE"
+key    = "parse"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''_h = payload.get("hourly", {}) if isinstance(payload, dict) else {}
+_raw = _h.get("temperature_2m", []) or []
+hours = _h.get("time", []) or []
+temps = []
+nulls = 0
+for _v in _raw:
+    try:
+        _f = float(_v)
+    except (TypeError, ValueError):
+        nulls += 1
+        continue
+    if _f == _f and not math.isinf(_f):
+        temps.append(_f)
+    else:
+        nulls += 1
+METRICS["http_status"] = int(status)
+METRICS["latency_ms"] = round(latms, 3)
+METRICS["source"] = source
+METRICS["bytes_in"] = len(json.dumps(payload).encode("utf-8"))
+METRICS["rows"] = len(temps)
+METRICS["nulls"] = nulls
+METRICS["distinct_hours"] = len(set(hours))
+METRICS["coverage"] = round(len(temps) / (len(_raw) or 1), 4)
+''',
+'''_h = payload.get("hourly", {}) if isinstance(payload, dict) else {}
+_raw = _h.get("temperature_2m", []) or []
+hours = _h.get("time", []) or []
+temps = []
+nulls = 0
+for _v in _raw:
+    try:
+        _f = float(str(_v).strip())
+    except (TypeError, ValueError):
+        nulls += 1
+        continue
+    if _f == _f and not math.isinf(_f):
+        temps.append(round(_f, 1))
+    else:
+        nulls += 1
+METRICS["http_status"] = int(status)
+METRICS["latency_ms"] = round(latms, 3)
+METRICS["source"] = source
+METRICS["bytes_in"] = len(json.dumps(payload).encode("utf-8"))
+METRICS["rows"] = len(temps)
+METRICS["nulls"] = nulls
+METRICS["distinct_hours"] = len(set(hours))
+METRICS["coverage"] = round(len(temps) / (len(_raw) or 1), 4)
+''',
+]
+
+# --- CLEAN: optional refinements (Subsets ⇒ {none, drop, clip, drop+clip}).
+#     o1 drops non-finite (safety); o2 clips to the [p05,p95] band. Both keep
+#     METRICS["rows"] in sync with temps so count_ok stays a true invariant. ---
+[[slots]]
+sheet  = "CLEAN"
+key    = "clean"
+verb   = "FW_Subsets"
+raw    = true
+values = [
+'''temps = [t for t in temps if (t == t and not math.isinf(t))]
+METRICS["rows"] = len(temps)
+''',
+'''if temps:
+    _ss = sorted(temps)
+    _lo = pctl(_ss, 0.05)
+    _hi = pctl(_ss, 0.95)
+    temps = [min(max(t, _lo), _hi) for t in temps]
+METRICS["rows"] = len(temps)
+''',
+]
+
+# --- AGG: 3 implementations (cartesian leaf). v0 correct (statistics); v1 has an
+#     OFF-BY-ONE sum (drops the last reading) → t_sum diverges → sum_ok breaks;
+#     v2 is a correct manual two-pass. All set score = mean as the base index. ---
+[[slots]]
+sheet  = "AGG"
+key    = "agg"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''if temps:
+    _s = sorted(temps)
+    m_min = float(_s[0])
+    m_max = float(_s[-1])
+    m_sum = float(sum(temps))
+    m_mean = statistics.fmean(temps)
+    m_median = statistics.median(temps)
+    m_stdev = statistics.pstdev(temps)
+    m_var = statistics.pvariance(temps)
+    m_range = m_max - m_min
+    m_p05 = pctl(_s, 0.05)
+    m_p95 = pctl(_s, 0.95)
+    m_iqr = pctl(_s, 0.75) - pctl(_s, 0.25)
+score = m_mean if m_mean == m_mean else 0.0
+''',
+'''if temps:
+    _s = sorted(temps)
+    m_min = float(_s[0])
+    m_max = float(_s[-1])
+    m_sum = float(sum(temps[:-1]))
+    m_mean = statistics.fmean(temps)
+    m_median = statistics.median(temps)
+    m_stdev = statistics.pstdev(temps)
+    m_var = statistics.pvariance(temps)
+    m_range = m_max - m_min
+    m_p05 = pctl(_s, 0.05)
+    m_p95 = pctl(_s, 0.95)
+    m_iqr = pctl(_s, 0.75) - pctl(_s, 0.25)
+score = m_mean if m_mean == m_mean else 0.0
+''',
+'''if temps:
+    m_min = temps[0]
+    m_max = temps[0]
+    _tot = 0.0
+    for _v in temps:
+        if _v < m_min:
+            m_min = _v
+        if _v > m_max:
+            m_max = _v
+        _tot += _v
+    m_min = float(m_min)
+    m_max = float(m_max)
+    m_sum = float(_tot)
+    _n = len(temps)
+    m_mean = _tot / _n
+    _sq = 0.0
+    for _v in temps:
+        _sq += (_v - m_mean) ** 2
+    m_var = _sq / _n
+    m_stdev = m_var ** 0.5
+    _s = sorted(temps)
+    m_median = statistics.median(temps)
+    m_range = m_max - m_min
+    m_p05 = pctl(_s, 0.05)
+    m_p95 = pctl(_s, 0.95)
+    m_iqr = pctl(_s, 0.75) - pctl(_s, 0.25)
+score = m_mean if m_mean == m_mean else 0.0
+''',
+]
+
+# --- TRANSFORM: ORDER-sensitive health-score steps (permutations, 3! = 6).
+#     Non-commutative (offset / scale / clip-via-cap): some orders push the score
+#     above SCORE_HI=80 → score_ok breaks. Each is a standalone module statement. ---
+[[slots]]
+sheet  = "TRANSFORM"
+key    = "xform"
+verb   = "FW_Permut"
+raw    = true
+values = [
+'''score = score + 60.0
+''',
+'''score = score * 2.0
+''',
+'''score = score - 30.0
+''',
+]
+
+# --- PERSIST: 2 implementations (cartesian leaf). Writes ONLY locally-computed
+#     numbers into the fresh local DB via PARAMETERIZED SQL (best-effort; never
+#     raises). v0 correct 8-bin histogram (bucket_sum == rows); v1 drops the last
+#     bucket → bucket_sum diverges → bucket_ok breaks. ---
+[[slots]]
+sheet  = "PERSIST"
+key    = "persist"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''_hist = histof(temps, 8)
+bucket_sum = sum(c for _, c in _hist)
+_pt = nowms()
+rows_written = 0
+db_ok = 0
+try:
+    import pg8000.dbapi
+    _cx = pg8000.dbapi.connect(host=DB_HOST, port=DB_PORT, user=DB_USER,
+                               password=DB_PASS, database=DB_NAME, timeout=6)
+    _cu = _cx.cursor()
+    _cu.execute("CREATE TABLE IF NOT EXISTS probe_runs (run_id bigint, combo_id text, "
+                "source text, rows integer, t_mean double precision, t_stdev double precision, "
+                "t_sum double precision, score double precision, latency_ms double precision, "
+                "created_at timestamptz default now())")
+    _cu.execute("INSERT INTO probe_runs (run_id, combo_id, source, rows, t_mean, t_stdev, "
+                "t_sum, score, latency_ms) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (int(RUN_ID), str(COMBO_ID), str(source), int(len(temps)),
+                 float(m_mean), float(m_stdev), float(m_sum), float(score),
+                 float(METRICS["latency_ms"])))
+    _cx.commit()
+    _cu.close()
+    _cx.close()
+    rows_written = 1
+    db_ok = 1
+except Exception:
+    rows_written = 0
+    db_ok = 0
+db_ms = nowms() - _pt
+''',
+'''_hist = histof(temps, 8)
+bucket_sum = sum(c for _, c in _hist[:-1])
+_pt = nowms()
+rows_written = 0
+db_ok = 0
+try:
+    import pg8000.dbapi
+    _cx = pg8000.dbapi.connect(host=DB_HOST, port=DB_PORT, user=DB_USER,
+                               password=DB_PASS, database=DB_NAME, timeout=6)
+    _cu = _cx.cursor()
+    _cu.execute("CREATE TABLE IF NOT EXISTS probe_runs (run_id bigint, combo_id text, "
+                "source text, rows integer, t_mean double precision, t_stdev double precision, "
+                "t_sum double precision, score double precision, latency_ms double precision, "
+                "created_at timestamptz default now())")
+    _cu.execute("INSERT INTO probe_runs (run_id, combo_id, source, rows, t_mean, t_stdev, "
+                "t_sum, score, latency_ms) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s)",
+                (int(RUN_ID), str(COMBO_ID), str(source), int(len(temps)),
+                 float(m_mean), float(m_stdev), float(m_sum), float(score),
+                 float(METRICS["latency_ms"])))
+    _cx.commit()
+    _cu.close()
+    _cx.close()
+    rows_written = 1
+    db_ok = 1
+except Exception:
+    rows_written = 0
+    db_ok = 0
+db_ms = nowms() - _pt
+''',
+]
+
+# --- TAIL: publish aggregates → METRICS, run the independent recompute oracle,
+#     set FW_VAR / FW_CUSTOM_VAR, and print ONE aggregated K=V line. Constant. ---
+[[slots]]
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''METRICS["t_min"] = m_min
+METRICS["t_max"] = m_max
+METRICS["t_mean"] = m_mean
+METRICS["t_median"] = m_median
+METRICS["t_stdev"] = m_stdev
+METRICS["t_var"] = m_var
+METRICS["t_range"] = m_range
+METRICS["t_p05"] = m_p05
+METRICS["t_p95"] = m_p95
+METRICS["t_iqr"] = m_iqr
+METRICS["t_sum"] = m_sum
+METRICS["score"] = round(score, 4)
+METRICS["rows"] = len(temps)
+METRICS["rows_written"] = rows_written
+METRICS["db_ok"] = db_ok
+METRICS["db_ms"] = round(db_ms, 3)
+METRICS["bucket_sum"] = bucket_sum
+if temps:
+    METRICS["monotonic_breaks"] = sum(1 for _i in range(1, len(temps)) if temps[_i] < temps[_i - 1])
+    _mn = m_mean if m_mean == m_mean else 0.0
+    METRICS["zero_crossings"] = sum(1 for _i in range(1, len(temps)) if (temps[_i] - _mn) * (temps[_i - 1] - _mn) < 0)
+_chk = 0.0
+for _t in temps:
+    _chk += _t
+sum_ok = abs(_chk - m_sum) <= TOL_ABS * (1 + abs(_chk))
+count_ok = (METRICS["rows"] == len(temps))
+range_ok = (not temps) or (m_max >= m_min and abs(m_range - (m_max - m_min)) <= 1e-9)
+bucket_ok = (bucket_sum == len(temps))
+score_ok = (SCORE_LO <= METRICS["score"] <= SCORE_HI)
+finite_ok = (m_mean == m_mean) and (m_stdev == m_stdev) and (METRICS["score"] == METRICS["score"])
+_checks = [sum_ok, count_ok, range_ok, bucket_ok, score_ok, finite_ok]
+METRICS["sum_ok"] = int(sum_ok)
+METRICS["count_ok"] = int(count_ok)
+METRICS["range_ok"] = int(range_ok)
+METRICS["bucket_ok"] = int(bucket_ok)
+METRICS["score_ok"] = int(score_ok)
+METRICS["violations"] = sum(1 for _c in _checks if not _c)
+METRICS["dq_score"] = round(sum(1 for _c in _checks if _c) / len(_checks), 4)
+FW_VAR = 0 if all(_checks) else 1
+FW_CUSTOM_VAR = FW_VAR
+METRICS["FW_VAR"] = FW_VAR
+def _fmt(v):
+    if isinstance(v, float):
+        return "nan" if v != v else (("%.4f" % v).rstrip("0").rstrip("."))
+    return str(v)
+print(" ".join("%s=%s" % (k, _fmt(v)) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "data-integrity invariant violated: sum/bucket/score/range/finite check failed"

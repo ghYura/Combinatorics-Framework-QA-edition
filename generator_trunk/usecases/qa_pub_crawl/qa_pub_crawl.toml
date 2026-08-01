@@ -1,0 +1,156 @@
+# "A QA tester goes into a pub" — comprehensive edition (UI showcase example).
+# The classic boundary-testing joke as a real multi-verb combinatorial test:
+#   ENTRY        FW_Combi(1)  — how the tester enters (leaf choice)
+#   ACTION       FW_Permut    — enter/sit/order tried in EVERY order (must enter first)
+#   QUANTITY     FW_Combi(1)  — 1 / 0 / -1 / 999999999 / "abcd": boundary/type/domain/capacity abuse
+#   TARGET       FW_Combi(1)  — beer / water / lizard (a lizard is not on the menu)
+#   GARNISH      FW_Subsets   — ANY subset of {ice, lime} (2^2 = 4)
+#   HAPPY_HOUR   FW_Optional  — a sudden event: prices halve            } "sudden actions",
+#   LAST_CALL    FW_Optional  — a sudden event: the bar is closing      } each present OR absent
+# Three combo-verb kinds + two optional sudden-actions. mandatory = 2·6·5·3·4 = 720;
+# × (1+1)(1+1) optional = 2880 candidates. The bar's oracle must NEVER crash — it accepts
+# valid orders and rejects invalid ones cleanly, tagging exactly why. trusted-local, self-contained.
+title = "A QA tester goes into a pub — FW_Combi × FW_Permut × FW_Subsets + FW_Optional sudden events, clean-reject oracle"
+note  = "Comprehensive boundary-testing joke: entry × action-order × weird quantities × absurd targets × garnish subsets, with sudden happy-hour / last-call events. The bar accepts valid orders and rejects invalid ones cleanly (never crashes, never overflows). Two goals → a real Pareto of orders-accepted vs price."
+args  = ["mode=qa_pub_crawl"]
+
+[[goals]]
+key = "accepted"
+dir = "max"
+[[goals]]
+key = "price"
+dir = "min"
+
+[[slots]]   # HEAD — the bar opens; state the tester will mutate
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''ACTIONS = []
+GARNISH = []
+EVENTS = []
+ENTRY = "walks"
+QTY = "1"
+TARGET = "beer"
+''']
+
+[[slots]]   # ENTRY — FW_Combi(1): how the tester enters
+sheet  = "ENTRY"
+key    = "entry"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''ENTRY = "walks"
+''', '''ENTRY = "runs"
+''']
+
+[[slots]]   # ACTION — FW_Permut: try enter/sit/order in EVERY order (entering first is the only valid one)
+sheet  = "ACTION"
+key    = "action"
+verb   = "FW_Permut"
+raw    = true
+values = ['''ACTIONS.append("enter")
+''', '''ACTIONS.append("sit")
+''', '''ACTIONS.append("order")
+''']
+
+[[slots]]   # QUANTITY — FW_Combi(1): boundary/type/domain/capacity abuse as first-class values
+sheet  = "QUANTITY"
+key    = "quantity"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''QTY = "1"
+''', '''QTY = "0"
+''', '''QTY = "-1"
+''', '''QTY = "999999999"
+''', '''QTY = "abcd"
+''']
+
+[[slots]]   # TARGET — FW_Combi(1): what is ordered (a lizard is not on the menu)
+sheet  = "TARGET"
+key    = "target"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''TARGET = "beer"
+''', '''TARGET = "water"
+''', '''TARGET = "lizard"
+''']
+
+[[slots]]   # GARNISH — FW_Subsets: any subset of {ice, lime} (2^2 = 4, incl. none)
+sheet  = "GARNISH"
+key    = "garnish"
+verb   = "FW_Subsets"
+raw    = true
+values = ['''GARNISH.append("ice")
+''', '''GARNISH.append("lime")
+''']
+
+[[slots]]   # HAPPY_HOUR — FW_Optional sudden event: prices halve (present OR absent)
+sheet  = "HAPPY_HOUR"
+key    = "happy_hour"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ['''EVENTS.append("happy_hour")
+''']
+
+[[slots]]   # LAST_CALL — FW_Optional sudden event: the bar is closing (present OR absent)
+sheet  = "LAST_CALL"
+key    = "last_call"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ['''EVENTS.append("last_call")
+''']
+
+[[slots]]   # TAIL — the bar's order handler: never crash; accept valid, reject invalid CLEANLY, tag why
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_pos = {a: i for i, a in enumerate(ACTIONS)}
+_bad_order = int(_pos["order"] < _pos["enter"] or _pos["sit"] < _pos["enter"])   # acted before entering
+# parse the quantity defensively — the bar must never crash or overflow on weird input
+if not QTY.lstrip("-").isdigit():
+    _qk = "type"          # e.g. "abcd"
+elif int(QTY) < 0:
+    _qk = "domain"        # e.g. -1
+elif int(QTY) == 0:
+    _qk = "zero"          # accepted no-op
+elif int(QTY) > 1000000:
+    _qk = "huge"          # capacity-reject, must not overflow
+else:
+    _qk = "ok"
+_bad_target = int(TARGET == "lizard")
+_last_call = int("last_call" in EVENTS)
+_happy = int("happy_hour" in EVENTS)
+_units = int(QTY) if _qk in ("ok", "zero") else 0
+price = round((5 * _units + len(GARNISH)) * (0.5 if _happy else 1.0), 2)
+if _bad_order:
+    FW_VAR = 2            # invalid action order (ordered/sat before entering)
+elif _qk in ("type", "domain", "huge"):
+    FW_VAR = 3            # invalid quantity rejected cleanly (type/domain/capacity)
+elif _bad_target:
+    FW_VAR = 4            # invalid order target rejected cleanly (no lizards)
+elif _last_call and _qk != "zero":
+    FW_VAR = 5            # bar is closing — order after last call, rejected cleanly
+else:
+    FW_VAR = 0            # PASS: a valid order accepted
+FW_CUSTOM_VAR = FW_VAR
+accepted = int(FW_VAR == 0)
+print("app=qa_pub_crawl entry=%s actions=%s qty=%s qk=%s target=%s garnish=%s events=%s accepted=%d price=%s FW_VAR=%d"
+      % (ENTRY, ">".join(ACTIONS), QTY, _qk, TARGET, "+".join(GARNISH) or "none",
+         "+".join(EVENTS) or "none", accepted, price, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "invalid action order: ordered or sat before entering the pub"
+[[custom_vars]]
+code = 3
+msg = "invalid quantity rejected cleanly (non-numeric type, negative domain, or huge over-capacity) — never crash, never overflow"
+[[custom_vars]]
+code = 4
+msg = "invalid order target rejected cleanly (you cannot order a lizard)"
+[[custom_vars]]
+code = 5
+msg = "order placed after last call — bar closing, rejected cleanly"

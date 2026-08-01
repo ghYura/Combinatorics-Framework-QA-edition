@@ -1,0 +1,62 @@
+{
+  "schema": "bundle.sut-manifest/v1",
+  "id": "telemetry-catalog-service",
+  "title": "Telemetry catalog service",
+  "maturity": "reference",
+  "summary": "A standalone, database-free HTTP System Under Test for constraint and validation work: a telemetry catalog whose documented rules decide whether a submitted record is accepted.",
+  "source": {
+    "kind": "sibling-checkout",
+    "sut_paths_key": "telemetry_catalog",
+    "repository": "https://github.com/ghYura/SUT.git",
+    "revision": "db1ac787d07fe4ea16b084b551576c1da1a055fd",
+    "revision_resolution": "Resolved through BUNDLE_SUT_ROOT."
+  },
+  "lifecycle": {
+    "install": "none — Python standard library only, no database",
+    "start": "python <sut>/telemetry_catalog_service.py (loopback HTTP)",
+    "health": "python <sut>/selftest.py — boots the service and exercises every validation rule over HTTP",
+    "stop": "terminate the service process; it holds no external state"
+  },
+  "determinism": {
+    "deterministic": true,
+    "reset": "In-memory only: restarting the process returns it to the documented baseline catalog.",
+    "seed": "No seed needed: validation is a pure function of the submitted record and the declared rules."
+  },
+  "oracle": {
+    "kind": "schema-and-rules",
+    "description": "The declared telemetry rules decide acceptance; the scenario TAIL parses the HTTP response and maps rule outcomes onto Bundle verdict codes.",
+    "independence": "The rule set is declared separately from the service's request handler and is re-stated in the scenario's constraint sidecar, so a rule the service applies but the scenario does not expect surfaces as a disagreement rather than being absorbed.",
+    "implementation": "<sut>/telemetry_rules.py"
+  },
+  "controls": {
+    "known_pass": ["telemetry_catalog_e2e: a record satisfying every declared rule is accepted"],
+    "known_fail": ["telemetry_catalog_e2e: records violating each individual rule are rejected with that rule's reason"],
+    "intentional_defects": []
+  },
+  "access": {"read": ["{scratch}"], "write": ["{scratch}"], "network": ["127.0.0.1"]},
+  "limits": {"wall_seconds_per_candidate": 30, "memory_mb": 512, "max_candidates_per_gate": 256},
+  "trusted_artifacts": [],
+  "capability_row": {
+    "language": "python", "candidate_sink": "loose-files", "handoff": "v2",
+    "run_mode": "verdict", "execution_policy": "networked-api-probe",
+    "executor_pool": "single", "repeat": "k1", "analyzer": "formal"
+  },
+  "candidate_origin": "network-facing",
+  "cleanup": "Stop the service process; python generator_trunk/bundle_run.py cleanup <run-dir>.",
+  "ci": {
+    "tier": 2,
+    "workflow_gate": "reference-sut-telemetry",
+    "tests": [
+      "generator_trunk/test_telemetry_catalog_e2e.py",
+      "generator_trunk/test_telemetry_catalog_full_e2e.py"
+    ],
+    "scenarios": [
+      "generator_trunk/usecases/telemetry_catalog_e2e",
+      "generator_trunk/usecases/telemetry_catalog_full"
+    ]
+  },
+  "caveats": [
+    "Candidates reach a loopback HTTP target, so the intended row uses networked-api-probe — never trusted-local.",
+    "The current tests prove the independent oracle, live HTTP behaviour, and direct full pipeline, but do not yet prove that exact networked-api-probe container-policy row end to end. It is reference, not canonical, until that gate exists."
+  ]
+}

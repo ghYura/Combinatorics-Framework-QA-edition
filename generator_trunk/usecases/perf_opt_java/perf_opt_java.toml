@@ -1,0 +1,119 @@
+# ============================================================================
+# USE-CASE #7-J — Performance / systems design-space optimization, JAVA analog.
+#
+# A faithful Java twin of usecases/perf_opt (the Python original): the SAME
+# discrete design space (algorithm x thread count x batch size x cache size =
+# 3*4*3*2 = 72 configurations), the SAME DETERMINISTIC surrogate cost model (no
+# wall-clock timing -> no noise -> the Pareto front is exactly reproducible), and
+# the SAME three conflicting objectives:
+#   latency_ms     -> min
+#   memory_mb      -> min
+#   throughput_rps -> max
+#
+# Every config is VALID (FW_VAR=0) -- this is OPTIMIZATION, not pass/fail. Each
+# candidate is a self-contained Java class whose main() evaluates the model and
+# EMITS one `app= ... FW_VAR=` metrics line. Emission target (Plan-1 3c): the
+# per-invocation path the framework injects via the `fw.metrics.out` system
+# property (MainWatch harvests it), falling back to stdout when unset (so the
+# class still runs meaningfully under a plain verdict-only run / sandbox path).
+#
+# Slot model (mirrors perf_opt, adapted to Java's class+main shape): the HEAD
+# opens the class, declares the static FW_VAR/FW_CUSTOM_VAR verdict fields and
+# the design variables with their defaults, and opens main(); the dimension
+# slots REASSIGN one variable each (no re-declaration, so the concatenation
+# compiles); the TAIL evaluates the deterministic model, sets FW_VAR=0, emits the
+# metrics line, and closes main()+class. Names are fully-qualified (no imports
+# needed before the class). The class name is a placeholder -- the Executor
+# renames the top-level type to C<candidate_id> before compiling.
+# ============================================================================
+title = "Performance optimization (Java) — kernel design space, deterministic surrogate, 3-objective Pareto"
+note  = "FW_Combi(1) over algo/threads/batch/cache; all valid; multi-objective selection. Java twin of perf_opt."
+args  = ["mode=perf_opt_java"]
+
+[[goals]]
+key = "throughput_rps"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "memory_mb"
+dir = "min"
+
+[[slots]]   # invariant frame: open class+main, declare verdict fields + design vars (defaults)
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''public class FwPerfOptJava {
+    public static int FW_VAR;
+    public static int FW_CUSTOM_VAR;
+    public static void main(String[] args) {
+        String ALGO = "naive";
+        int THREADS = 1;
+        int BATCH = 16;
+        String CACHE = "small";
+''']
+
+[[slots]]   # design dimension: algorithm implementation
+sheet  = "ALGO"
+key    = "algo"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        ALGO = \"naive\";\n", "        ALGO = \"blocked\";\n", "        ALGO = \"simd\";\n"]
+
+[[slots]]   # design dimension: thread count
+sheet  = "THREADS"
+key    = "threads"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        THREADS = 1;\n", "        THREADS = 2;\n", "        THREADS = 4;\n", "        THREADS = 8;\n"]
+
+[[slots]]   # design dimension: batch size
+sheet  = "BATCH"
+key    = "batch"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        BATCH = 16;\n", "        BATCH = 64;\n", "        BATCH = 256;\n"]
+
+[[slots]]   # design dimension: cache size
+sheet  = "CACHE"
+key    = "cache"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        CACHE = \"small\";\n", "        CACHE = \"large\";\n"]
+
+[[slots]]   # invariant frame: evaluate model, emit metrics, mark valid (FW_VAR=0), close main+class
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''        double base = ALGO.equals("naive") ? 100.0 : (ALGO.equals("blocked") ? 60.0 : 35.0);
+        double serial = 0.15;
+        double speedup = 1.0 / (serial + (1.0 - serial) / THREADS);
+        double perItem = base / (1.0 + (Math.log(BATCH) / Math.log(2.0)) * 0.08);
+        double cacheFactor = CACHE.equals("large") ? 0.85 : 1.0;
+        double latency = perItem * cacheFactor / speedup;
+        double throughput = 1000.0 / latency * THREADS * 0.9;
+        double memory = 8.0 + BATCH * 0.5 + THREADS * 4.0
+                + (CACHE.equals("large") ? 64.0 : 8.0)
+                + (ALGO.equals("simd") ? 12.0 : (ALGO.equals("blocked") ? 6.0 : 2.0));
+        FW_VAR = 0;  // every configuration is valid; optimization selects, it does not reject
+        FW_CUSTOM_VAR = FW_VAR;
+        String line = String.format(java.util.Locale.ROOT,
+                "app=perf_opt_java algo=%s threads=%d batch=%d cache=%s "
+                + "latency_ms=%.3f throughput_rps=%.1f memory_mb=%.1f FW_VAR=%d",
+                ALGO, THREADS, BATCH, CACHE, latency, throughput, memory, FW_VAR);
+        String fwMetricsOut = System.getProperty("fw.metrics.out");
+        if (fwMetricsOut != null && !fwMetricsOut.isEmpty()) {
+            try {
+                java.nio.file.Files.writeString(java.nio.file.Paths.get(fwMetricsOut), line);
+            } catch (Exception e) {
+                System.out.println(line);
+            }
+        } else {
+            System.out.println(line);
+        }
+    }
+}
+''']

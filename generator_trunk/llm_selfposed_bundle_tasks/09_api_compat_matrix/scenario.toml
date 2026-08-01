@@ -1,0 +1,128 @@
+# Self-posed scenario 09 — API compatibility matrix with pre-execution contract sieve.
+# Category: API compatibility. Demonstrates Bundle for client/API/payload/auth compatibility testing.
+# 3(API_VERSION) x 3(CLIENT) x 3(AUTH) x 3(PAYLOAD) = 81 mandatory.
+# Binary sieve forbids legacy client + v3 API: 1x1x3x3 = 9 removed -> 72 executed.
+# Runtime oracle catches v1+bulk payload and beta+jwt+legacy-payload compatibility risks.
+title = "API compatibility matrix — version/client/auth/payload contract checks"
+note  = "API/platform scenario: binary [[constraints]] remove structurally unsupported client/API pairs before execution; TAIL oracle flags executable but incompatible payload/auth combinations."
+args  = ["mode=api_compat_matrix"]
+
+[[goals]]
+key = "compat_score"
+dir = "max"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "migration_effort"
+dir = "min"
+
+[[slots]]   # HEAD: deterministic compatibility scoring model
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''API_VERSION = "v1"
+CLIENT = "legacy_sdk"
+AUTH = "api_key"
+PAYLOAD = "legacy_json"
+
+def _compat_score(api_version, client, auth, payload):
+    score = 100
+    latency = {"v1": 40, "v2": 55, "v3": 70}[api_version]
+    effort = {"legacy_sdk": 2, "current_sdk": 4, "beta_sdk": 7}[client]
+    score += {"v1": 0, "v2": 6, "v3": 9}[api_version]
+    score += {"legacy_sdk": -7, "current_sdk": 2, "beta_sdk": 4}[client]
+    score += {"api_key": -3, "oauth": 2, "jwt": 4}[auth]
+    score += {"legacy_json": -2, "modern_json": 3, "bulk_json": 5}[payload]
+    latency += {"api_key": -5, "oauth": 8, "jwt": 6}[auth]
+    latency += {"legacy_json": 0, "modern_json": 5, "bulk_json": 22}[payload]
+    effort += {"api_key": 0, "oauth": 3, "jwt": 4}[auth]
+    effort += {"legacy_json": 0, "modern_json": 2, "bulk_json": 5}[payload]
+    return score, latency, effort
+''']
+
+[[slots]]
+sheet  = "API_VERSION"
+key    = "api_version"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["API_VERSION = \"v1\"\n", "API_VERSION = \"v2\"\n", "API_VERSION = \"v3\"\n"]
+
+[[slots]]
+sheet  = "CLIENT"
+key    = "client"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["CLIENT = \"legacy_sdk\"\n", "CLIENT = \"current_sdk\"\n", "CLIENT = \"beta_sdk\"\n"]
+
+[[slots]]
+sheet  = "AUTH"
+key    = "auth"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["AUTH = \"api_key\"\n", "AUTH = \"oauth\"\n", "AUTH = \"jwt\"\n"]
+
+[[slots]]
+sheet  = "PAYLOAD"
+key    = "payload"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["PAYLOAD = \"legacy_json\"\n", "PAYLOAD = \"modern_json\"\n", "PAYLOAD = \"bulk_json\"\n"]
+
+[[slots]]   # TAIL: compatibility oracle + metrics for Analyzer
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_score, _latency, _effort = _compat_score(API_VERSION, CLIENT, AUTH, PAYLOAD)
+if API_VERSION == "v1" and PAYLOAD == "bulk_json":
+    FW_VAR = 2      # v1 contract cannot accept bulk payloads
+elif CLIENT == "beta_sdk" and AUTH == "jwt" and PAYLOAD == "legacy_json":
+    FW_VAR = 3      # beta SDK JWT path requires modern/bulk claim shape
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=api_compat api_version=%s client=%s auth=%s payload=%s compat_score=%d latency_ms=%d migration_effort=%d FW_VAR=%d"
+      % (API_VERSION, CLIENT, AUTH, PAYLOAD, _score, _latency, _effort, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "v1 API cannot accept bulk_json payloads"
+[[custom_vars]]
+code = 3
+msg = "beta SDK JWT path requires modern/bulk payload claims"
+
+# --- params + binary pre-execution contract constraint for the sieve ---
+[[params]]
+sheet = "CLIENT"
+value = 'CLIENT = "legacy_sdk"'
+is_legacy = 1
+[[params]]
+sheet = "CLIENT"
+value = 'CLIENT = "current_sdk"'
+is_legacy = 0
+[[params]]
+sheet = "CLIENT"
+value = 'CLIENT = "beta_sdk"'
+is_legacy = 0
+[[params]]
+sheet = "API_VERSION"
+value = 'API_VERSION = "v1"'
+is_v3 = 0
+[[params]]
+sheet = "API_VERSION"
+value = 'API_VERSION = "v2"'
+is_v3 = 0
+[[params]]
+sheet = "API_VERSION"
+value = 'API_VERSION = "v3"'
+is_v3 = 1
+
+[[constraints]]
+id = "no_legacy_sdk_against_v3_api"
+sheets = ["CLIENT", "API_VERSION"]
+when = "CLIENT.is_legacy == 1 and API_VERSION.is_v3 == 1"
+gate = {}
+desc = "API contract: legacy SDK is not allowed against v3 API; upgrade client before v3 compatibility tests"

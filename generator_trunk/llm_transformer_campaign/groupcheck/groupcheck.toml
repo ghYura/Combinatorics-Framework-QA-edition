@@ -1,0 +1,95 @@
+title = "LLM-Transformer group check — FW_Group (combinations of combinations) + FW_ReplaceRE short-key transform"
+note  = """Second-order CHECK-PLAN synthesis. The CHECKS sheet first-order FW_Subsets over 2 appends
+-> rows; FW_Group then re-runs FW_Subsets over THOSE ROWS as atoms -> combinations-of-combinations
+(observed fw_final = 6 distinct after the Core's content-sort collapses post-grouping collisions).
+NOTE on FW_ReplaceRE: verified against SheetWorker.java, the Core's short key is a `Short` integer
+value-code (Map<Short,List<Short>>); FW_ReplaceRE runs replaceAll on the toString() of a combo of those
+Short codes and the result is Integer.parseInt'd back, so it is a CODE-LEVEL remap / `+`-splice / delete
+— NOT a value-text rewrite. The @S@/@F@ tokens are therefore the candidate's own check ids (they pass
+through), and the TAIL keys off them to run exactly those assertions on a freshly built model.
+Verdict CONVICTS code1/2/9 (wrong-shape / non-finite / crash); FW_VAR=0 = the selected checks all held.
+Freedom→verb: 're-combine a prior result' is FW_Group — the engine's unary second-order operator."""
+goals = ["latency_ms", "nchecks"]
+args  = ["mode=groupcheck"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme import CPUTransformerSeq2Seq
+sel = []
+METRICS = dict(app="groupcheck", nchecks=0, checks="", latency_ms=0.0, code=0, defect=0)
+''']
+
+[[slots]]
+sheet = "CHECKS"
+key   = "checks"
+verb  = "FW_Subsets"
+group_replace = [["@S@", "shape"], ["@F@", "finite"]]
+raw   = true
+values = ['''
+sel.append("@S@")
+''', '''
+sel.append("@F@")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+code = 0
+# @S@ / @F@ are the Core short-code tokens (they pass through FW_ReplaceRE, which
+# is a Short-code-level op, not a value-text rewrite). They ARE the check ids.
+checks = sorted(set(sel))
+want_shape = ("@S@" in checks) or ("shape" in checks)
+want_finite = ("@F@" in checks) or ("finite" in checks)
+try:
+    torch.manual_seed(0)
+    M = CPUTransformerSeq2Seq(vocab_size=64, d_model=16, n_layers=1, n_heads=4,
+                              n_kv_heads=2, d_ffn=24, max_seq_len=64)
+    src = torch.randint(0, 64, (2, 5))
+    tgt = torch.randint(0, 64, (2, 4))
+    out = M(src, tgt)
+    if (want_shape or not checks) and tuple(out.shape) != (2, 4, 64):
+        code = 1
+    if code == 0 and want_finite and not bool(torch.isfinite(out).all()):
+        code = 2
+except Exception as e:
+    code = 9
+    METRICS["err"] = type(e).__name__
+METRICS["nchecks"] = len(checks)
+METRICS["checks"] = "-".join(checks) if checks else "none"
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a selected shape check failed (wrong output shape)"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a selected finite check failed (non-finite logits)"
+
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: the model crashed while running the grouped check plan"

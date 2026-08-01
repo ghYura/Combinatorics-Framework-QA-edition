@@ -1,0 +1,12 @@
+import os, platform, subprocess, sys
+def v(c):
+    try: return subprocess.run(c, capture_output=True, text=True).stdout.splitlines()[0]
+    except Exception: return 'n/a'
+cpu = 'unknown'
+try:
+    for ln in open('/proc/cpuinfo'):
+        if ln.startswith('model name'): cpu = ln.split(':',1)[1].strip(); break
+except Exception: pass
+cand = os.path.basename(sys.argv[1]) if len(sys.argv) > 1 else '-'
+print('[RunMeFirstOnce] optimizing FOR: %s | %s | cores %s | %s %s | %s | observing asm candidate %s'
+      % (cpu, platform.machine(), os.cpu_count(), platform.system(), platform.release(), v(['gcc','--version']), cand))

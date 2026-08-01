@@ -1,0 +1,36 @@
+// ── 2.txt — initial implementation of charEntropy(String) ────────────
+// Contract:
+//   in   String text  (may be null or empty)
+//   out  Shannon entropy (in bits) of the codepoint distribution
+//
+// Original AnalyzerCore.java: ASCII int[128] fast-path + lazy HashMap
+// for the BMP/supplementary tail.
+
+    public static double charEntropy(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p2_invocations++;
+        Metrics.p2_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null || text.isEmpty()) return 0.0;
+            int[] ascii = new int[128];
+            Map<Integer, Integer> ext = null;
+            int n = 0, len = text.length();
+            for (int i = 0; i < len; ) {
+                int cp = text.codePointAt(i);
+                if (cp < 128) ascii[cp]++;
+                else { if (ext == null) ext = new HashMap<>(); ext.merge(cp, 1, Integer::sum); }
+                i += Character.charCount(cp);
+                n++;
+            }
+            if (n == 0) return 0.0;
+            final double inv = 1.0 / n;
+            final double invLog2 = 1.0 / Math.log(2);
+            double entropy = 0.0;
+            for (int c : ascii) if (c > 0) { double p = c * inv; entropy -= p * Math.log(p) * invLog2; }
+            if (ext != null) for (int c : ext.values()) { double p = c * inv; entropy -= p * Math.log(p) * invLog2; }
+            Metrics.p2_sum_of_entropy += entropy;
+            return entropy;
+        } finally {
+            Metrics.p2_duration_ns += System.nanoTime() - __t0;
+        }
+    }

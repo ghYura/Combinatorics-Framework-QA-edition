@@ -1,0 +1,36 @@
+title = "TinyML/Edge — drone computer-vision (YOLO) quantization"
+goals = ["map_accuracy", "fps", "model_size_mb"]
+args  = ["testset=100_images", "target=raspberry_pi_npu"]
+
+[[slots]]
+sheet = "RES"
+key   = "input_res"
+values = ["640x640", "320x320", "256x256"]
+
+[[slots]]
+sheet = "BACKBONEQ"
+key   = "backbone_quant"
+values = ["fp32", "fp16", "int8"]
+
+[[slots]]
+sheet = "HEADQ"
+key   = "head_quant"
+values = ["fp16", "int8", "int4"]
+
+[[slots]]
+sheet = "PRUNE"
+key   = "pruning"
+values = ["0pct", "20pct", "40pct"]
+
+[[custom_vars]]
+code = 2
+msg  = "mAP accuracy below threshold"
+[[custom_vars]]
+code = 3
+msg  = "model size exceeds 16MB chip RAM"
+[[custom_vars]]
+code = 4
+msg  = "FPS below realtime target"
+[[custom_vars]]
+code = 5
+msg  = "compile/quantization failed"

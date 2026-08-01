@@ -1,0 +1,164 @@
+version = 1
+
+[page]
+title = "Face 1 new · FW_Seq sheet composer"
+ready_text = "Compose FW_Seq and all six Core control sheets"
+root_css = ".shell"
+visible_dialog_css = ".q-dialog:not([style*='display: none'])"
+visible_panel_css = ".q-tab-panel:not([style*='display: none'])"
+notification_css = ".q-notification"
+
+[tabs]
+guided_start = "Guided start"
+seq = "FW_Seq"
+sheet_names = "FW_SheetNames"
+run_once = "FW_RunMeFirstOnce"
+arguments = "FW_Arguments"
+custom_var = "FW_CUSTOM_VAR"
+info = "FW_Info"
+data = "Data sheets"
+run = "Plan & run"
+example_info = "Example · FW_Info"
+
+[buttons]
+invitation_apply = "Use this editable starter"
+new = "New"
+import_xlsx = "Import XLSX"
+upload_close = "Close"
+insert_brace_trio = "Insert brace trio"
+add_rows = "+5 rows"
+add_column = "+ column"
+helper_open = "Helper"
+validate = "Validate"
+download_xlsx = "Download XLSX"
+formula_save = "Save cell"
+run_once_edit = "Edit A1"
+run_once_clear = "Clear A1"
+run_once_save = "Save A1"
+argument_add = "Add argument"
+argument_delete = "Delete row"
+argument_save = "Save argument"
+verdict_add = "Add verdict"
+verdict_delete = "Delete row"
+verdict_save = "Save verdict"
+directive_clear = "Clear cell"
+directive_save = "Save cell"
+target_add_data = "Add data row"
+target_delete_row = "Delete FW_Seq row"
+target_save = "Save target + data"
+helper_save = "Save helper"
+plan_only = "Plan only"
+check_engine = "Check engine"
+run_workbook = "Run workbook"
+run_face2 = "Run + Face 2"
+run_cancel = "Cancel"
+scenario_inspect = "Inspect plan"
+scenario_run = "Run example"
+dialog_cancel = "Cancel"
+dialog_close = "Close"
+dialog_start_run = "Start real run"
+dialog_start_example = "Start example"
+export_results_json = "Export result JSON"
+export_pareto_csv = "Export Pareto CSV"
+
+[fields]
+invitation_domain = "What kind of issue is this?"
+invitation_goal = "What outcome should improve or never fail?"
+project = "Project"
+upload = "Drop XLSX here or browse"
+run_once_source = "Exact A1 source"
+argument_value = "Exact argument value"
+verdict_code = "A · verdict code"
+verdict_message = "B · verdict message"
+directive_value = "Exact cell content"
+target_name = "Target sheet name"
+target_prefix = "Output prefix"
+target_suffix = "Output suffix"
+helper_name = "Sheet name"
+helper_values = "Column A values · one per line"
+database = "Database"
+run_id = "Run id"
+candidate_language = "Candidate language"
+run_mode = "Run mode"
+goals = "Goals · metric:min|max"
+analysis_contract = "Analysis contract"
+execution_policy = "Execution policy · required"
+candidate_origin = "Candidate origin · required for trusted-local"
+trusted_local_reason = "Trusted-local reason · required for NO SANDBOX"
+candidate_transport = "Candidate transport"
+executor_pool = "Executor pool"
+iterations = "Iterations"
+main_db_port = "Main DB port"
+results_db_port = "Results DB port"
+test_suite = "Test suite"
+scenario = "Scenario"
+command_preview = "Server-side command · passwords remain environment-only"
+
+[field_css]
+formula = ".formula-bar .q-field input"
+upload_file = "input[type=file]"
+live_log = ".command-preview textarea[readonly]"
+target_data_inputs = ".q-dialog .q-field input"
+
+[checkboxes]
+sieve = "Apply existing sieve"
+draw = "Open Face 2 before Core"
+draw_exact = "Open Face 2 after Core · exact"
+allow_extreme = "Allow extreme after review"
+
+[expansions]
+validation = "Validation details"
+advanced = "Advanced · complete Bundle control surface"
+budgets = "Budgets & safety"
+sandbox = "Execution & sandbox"
+repeat = "Repeat policy"
+infrastructure = "Timeouts & infrastructure"
+stress = "Stress mode"
+command = "Exact launch command"
+scenarios = "Verified scenario library"
+live_log = "Live run log"
+
+[dialogs]
+upload = "Import a workbook into the grid"
+run_once = "FW_RunMeFirstOnce · A1"
+argument = "FW_Arguments"
+verdict = "FW_CUSTOM_VAR"
+directive = "Edit B"
+target = "Target and data sheet"
+helper = "Add helper data sheet"
+run_confirm = "Start the real Bundle pipeline?"
+scenario_plan = "Cardinality"
+scenario_confirm = "Run verified scenario"
+
+[icons]
+row_up = "keyboard_arrow_up"
+row_down = "keyboard_arrow_down"
+delete_data = "delete_outline"
+
+[patterns]
+template_css = ".template-cell"
+template_title_css = ".template-title"
+grid_css = ".sheet-grid"
+grid_cell_css = ".sheet-cell"
+grid_row_css = ".row-head"
+control_cell_css = ".sheet-cell"
+advanced_label_suffix = " · {flag}"
+stage_css = ".stage-cell"
+result_table_css = ".q-table"
+
+[inventory]
+button = 49
+input = 15
+number = 4
+select = 9
+checkbox = 8
+textarea = 6
+upload = 1
+expansion = 6
+tab = 10
+dialog = 10
+table = 1
+
+[expected]
+tab_count = 10
+control_sheet_count = 6

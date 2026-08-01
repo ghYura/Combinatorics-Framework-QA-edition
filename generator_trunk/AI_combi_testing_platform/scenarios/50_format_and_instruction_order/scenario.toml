@@ -1,0 +1,90 @@
+spec_version = "1"
+title = "Format and instruction-order resilience study"
+note = "Exact tasks vary strict schemas while FW_Permut orders task-first and constraints-first section directives."
+args = ["suite=ai_combi_testing", "study=format-instruction-order"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "format_ok"
+dir = "max"
+[[goals]]
+key = "all_constraints_pass"
+dir = "max"
+[[goals]]
+key = "latency_us"
+dir = "min"
+[[goals]]
+key = "cost_microusd"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+PLAN = initialize_candidate(family="ordering", seed=22360, complexity=4)
+''']
+
+[[slots]]
+sheet = "SECTION_ORDER"
+key = "section_order"
+verb = "FW_Permut(2)"
+raw = true
+values = [
+'''PLAN.instruction_order = "task_first"
+''',
+'''PLAN.instruction_order = "constraints_first"
+'''
+]
+
+[[slots]]
+sheet = "OUTPUT_SCHEMA"
+key = "output_schema"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.schema = "json"
+''',
+'''PLAN.schema = "plain"
+''',
+'''PLAN.schema = "csv"
+'''
+]
+
+[[slots]]
+sheet = "PROMPT_VERSION"
+key = "prompt_version"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''PLAN.prompt_version = "v1"
+''',
+'''PLAN.prompt_version = "v2"
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

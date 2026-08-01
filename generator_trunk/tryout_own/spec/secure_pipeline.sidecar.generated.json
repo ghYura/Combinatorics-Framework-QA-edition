@@ -1,0 +1,182 @@
+{
+  "version": 1,
+  "params": {
+    "MODE": {
+      "MODE = \"strict\"": {
+        "tier": 2
+      },
+      "MODE = \"legacy\"": {
+        "tier": 1
+      }
+    },
+    "PAYLOAD": {
+      "PAYLOAD_KIND = \"ascii\"": {
+        "unicode": 0
+      },
+      "PAYLOAD_KIND = \"unicode\"": {
+        "unicode": 1
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "bond0_MODE_ORDER",
+      "polarity": "forbid",
+      "sheets": [
+        "MODE",
+        "ORDER"
+      ],
+      "pairs": [
+        {
+          "MODE": "MODE = \"strict\"",
+          "ORDER": "ORDER.append(\"normalize\")"
+        }
+      ],
+      "gate": {},
+      "desc": "1 forbid MODE x ORDER bond(s)"
+    },
+    {
+      "id": "bond1_FEATURES_ORDER",
+      "polarity": "forbid",
+      "sheets": [
+        "FEATURES",
+        "ORDER"
+      ],
+      "pairs": [
+        {
+          "ORDER": "ORDER.append(\"normalize\")",
+          "FEATURES": "FEATURES.add(\"audit\")"
+        }
+      ],
+      "gate": {},
+      "desc": "1 forbid FEATURES x ORDER bond(s)"
+    },
+    {
+      "id": "bond2_FEATURES_PAYLOAD",
+      "polarity": "forbid",
+      "sheets": [
+        "FEATURES",
+        "PAYLOAD"
+      ],
+      "pairs": [
+        {
+          "FEATURES": "FEATURES.add(\"audit\")",
+          "PAYLOAD": "PAYLOAD_KIND = \"ascii\""
+        }
+      ],
+      "gate": {},
+      "desc": "1 forbid FEATURES x PAYLOAD bond(s)"
+    },
+    {
+      "id": "bond3_MODE_PAYLOAD",
+      "polarity": "require",
+      "sheets": [
+        "MODE",
+        "PAYLOAD"
+      ],
+      "pairs": [
+        {
+          "MODE": "MODE = \"strict\"",
+          "PAYLOAD": "PAYLOAD_KIND = \"unicode\""
+        }
+      ],
+      "gate": {},
+      "desc": "1 require MODE x PAYLOAD bond(s)"
+    },
+    {
+      "id": "bond4_FEATURES_MODE",
+      "polarity": "require",
+      "sheets": [
+        "FEATURES",
+        "MODE"
+      ],
+      "pairs": [
+        {
+          "FEATURES": "FEATURES.add(\"cache\")",
+          "MODE": "MODE = \"legacy\""
+        }
+      ],
+      "gate": {},
+      "desc": "1 require FEATURES x MODE bond(s)"
+    },
+    {
+      "id": "mm0_FEATURES_ORDER",
+      "polarity": "forbid",
+      "sheets": [
+        "FEATURES",
+        "ORDER"
+      ],
+      "sets": {
+        "FEATURES": [
+          "FEATURES.add(\"cache\")"
+        ],
+        "ORDER": [
+          "ORDER.append(\"redact\")",
+          "ORDER.append(\"tag\")"
+        ]
+      },
+      "gate": {},
+      "desc": "forbid FEATURES in {FEATURES.add(\"cache\")} x ORDER in {ORDER.append(\"redact\"),ORDER.append(\"tag\")}"
+    },
+    {
+      "id": "mm1_FEATURES_PAYLOAD",
+      "polarity": "require",
+      "sheets": [
+        "FEATURES",
+        "PAYLOAD"
+      ],
+      "sets": {
+        "PAYLOAD": [
+          "PAYLOAD_KIND = \"unicode\"",
+          "PAYLOAD_KIND = \"ascii\""
+        ],
+        "FEATURES": [
+          "FEATURES.add(\"cache\")"
+        ]
+      },
+      "gate": {},
+      "desc": "require FEATURES in {FEATURES.add(\"cache\")} x PAYLOAD in {PAYLOAD_KIND = \"unicode\",PAYLOAD_KIND = \"ascii\"}"
+    },
+    {
+      "id": "mm2_FEATURES_MODE_ORDER_PAYLOAD",
+      "polarity": "require",
+      "sheets": [
+        "FEATURES",
+        "MODE",
+        "ORDER",
+        "PAYLOAD"
+      ],
+      "sets": {
+        "ORDER": [
+          "ORDER.append(\"tag\")",
+          "ORDER.append(\"redact\")",
+          "ORDER.append(\"normalize\")"
+        ],
+        "MODE": [
+          "MODE = \"strict\"",
+          "MODE = \"legacy\""
+        ],
+        "FEATURES": [
+          "FEATURES.add(\"cache\")",
+          "FEATURES.add(\"audit\")"
+        ],
+        "PAYLOAD": [
+          "PAYLOAD_KIND = \"ascii\""
+        ]
+      },
+      "gate": {},
+      "desc": "require FEATURES in {FEATURES.add(\"cache\"),FEATURES.add(\"audit\")} x MODE in {MODE = \"strict\",MODE = \"legacy\"} x ORDER in {ORDER.append(\"tag\"),ORDER.append(\"redact\"),ORDER.append(\"normalize\")} x PAYLOAD in {PAYLOAD_KIND = \"ascii\"}"
+    },
+    {
+      "id": "when0_MODE_PAYLOAD",
+      "polarity": "forbid",
+      "sheets": [
+        "MODE",
+        "PAYLOAD"
+      ],
+      "when": "MODE.tier == 2 and PAYLOAD.unicode == 1",
+      "gate": {},
+      "desc": "forbid MODE/PAYLOAD when MODE.tier == 2 and PAYLOAD.unicode == 1"
+    }
+  ]
+}

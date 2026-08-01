@@ -1,0 +1,124 @@
+# Self-posed scenario 07 — constraint ARITY (exercises Automation's 2026-06-18 sieve-arity reporting).
+# Teaches the operational rule: a BINARY [[constraint]] (2 sheets) is executable by sieve v1 and pruned
+# before execution; a true TERNARY bond (3 sheets) is REPORTED as unsupported (never silently skipped)
+# and must be decomposed into binary rules OR enforced by the TAIL oracle at runtime.
+# 4(REGION) x 3(TIER) x 3(REPLICAS) = 36 mandatory; binary sieve removes 6 -> 30; oracle catches the ternary case.
+title = "Constraint arity — binary sieve rule applied; ternary rule reported unsupported (sieve v1)"
+note  = "Binary [[constraints]] run in the sieve; a 3-sheet (ternary) bond is reported unsupported by sieve v1 and enforced by the oracle instead. Demonstrates `constraints explain` warnings and `--strict` rejection."
+args  = ["mode=constraint_arity"]
+
+[[goals]]
+key = "replicas"
+dir = "max"
+
+[[slots]]   # HEAD
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''REGION = "us"
+TIER = "free"
+REPLICAS = 1
+''']
+
+[[slots]]
+sheet  = "REGION"
+key    = "region"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["REGION = \"us\"\n", "REGION = \"eu\"\n", "REGION = \"ap\"\n", "REGION = \"sa\"\n"]
+
+[[slots]]
+sheet  = "TIER"
+key    = "tier"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["TIER = \"free\"\n", "TIER = \"pro\"\n", "TIER = \"ent\"\n"]
+
+[[slots]]
+sheet  = "REPLICAS"
+key    = "replicas"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["REPLICAS = 1\n", "REPLICAS = 3\n", "REPLICAS = 5\n"]
+
+[[slots]]   # TAIL: the binary bond is handled by the sieve; the TERNARY bond is enforced here at runtime
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_ternary_bad = int(REGION in ("eu", "ap") and TIER == "ent" and REPLICAS == 1)
+if _ternary_bad:
+    FW_VAR = 2   # 3-sheet bond: sieve v1 cannot express it, so the oracle enforces it
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=constraint_arity region=%s tier=%s replicas=%d ternary_bad=%d FW_VAR=%d"
+      % (REGION, TIER, REPLICAS, _ternary_bad, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "ternary bond violated: enterprise tier in a restricted region with a single replica (sieve v1 cannot express a 3-sheet rule; the oracle catches it)"
+
+# --- params (value attributes the sieve reads) ---
+[[params]]
+sheet = "TIER"
+value = 'TIER = "free"'
+is_free = 1
+is_ent = 0
+[[params]]
+sheet = "TIER"
+value = 'TIER = "pro"'
+is_free = 0
+is_ent = 0
+[[params]]
+sheet = "TIER"
+value = 'TIER = "ent"'
+is_free = 0
+is_ent = 1
+[[params]]
+sheet = "REGION"
+value = 'REGION = "us"'
+restricted = 0
+[[params]]
+sheet = "REGION"
+value = 'REGION = "eu"'
+restricted = 1
+[[params]]
+sheet = "REGION"
+value = 'REGION = "ap"'
+restricted = 1
+[[params]]
+sheet = "REGION"
+value = 'REGION = "sa"'
+restricted = 0
+[[params]]
+sheet = "REPLICAS"
+value = 'REPLICAS = 1'
+single = 1
+[[params]]
+sheet = "REPLICAS"
+value = 'REPLICAS = 3'
+single = 0
+[[params]]
+sheet = "REPLICAS"
+value = 'REPLICAS = 5'
+single = 0
+
+# BINARY constraint (2 sheets) -- SUPPORTED by sieve v1, removes free x {eu,ap} x 3 replicas = 6 rows
+[[constraints]]
+id = "no_free_tier_in_restricted_region"
+sheets = ["TIER", "REGION"]
+when = "TIER.is_free == 1 and REGION.restricted == 1"
+gate = {}
+desc = "binary bond: free tier not allowed in restricted regions (removed before execution by sieve v1)"
+
+# TERNARY constraint (3 sheets) -- UNSUPPORTED by sieve v1: must be REPORTED (not silently skipped),
+# then decomposed into binary rules or enforced by the oracle (here: the TAIL handles it at runtime).
+[[constraints]]
+id = "ent_in_restricted_with_single_replica_forbidden"
+sheets = ["REGION", "TIER", "REPLICAS"]
+when = "REGION.restricted == 1 and TIER.is_ent == 1 and REPLICAS.single == 1"
+gate = {}
+desc = "ternary bond (region+tier+replicas): sieve v1 cannot express a 3-sheet rule; decompose or let the oracle enforce it"

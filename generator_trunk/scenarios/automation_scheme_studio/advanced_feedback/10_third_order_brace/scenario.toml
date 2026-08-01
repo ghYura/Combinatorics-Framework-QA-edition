@@ -1,0 +1,315 @@
+spec_version = "1"
+title = "Third-order recursive automation feedback architecture search"
+note = "Three nested FW_ brace joins build sequence inside parallel inside feedback. Ordered stage pairs cover every SUT component; repeated complex loop branches and subset return paths create real nested SCCs."
+args = ["sut=automation_scheme_studio", "suite=advanced_feedback", "order=3"]
+
+seq_extra = [
+  ["SERIES_RESULT", "FW_Reuse", "FW_(SERIES_OPEN,,ORDERED_STAGES,,TAIL_ATOM,,SERIES_CLOSE,,M:N)"],
+  ["PARALLEL_RESULT", "FW_Reuse", "FW_(PARALLEL_OPEN,,FW_(),,COMPLEX_BRANCHES,,PARALLEL_CLOSE,,M:N)"],
+  ["FEEDBACK_RESULT", "FW_Reuse", "FW_(FEEDBACK_OPEN,,FW_(),,RETURN_PATH,,FEEDBACK_CLOSE,,M:N)"],
+]
+
+[[goals]]
+key = "control_score"
+dir = "max"
+[[goals]]
+key = "robustness_score"
+dir = "max"
+[[goals]]
+key = "stability_score"
+dir = "max"
+[[goals]]
+key = "settling_time_s"
+dir = "min"
+[[goals]]
+key = "worst_error"
+dir = "min"
+[[goals]]
+key = "overshoot_pct"
+dir = "min"
+[[goals]]
+key = "control_effort"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import initialize_candidate
+PLAN, INITIAL_COMPONENT_PARAMETERS, MEASUREMENT_TERMINALS = initialize_candidate(
+    family="advanced_feedback_third_order", battery="screen", duration=1.8, dt=0.06
+)
+from generator_trunk.scenarios.automation_scheme_studio.advanced_topology import (
+    annotate_result, attach_topology, emit_atom, emit_close, emit_node, emit_open, template
+)
+TOPOLOGY_STREAM = []
+''']
+
+[[slots]]
+sheet = "ORDERED_STAGES"
+key = "ordered_stages"
+verb = "FW_Permut(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(TOPOLOGY_STREAM, "gain")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "inverter")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "limiter")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "dead_zone")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "modulator")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "comparator_gate")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "relay")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "low_pass")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "unit_delay")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "integrator")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "p")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "pid")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "selector")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "bumpless_selector")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "manual_selector")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "probe")
+'''
+]
+
+[[slots]]
+sheet = "TAIL_ATOM"
+key = "tail_atom"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(TOPOLOGY_STREAM, "low_pass")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "unit_delay")
+'''
+]
+
+[[slots]]
+sheet = "COMPLEX_BRANCHES"
+key = "complex_branches"
+verb = "FW_CombiR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_node(TOPOLOGY_STREAM, template("inverter_modulator_loop"))
+''',
+'''emit_node(TOPOLOGY_STREAM, template("repeated_relay_loop"))
+''',
+'''emit_node(TOPOLOGY_STREAM, template("parallel_pid_loops"))
+''',
+'''emit_node(TOPOLOGY_STREAM, template("nested_selector_loop"))
+'''
+]
+
+[[slots]]
+sheet = "RETURN_PATH"
+key = "return_path"
+verb = "FW_Subsets_RANGE(1,2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(TOPOLOGY_STREAM, "inverter")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "modulator")
+''',
+'''emit_atom(TOPOLOGY_STREAM, "integrator")
+'''
+]
+
+[[slots]]
+sheet = "SERIES_RESULT"
+key = "series_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PARALLEL_RESULT"
+key = "parallel_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "FEEDBACK_RESULT"
+key = "feedback_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "SERIES_OPEN"
+key = "series_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(TOPOLOGY_STREAM, 1, "sequence")
+''']
+
+[[slots]]
+sheet = "SERIES_CLOSE"
+key = "series_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 1)
+''']
+
+[[slots]]
+sheet = "PARALLEL_OPEN"
+key = "parallel_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(TOPOLOGY_STREAM, 2, "parallel", reducer="mean")
+''']
+
+[[slots]]
+sheet = "PARALLEL_CLOSE"
+key = "parallel_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 2)
+''']
+
+[[slots]]
+sheet = "FEEDBACK_OPEN"
+key = "feedback_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(
+    TOPOLOGY_STREAM, 3, "feedback", controller="pid",
+    boundary="unit_delay", placement="forward_and_feedback"
+)
+''']
+
+[[slots]]
+sheet = "FEEDBACK_CLOSE"
+key = "feedback_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(TOPOLOGY_STREAM, 3)
+''']
+
+[[slots]]
+sheet = "POLICY"
+key = "policy"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+'''
+PLAN.architecture = "serial"
+PLAN.controller = "p"
+PLAN.plant = "first_order"
+PLAN.apply_profile("conservative")
+''',
+'''
+PLAN.architecture = "serial"
+PLAN.controller = "pid"
+PLAN.plant = "second_order"
+PLAN.apply_profile("balanced")
+''',
+'''
+PLAN.architecture = "parallel_sum"
+PLAN.controller = "pi"
+PLAN.inner_controller = "p"
+PLAN.branches = ["p", "pid"]
+PLAN.plant = "first_order"
+PLAN.apply_profile("balanced")
+''',
+'''
+PLAN.architecture = "parallel_sum"
+PLAN.controller = "relay"
+PLAN.inner_controller = "pid"
+PLAN.branches = ["pi", "relay", "pid"]
+PLAN.plant = "second_order"
+PLAN.apply_profile("aggressive")
+PLAN.enable("actuator_limit")
+''',
+'''
+PLAN.architecture = "cascade_velocity"
+PLAN.controller = "pd"
+PLAN.inner_controller = "pi"
+PLAN.branches = ["p", "pi", "pid"]
+PLAN.plant = "first_order"
+PLAN.apply_profile("low_energy")
+PLAN.enable("sensor_filter")
+''',
+'''
+PLAN.architecture = "cascade_velocity"
+PLAN.controller = "pid"
+PLAN.inner_controller = "relay"
+PLAN.branches = ["relay", "pid"]
+PLAN.plant = "second_order"
+PLAN.apply_profile("aggressive")
+PLAN.enable("transport_delay")
+''',
+'''
+PLAN.architecture = "relay_switch"
+PLAN.controller = "relay"
+PLAN.inner_controller = "p"
+PLAN.branches = ["relay", "pid", "p"]
+PLAN.plant = "first_order"
+PLAN.apply_profile("conservative")
+PLAN.enable("prefilter")
+''',
+'''
+PLAN.architecture = "relay_switch"
+PLAN.controller = "pi"
+PLAN.inner_controller = "pid"
+PLAN.branches = ["pi", "relay", "pid"]
+PLAN.plant = "second_order"
+PLAN.apply_profile("balanced")
+PLAN.enable("prefilter")
+PLAN.enable("sensor_filter")
+PLAN.enable("actuator_limit")
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+TOPOLOGY = attach_topology(PLAN, TOPOLOGY_STREAM)
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import finish_candidate
+_RESULT = finish_candidate(PLAN, MEASUREMENT_TERMINALS)
+annotate_result(_RESULT, TOPOLOGY)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line(
+    initial_parameters=INITIAL_COMPONENT_PARAMETERS,
+    include_terminals=True,
+    include_parameters=True,
+))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "circuit validation/build/compile failure"
+[[custom_vars]]
+code = 3
+msg = "simulation runtime or non-finite signal failure"
+[[custom_vars]]
+code = 4
+msg = "unstable excitation response or internal tester terminal"
+[[custom_vars]]
+code = 5
+msg = "tracking/convergence acceptance limit exceeded"

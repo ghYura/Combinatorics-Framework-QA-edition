@@ -1,0 +1,110 @@
+title = "Telemetry catalog conditional-constraints e2e"
+note = """Self-contained telemetry /api/catalog/lookup object for the CONDITIONAL sieve acceptance test.
+
+Each candidate is one catalog LOOKUP: DatasetFamily/SignalClass/ExcludeRestricted/AccessTier/Geometry are
+FW_Optional URL parameters, so each may be present or absent. The HEAD carries the real `TelemetryLookup`
+validity engine; a lookup is INVALID iff its present parameters trip one of
+four interdependency rules — which are EXACTLY the conditional sieve constraints the test draws:
+
+  • SignalClass must belong to DatasetFamily        -> a `mapping` (dependent allowed-set)
+  • AccessTier=restricted forbidden when DatasetFamily=OpenData       -> forbid + `condition`
+  • AccessTier=restricted forbidden when ExcludeRestricted=enabled          -> forbid + `condition`
+  • Geometry=volumetric forbidden when DatasetFamily=OpenData    -> forbid + `condition`
+
+So the conditional sieve must remove precisely the INVALID lookups — proven against the engine's own
+verdict (a perfect classifier). An invalid lookup that escapes the sieve runs and reports FW_VAR=2
+(the negative control); every lookup the sieve keeps assembles a valid lookup URL and reports FW_VAR=0.
+
+The URL also carries fixed `accessKey=key-orbit` and `encoding=parquet`; neither is an axis.
+
+(3+1)·(3+1)·(2+1)·(3+1)·(2+1) = 576 URL forms including absent parameters; the four rules leave exactly 300 valid."""
+
+[[goals]]
+key = "valid"
+dir = "max"
+
+[[goals]]
+key = "broken_count"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+raw = true
+values = [
+'''DatasetFamily = SignalClass = ExcludeRestricted = AccessTier = Geometry = None
+
+
+class TelemetryLookup:
+    """The telemetry-catalog validity model the conditional constraints are drawn against. `validate`
+    is the single source of truth for which lookups are invalid; the acceptance test execs this class
+    to derive the ground-truth invalid set the sieve must match."""
+
+    ALLOWED = {"Mobility": ["Trajectory"], "Climate": ["Radar"], "OpenData": ["AirQuality"]}
+
+    @staticmethod
+    def validate(family, signal, exclude_restricted, access, geometry):
+        broken = []
+        if family is not None and signal is not None and signal not in TelemetryLookup.ALLOWED.get(family, []):
+            broken.append("SIGNAL_NOT_IN_FAMILY")       # mapping: SignalClass by DatasetFamily
+        if access == "restricted" and family == "OpenData":
+            broken.append("RESTRICTED_OPEN_DATA")                 # condition: forbid AccessTier=restricted when DatasetFamily=OpenData
+        if access == "restricted" and exclude_restricted == "enabled":
+            broken.append("RESTRICTED_EXCLUSION_CONFLICT")        # condition: forbid AccessTier=restricted when ExcludeRestricted=enabled
+        if geometry == "volumetric" and family == "OpenData":
+            broken.append("NO_VOLUME_OPEN_DATA")                   # condition: forbid Geometry=volumetric when DatasetFamily=OpenData
+        return broken
+
+    @staticmethod
+    def url(locator, family, signal, exclude_restricted, access, geometry):
+        pairs = [("accessKey", "key-orbit"), ("encoding", "parquet"), ("DatasetFamily", family), ("SignalClassList", signal), ("ExcludeRestricted", exclude_restricted),
+                 ("AccessTier", access), ("geometry", geometry)]
+        qs = "&".join("%s=%s" % (k, v) for k, v in pairs if v is not None)
+        return "http://localhost:8080/api/catalog/lookup/%s%s" % (locator, ("?" + qs) if qs else "")'''
+]
+
+[[slots]]
+sheet = "DatasetFamily"
+raw = true
+flags = ["FW_Optional"]
+values = ['''DatasetFamily = "Mobility"''', '''DatasetFamily = "Climate"''', '''DatasetFamily = "OpenData"''']
+
+[[slots]]
+sheet = "SignalClass"
+raw = true
+flags = ["FW_Optional"]
+values = ['''SignalClass = "Trajectory"''', '''SignalClass = "Radar"''', '''SignalClass = "AirQuality"''']
+
+[[slots]]
+sheet = "ExcludeRestricted"
+raw = true
+flags = ["FW_Optional"]
+values = ['''ExcludeRestricted = "enabled"''', '''ExcludeRestricted = "disabled"''']
+
+[[slots]]
+sheet = "AccessTier"
+raw = true
+flags = ["FW_Optional"]
+values = ['''AccessTier = "public"''', '''AccessTier = "community"''', '''AccessTier = "restricted"''']
+
+[[slots]]
+sheet = "Geometry"
+raw = true
+flags = ["FW_Optional"]
+values = ['''Geometry = "tabular"''', '''Geometry = "volumetric"''']
+
+[[slots]]
+sheet = "TAIL"
+raw = true
+values = [
+'''_broken = TelemetryLookup.validate(DatasetFamily, SignalClass, ExcludeRestricted, AccessTier, Geometry)
+FW_VAR = 0 if not _broken else 2
+FW_CUSTOM_VAR = FW_VAR
+_url = TelemetryLookup.url("grid-sample", DatasetFamily, SignalClass, ExcludeRestricted, AccessTier, Geometry)
+print(
+    "app=telemetry_catalog "
+    "family=%s signal=%s exclude=%s access=%s geometry=%s "
+    "valid=%d broken=%s broken_count=%d url=%s FW_VAR=%d"
+    % (DatasetFamily, SignalClass, ExcludeRestricted, AccessTier, Geometry,
+       int(not _broken), "+".join(_broken) or "none", len(_broken), _url, FW_VAR)
+)'''
+]

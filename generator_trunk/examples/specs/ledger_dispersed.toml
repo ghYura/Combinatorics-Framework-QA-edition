@@ -1,0 +1,171 @@
+# ============================================================================
+# ledger_dispersed — the comprehensive LedgerEngine.java, decomposed by
+# code_decompose.py and then SMART-DISPERSED across the Core's verbs.
+#
+# The decomposition flagged deposit/withdraw/roundCents/applyOverdraftGuard/main
+# as interacting pieces (⇄). The dispersal below distributes each piece to the
+# combination rule that matches its SEMANTICS:
+#
+#   FRAME / MAINOPEN / VERDICT  → FW_Combi(1)  constant frame (class+fields+verdict),
+#                                              one value, the invariant skeleton.
+#   WITHDRAW / ROUND / GUARD    → FW_Combi(1)  several IMPLEMENTATIONS each; the
+#                                              cartesian of impls surfaces the
+#                                              indirect interactions (a buggy
+#                                              withdraw × a guard variant, etc.).
+#   OPT                         → FW_Subsets   optional features present/absent.
+#   OPS                         → FW_Permut    ORDER-sensitive money movements
+#                                              (withdraw-before-deposit can dip
+#                                              negative; interest sees a different base).
+#   MUT                         → FW_Combi(2)  apply 2-of-3 adjustments (one injects drift).
+#
+# Every slot is an independent, fully-declared statement/member in a CONSTANT
+# class+main frame, so ANY combination concatenates into a valid, runnable
+# Candidate.java. raw=true ⇒ verbatim; run the Reader with concatenator=''.
+# Verdict: FW_VAR = 1 iff the dual-accounting invariant breaks (audit drift, or a
+# negative balance under overdraft protection). FW_CUSTOM_VAR mirrors it so the
+# harness works whether the Reader builds an FW_VAR- or FW_CUSTOM_VAR-mode table.
+# est. fw_final = 3·2·2·6·4·3 = 864 programs.
+# ============================================================================
+title = "LedgerEngine — decomposed & dispersed (Combi(1) impls × Permut order × Subsets options × Combi(2) mutators)"
+note  = "Dual-accounting invariant fuzz: the combinatorics finds impl/order/option combos that break balance==audit or go negative under guard."
+goals = ["bugs_found"]
+args  = ["mode=ledger_e2e"]
+
+# --- constant frame: class + verdict fields + state + constant helpers ---
+[[slots]]
+sheet  = "FRAME"
+key    = "frame"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''
+public class LedgerEngine {
+    public static int FW_VAR = 0;
+    public static int FW_CUSTOM_VAR = 0;
+    static long balance = 0, audit = 0;
+    static boolean overdraftGuard = false, chargeFee = false;
+    static int roundMode = 0;
+    static long interest(long principal) { return principal / 100; }
+    static long serviceFee() { return 25; }
+''']
+
+# --- withdraw: 3 implementations (cartesian leaf). #2 forgets the audit leg
+#     (drift bug); #3 respects overdraft protection. ---
+[[slots]]
+sheet  = "WITHDRAW"
+key    = "withdraw"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''    static void withdraw(long amt) { balance -= amt; audit -= amt; }
+''',
+'''    static void withdraw(long amt) { balance -= amt; }
+''',
+'''    static void withdraw(long amt) { if (!overdraftGuard || balance >= amt) { balance -= amt; audit -= amt; } }
+''',
+]
+
+# --- roundCents: 2 implementations (cartesian leaf) ---
+[[slots]]
+sheet  = "ROUND"
+key    = "round"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''    static long roundCents(long v) { return v; }
+''',
+'''    static long roundCents(long v) { return (v / 10) * 10; }
+''',
+]
+
+# --- applyOverdraftGuard: 2 implementations. #2 fixes the balance only (drift bug) ---
+[[slots]]
+sheet  = "GUARD"
+key    = "guard"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''    static void applyOverdraftGuard() { if (overdraftGuard && balance < 0) { long c = -balance; balance += c; audit += c; } }
+''',
+'''    static void applyOverdraftGuard() { if (overdraftGuard && balance < 0) { balance = 0; } }
+''',
+]
+
+# --- open main + initialise state and the operation amounts (constant) ---
+[[slots]]
+sheet  = "MAINOPEN"
+key    = "mainopen"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''    public static void main(String[] args) {
+        balance = 100; audit = 100;
+        long txn = 120;
+        long wd = 170;
+''']
+
+# --- optional features: set BEFORE the operations so the guard/fee take effect.
+#     Subsets ⇒ {none, guard, fee, guard+fee}. ---
+[[slots]]
+sheet  = "OPT"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = [
+'''        overdraftGuard = true;
+''',
+'''        chargeFee = true;
+''',
+]
+
+# --- ORDER-sensitive operations (permutations). withdraw uses the chosen impl;
+#     deposit/interest keep lock-step. Order changes whether the balance dips
+#     negative and what base interest sees. 3! = 6 orderings. ---
+[[slots]]
+sheet  = "OPS"
+key    = "ops"
+verb   = "FW_Permut"
+raw    = true
+values = [
+'''        balance += txn; audit += txn;
+''',
+'''        withdraw(wd);
+''',
+'''        { long e = interest(balance); balance += e; audit += e; }
+''',
+]
+
+# --- pick 2-of-3 adjustments (combinations). m1/m2 keep lock-step; m3 injects drift. ---
+[[slots]]
+sheet  = "MUT"
+key    = "mut"
+verb   = "FW_Combi(2)"
+raw    = true
+values = [
+'''        if (chargeFee) { long f = serviceFee(); balance -= f; audit -= f; }
+''',
+'''        balance += 0; audit += 0;
+''',
+'''        audit += 2;
+''',
+]
+
+# --- constant frame: run the guard, normalise, evaluate the invariant, close ---
+[[slots]]
+sheet  = "VERDICT"
+key    = "verdict"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''        applyOverdraftGuard();
+        balance = roundCents(balance);
+        audit = roundCents(audit);
+        boolean drift = (balance != audit);
+        boolean negative = (overdraftGuard && balance < 0);
+        FW_VAR = (drift || negative) ? 1 : 0;
+        FW_CUSTOM_VAR = FW_VAR;
+        System.out.println("FW_VAR=" + FW_VAR + " balance=" + balance + " audit=" + audit);
+    }
+}
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "invariant violated: dual-accounting drift (balance != audit) or negative balance under overdraft guard"

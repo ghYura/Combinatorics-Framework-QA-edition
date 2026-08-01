@@ -1,0 +1,118 @@
+# Self-posed scenario 11 — DB config tuning with FW_Cartes(WORKLOAD).
+# Category: DB-config tuning / workload matrix. Demonstrates FW_Cartes as a cross-another-sheet verb.
+# DB_CONFIG = FW_Cartes(WORKLOAD): 3 config profiles × 3 workload classes = 9 matrix cells,
+# crossed with DATA_SIZE 2 -> 18 candidates. Incompatibilities are workload/config policies in the TAIL oracle.
+title = "DB config tuning — FW_Cartes workload matrix x data size, p95/cost/stability Pareto"
+note  = "FW_Cartes(WORKLOAD) crosses each DB config profile with each workload class; DATA_SIZE is a normal FW_Combi(1) axis; TAIL oracle flags config/workload incompatibilities."
+args  = ["mode=db_config_cartes"]
+
+[[goals]]
+key = "p95_ms"
+dir = "min"
+[[goals]]
+key = "cost_units"
+dir = "min"
+[[goals]]
+key = "stability_score"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''CONFIG = "low_mem"
+CACHE_MB = 256
+WORK_MEM_MB = 16
+POOL_SIZE = 16
+CONFIG_COST = 1
+CONFIG_STABILITY = 7
+WORKLOAD = "oltp"
+WORKLOAD_WEIGHT = 1.0
+DATA_SIZE = "small"
+DATA_FACTOR = 1.0
+
+def _db_model(config, cache_mb, work_mem_mb, pool_size, config_cost, config_stability, workload, workload_weight, data_factor):
+    base = {"oltp": 35.0, "analytics": 95.0, "mixed": 60.0}[workload]
+    cache_gain = min(24.0, cache_mb / 64.0)
+    work_gain = min(28.0, work_mem_mb / 4.0) if workload == "analytics" else min(12.0, work_mem_mb / 8.0)
+    pool_gain = min(18.0, pool_size / 2.0) if workload == "oltp" else min(8.0, pool_size / 4.0)
+    p95 = round((base - cache_gain - work_gain - pool_gain) * data_factor * workload_weight, 2)
+    cost = round(config_cost * data_factor + cache_mb / 512.0 + work_mem_mb / 64.0 + pool_size / 32.0, 2)
+    stability = int(config_stability + min(2, pool_size // 32) - (1 if data_factor > 1.0 and config == "low_mem" else 0))
+    return max(1.0, p95), cost, max(0, stability)
+''']
+
+[[slots]]
+sheet = "DB_CONFIG"
+key = "db_config"
+verb = "FW_Cartes(WORKLOAD)"
+raw = true
+values = ['''CONFIG = "low_mem"
+CACHE_MB = 256
+WORK_MEM_MB = 16
+POOL_SIZE = 16
+CONFIG_COST = 1
+CONFIG_STABILITY = 7
+''', '''CONFIG = "balanced"
+CACHE_MB = 512
+WORK_MEM_MB = 64
+POOL_SIZE = 32
+CONFIG_COST = 3
+CONFIG_STABILITY = 8
+''', '''CONFIG = "analytics_heavy"
+CACHE_MB = 1024
+WORK_MEM_MB = 128
+POOL_SIZE = 16
+CONFIG_COST = 5
+CONFIG_STABILITY = 6
+''']
+
+[[slots]]
+sheet = "WORKLOAD"
+key = "workload"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ['''WORKLOAD = "oltp"
+WORKLOAD_WEIGHT = 1.0
+''', '''WORKLOAD = "analytics"
+WORKLOAD_WEIGHT = 1.15
+''', '''WORKLOAD = "mixed"
+WORKLOAD_WEIGHT = 1.05
+''']
+
+[[slots]]
+sheet = "DATA_SIZE"
+key = "data_size"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''DATA_SIZE = "small"
+DATA_FACTOR = 1.0
+''', '''DATA_SIZE = "large"
+DATA_FACTOR = 1.8
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''_p95, _cost, _stability = _db_model(CONFIG, CACHE_MB, WORK_MEM_MB, POOL_SIZE, CONFIG_COST, CONFIG_STABILITY, WORKLOAD, WORKLOAD_WEIGHT, DATA_FACTOR)
+if WORKLOAD == "analytics" and WORK_MEM_MB < 64:
+    FW_VAR = 2      # analytics workload needs enough work_mem
+elif WORKLOAD == "oltp" and POOL_SIZE < 32:
+    FW_VAR = 3      # OLTP workload needs enough pool capacity
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=db_config config=%s workload=%s data_size=%s p95_ms=%.2f cost_units=%.2f stability_score=%d FW_VAR=%d"
+      % (CONFIG, WORKLOAD, DATA_SIZE, _p95, _cost, _stability, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "analytics workload under-provisioned: work_mem below 64 MB"
+[[custom_vars]]
+code = 3
+msg = "OLTP workload under-provisioned: pool_size below 32"

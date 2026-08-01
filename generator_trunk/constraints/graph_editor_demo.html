@@ -1,0 +1,93 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><title>Constraint graph — threads & cross-sheet bonds</title>
+<style>
+ body{font:14px/1.5 system-ui,sans-serif;margin:20px;color:#1a1a1a;background:#fafafa}
+ h1{font-size:18px} .sub{color:#666;max-width:780px}
+ #stage{position:relative;border:1px solid #ddd;background:#fff;border-radius:8px;margin:12px 0;overflow:auto}
+ svg{position:absolute;left:0;top:0;pointer-events:none}
+ .node{position:absolute;transform:translate(-50%,-50%);padding:5px 9px;border:1px solid #888;
+   border-radius:14px;background:#eef3ff;cursor:pointer;white-space:nowrap;font-size:13px;user-select:none}
+ .node:hover{outline:2px solid #69f} .node.sel{background:#ffe9a8;border-color:#c90}
+ .col{position:absolute;top:6px;transform:translateX(-50%);color:#555;font-weight:600}
+ line.edge{stroke:#d33;stroke-width:2.5;pointer-events:stroke;cursor:pointer}
+ line.edge:hover{stroke:#f66;stroke-width:4}
+ .panel{margin:10px 0;padding:10px 12px;background:#fff;border:1px solid #ddd;border-radius:6px;max-width:780px}
+ .rule{color:#a00} button{font:14px system-ui;padding:7px 12px;cursor:pointer} code{background:#f0f0f0;padding:1px 4px}
+</style>
+<h1>Constraint graph — threads & cross-sheet bonds</h1>
+<div class="sub">Click one value-node, then another in a <b>different sheet</b>, to draw a forbidden
+<b>thread</b> (red). Click a thread to remove it. Cross-sheet bonds are first-class. Then
+<b>Download sidecar.json</b> → <code>bundle_run.py &lt;spec&gt; --sieve</code>.</div>
+<div id="stage"></div>
+<div class="panel"><b>Impact (co-occurrence):</b> <span id="impact"></span></div>
+<div class="panel"><b>Threads (plain language):</b><div id="rules"></div></div>
+<button id="dl">Download sidecar.json</button>
+<script>
+const D={"sheets": [["A", ["a1", "a2"]], ["B", ["b1", "b2"]], ["C", ["c1", "c2", "c3"]]], "edges": [["[\"A\",\"a1\"]", "[\"C\",\"c1\"]"], ["[\"B\",\"b2\"]", "[\"C\",\"c3\"]"]], "full": 12};
+const COLW=190, ROWH=44, PADX=110, PADY=42;
+const E=new Set(D.edges.map(e=>JSON.stringify([e[0],e[1]].sort())));   // canonical thread set
+let sel=null;
+const stage=document.getElementById("stage");
+function pos(si,vi){return {x:PADX+si*COLW, y:PADY+vi*ROWH};}
+function nodeIndex(){const m={};D.sheets.forEach((sv,si)=>sv[1].forEach((v,vi)=>{m[JSON.stringify([sv[0],v])]={si,vi};}));return m;}
+const NI=nodeIndex();
+function esc(s){return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));}
+function attr(s){return esc(s).replace(/'/g,"&#39;");}
+function render(){
+ const rows=Math.max(...D.sheets.map(s=>s[1].length));
+ const W=PADX+ (D.sheets.length-1)*COLW + PADX, H=PADY+rows*ROWH+10;
+ let svg="<svg width='"+W+"' height='"+H+"'>";
+ E.forEach(k=>{const[n1,n2]=JSON.parse(k);const a=NI[n1],b=NI[n2];if(!a||!b)return;
+   const p=pos(a.si,a.vi),q=pos(b.si,b.vi);
+   svg+="<line class='edge' data-k='"+attr(k)+"' x1='"+p.x+"' y1='"+p.y+"' x2='"+q.x+"' y2='"+q.y+"'></line>";});
+ svg+="</svg>";
+ let nodes="";
+ D.sheets.forEach((s,si)=>{nodes+="<div class='col' style='left:"+pos(si,0).x+"px'>"+esc(s[0])+"</div>";
+   s[1].forEach((v,vi)=>{const id=JSON.stringify([s[0],v]);const p=pos(si,vi);
+     nodes+="<div class='node"+(sel===id?" sel":"")+"' style='left:"+p.x+"px;top:"+p.y+"px' data-id='"+attr(id)+"'>"+esc(v)+"</div>";});});
+ stage.style.width=W+"px"; stage.style.height=H+"px"; stage.innerHTML=svg+nodes;
+ stage.querySelectorAll(".node").forEach(n=>n.onclick=()=>clickNode(n.dataset.id));
+ stage.querySelectorAll("line.edge").forEach(l=>l.onclick=()=>{E.delete(l.dataset.k);sel=null;render();});
+ updatePanels();
+}
+function clickNode(id){
+ if(sel===null){sel=id;}
+ else if(sel===id){sel=null;}
+ else{const a=JSON.parse(sel),b=JSON.parse(id);
+   if(a[0]!==b[0]){E.add(JSON.stringify([sel,id].sort()));} sel=null;}
+ render();
+}
+function violates(combo){ // combo: map sheet->value
+ for(const k of E){const[n1,n2]=JSON.parse(k);const[s1,v1]=JSON.parse(n1),[s2,v2]=JSON.parse(n2);
+   if(combo[s1]===v1 && combo[s2]===v2) return true;} return false;}
+function impact(){ // exact via cartesian if small, else per-thread estimate
+ const sizes=D.sheets.map(s=>s[1].length), prod=sizes.reduce((a,b)=>a*b,1);
+ if(prod<=50000){let rem=0;const idx=D.sheets.map(()=>0);
+   for(let n=0;n<prod;n++){const combo={};D.sheets.forEach((s,i)=>combo[s[0]]=s[1][idx[i]]);
+     if(violates(combo))rem++; for(let i=D.sheets.length-1;i>=0;i--){if(++idx[i]<sizes[i])break;idx[i]=0;}}
+   return {exact:true,removed:rem,full:prod};}
+ return {exact:false,removed:null,full:D.full};
+}
+function updatePanels(){
+ const im=impact();
+ document.getElementById("impact").textContent = im.exact
+   ? (E.size+" thread(s) → removes "+im.removed+" of "+im.full+" combinations ("+(im.full-im.removed)+" kept).")
+   : (E.size+" thread(s); full product "+im.full+" too large to count live — run --sieve for the exact figure.");
+ document.getElementById("rules").innerHTML=[...E].sort().map(k=>{const[n1,n2]=JSON.parse(k);
+   const[s1,v1]=JSON.parse(n1),[s2,v2]=JSON.parse(n2);
+   return "<div class='rule'>x  "+esc(s1)+":"+esc(v1)+"  +  "+esc(s2)+":"+esc(v2)+"</div>";}).join("")
+   ||"<i>no threads yet — click two nodes in different sheets</i>";
+}
+function sidecar(){
+ const groups={};
+ E.forEach(k=>{const[n1,n2]=JSON.parse(k);const[s1,v1]=JSON.parse(n1),[s2,v2]=JSON.parse(n2);
+   const ps=[s1,s2].sort(),gk=ps.join("");(groups[gk]=groups[gk]||{sheets:ps,pairs:[]});
+   const o={};o[s1]=v1;o[s2]=v2;groups[gk].pairs.push(o);});
+ const cons=Object.values(groups).map((g,i)=>({id:"bond"+i+"_"+g.sheets[0]+"_"+g.sheets[1],
+   polarity:"forbid",sheets:g.sheets,pairs:g.pairs,gate:{},
+   desc:g.pairs.length+" forbid "+g.sheets[0]+"x"+g.sheets[1]+" bond(s)"}));
+ return {version:1,params:{},constraints:cons};
+}
+document.getElementById("dl").onclick=()=>{const b=new Blob([JSON.stringify(sidecar(),null,2)],{type:"application/json"});
+ const u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="sidecar.json";a.click();URL.revokeObjectURL(u);};
+render();
+</script></html>

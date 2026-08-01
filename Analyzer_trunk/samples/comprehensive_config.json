@@ -1,0 +1,93 @@
+{
+  "_comment": [
+    "Comprehensive manual config for samples/comprehensive_input.txt.",
+    "Paste this whole object into the 'Manual config JSON' panel.",
+    "Every block below maps to a code path in OptimizationAnalyzer/scoreLine."
+  ],
+
+  "required_tokens":  ["status", "operation"],
+  "forbidden_tokens": ["FATAL", "panic", "core_dump"],
+
+  "token_weights": {
+    "ok":      5.0,
+    "success": 4.0,
+    "warn":   -3.0,
+    "fail":  -10.0
+  },
+
+  "required_keys":  ["operation"],
+  "forbidden_keys": ["secret", "password", "api_key"],
+
+  "expected_line_types":  ["kv_numeric", "kv", "mixed"],
+  "expected_signatures":  ["LSLSLSLSLSL", "LSLPDPL"],
+
+  "required_regexes": ["\\bv\\d+\\.\\d+(?:\\.\\d+)?\\b"],
+  "forbidden_regexes": [
+    "(?i)\\bDROP\\s+TABLE\\b",
+    "(?i)\\brm\\s+-rf\\s+/",
+    ":\\(\\)\\{ :\\|:&\\};:"
+  ],
+
+  "notes": [
+    "Synthetic corpus exercising every analyzer code path.",
+    "See samples/comprehensive_input.txt header for layout."
+  ],
+
+  "line_length": { "min": 20, "max": 500 },
+
+  "numeric_ranges": {
+    "latency":     [0.0,   100.0],
+    "error_rate":  [0.0,     0.05],
+    "cost":        [0.0,     1.0 ],
+    "throughput":  [10.0, 10000.0]
+  },
+
+  "optimizations": [
+    {
+      "_comment": "Calculus-of-variations style: user supplies the cost surface as a Java expression in 'x'; Brent finds argmin at construction. Expected: argmin = 0.5, fmin = 0.1.",
+      "key":          "cost",
+      "mode":         "target",
+      "objective":    "(x - 0.5)^2 + 0.1",
+      "search_lo":    0.0,
+      "search_hi":    1.0,
+      "weight":      30.0
+    },
+    {
+      "_comment": "Pure throughput maximisation against the corpus's robust P5..P95 band (no objective expression).",
+      "key":     "throughput",
+      "mode":    "maximize",
+      "weight":  20.0
+    },
+    {
+      "_comment": "Latency target via explicit constant (no objective expression).",
+      "key":          "latency",
+      "mode":         "target",
+      "target_value": 5.0,
+      "weight":      25.0
+    },
+    {
+      "_comment": "Pure minimisation, percentile-clamped normalisation.",
+      "key":     "error_rate",
+      "mode":    "minimize",
+      "weight":  20.0
+    },
+    {
+      "_comment": "Trigonometric+quadratic objective; Brent on [-3, 3] finds argmin near x ≈ -1.30644.",
+      "key":          "alpha_metric",
+      "mode":         "target",
+      "objective":    "sin(x) + 0.1*x*x",
+      "search_lo":   -3.0,
+      "search_hi":    3.0,
+      "weight":      15.0
+    },
+    {
+      "_comment": "Gaussian objective (negated for argmax demo): exp(-x*x) is maximised at x=0; Brent on -exp(-x*x) finds argmin at x=0.",
+      "key":          "beta_metric",
+      "mode":         "target",
+      "objective":    "-exp(-x*x)",
+      "search_lo":   -2.0,
+      "search_hi":    2.0,
+      "weight":      10.0
+    }
+  ]
+}

@@ -1,0 +1,71 @@
+# Self-posed scenario 13 — resource allocation MULTISET (exercises FW_CombiR: k-of-n WITH repetition).
+# Allocate 3 worker slots from {cpu, gpu, mem} instance types WITH repetition (you may pick the same
+# type more than once) -> FW_CombiR(3) over 3 types = C(3+3-1, 3) = 10 multisets, crossed with the
+# workload class (FW_Combi(1): batch/serving) -> 20 candidates. Oracle checks resource-mix policy.
+# Verdict codes are kept small (2,3) to fit the combo-column capacity (n_total-6); see scenario 12's
+# overflow gotcha. Self-contained -> trusted-local.
+title = "Resource allocation multiset — FW_CombiR(3) over instance types x workload, resource-mix oracle"
+note  = "FW_CombiR(3) (3 slots from 3 types, repetition allowed) x FW_Combi(1) workload; oracle flags zero-diversity (single point of failure) and serving-without-gpu; Pareto over diversity vs cost."
+args  = ["mode=resource_alloc"]
+
+[[goals]]
+key = "diversity"
+dir = "max"
+[[goals]]
+key = "cost_units"
+dir = "min"
+
+[[slots]]   # HEAD
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''ALLOC = []
+WORKLOAD = "batch"
+''']
+
+[[slots]]   # 3 worker slots chosen from 3 instance types WITH repetition -> FW_CombiR(3) -> C(5,3)=10 multisets
+sheet  = "INSTANCES"
+key    = "instances"
+verb   = "FW_CombiR(3)"
+raw    = true
+values = ['''ALLOC.append("cpu")
+''', '''ALLOC.append("gpu")
+''', '''ALLOC.append("mem")
+''']
+
+[[slots]]   # workload class (cartesian leaf)
+sheet  = "WORKLOAD"
+key    = "workload"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["WORKLOAD = \"batch\"\n", "WORKLOAD = \"serving\"\n"]
+
+[[slots]]   # TAIL: resource-mix oracle (codes kept <= combo-column capacity)
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_types = sorted(set(ALLOC))
+_diversity = len(_types)
+_gpu = ALLOC.count("gpu")
+_cost = ALLOC.count("gpu") * 3 + ALLOC.count("cpu") * 1 + ALLOC.count("mem") * 2
+_no_diversity = int(_diversity == 1)
+_serving_no_gpu = int(WORKLOAD == "serving" and _gpu == 0)
+if _no_diversity:
+    FW_VAR = 2
+elif _serving_no_gpu:
+    FW_VAR = 3
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=resource_alloc workload=%s alloc=%s diversity=%d gpu_slots=%d cost_units=%d FW_VAR=%d"
+      % (WORKLOAD, "+".join(ALLOC), _diversity, _gpu, _cost, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "zero diversity: all 3 slots are the same instance type (single point of failure)"
+[[custom_vars]]
+code = 3
+msg = "serving workload allocated no gpu slot"

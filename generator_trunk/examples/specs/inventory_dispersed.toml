@@ -1,0 +1,187 @@
+# ============================================================================
+# inventory_dispersed — the comprehensive inventory_reconciler.py, decomposed by
+# code_decompose.py and then SMART-DISPERSED across the Core's verbs.
+#
+# Same dispersal philosophy as the Java harness, but the Bundle's Executor compiles
+# ONLY Java, so this chain is Core → Reader (reassemble a .py per combo) → the NEW
+# Python Executor analog (py_executor.py), which runs each program and records FW_VAR.
+#
+#   FRAME / INIT / VERDICT  → FW_Combi(1)  constant frame (defs+state+verdict skeleton).
+#   RECEIVE / SHIP / ROUND  → FW_Combi(1)  several IMPLEMENTATIONS each; the cartesian
+#                                          of impls surfaces indirect interactions
+#                                          (a buggy ship × a round variant, etc.).
+#   OPT                     → FW_Subsets   optional features present/absent.
+#   MOVES                   → FW_Permut    ORDER-sensitive stock movements.
+#   MUT                     → FW_Combi(2)  apply 2-of-3 adjustments (one injects drift).
+#
+# Every slot is a MODULE-LEVEL (indent 0) statement/def, so ANY combination
+# concatenates into a valid runnable module. Functions are defined before they are
+# called (slot order). raw=true ⇒ verbatim; Reader concatenator=''.
+# Verdict: FW_VAR = 1 iff the dual-count invariant breaks (ledger drift, or negative
+# on-hand under backorder protection). FW_CUSTOM_VAR mirrors it.
+# NOTE: FRAME is ordered so no data cell starts with "FW_" (the Core would otherwise
+# read it as a cell-directive). est. fw_final = 2·3·2·6·4·3 = 864 programs.
+# ============================================================================
+title = "inventory_reconciler — decomposed & dispersed (Combi(1) impls × Permut order × Subsets options × Combi(2) mutators)"
+note  = "Dual-count invariant fuzz: the combinatorics finds impl/order/option combos that break on_hand==ledger."
+goals = ["bugs_found"]
+args  = ["mode=inventory_e2e"]
+
+# --- constant frame: state, verdict vars, and constant helpers.
+#     Ordered so the cell does NOT start with FW_ (a Core cell-directive trigger). ---
+[[slots]]
+sheet  = "FRAME"
+key    = "frame"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''on_hand = 0
+ledger = 0
+backorder_guard = False
+apply_shrinkage = False
+round_mode = 0
+FW_VAR = 0
+FW_CUSTOM_VAR = 0
+def reorder_estimate(level):
+    return level // 100
+def shrinkage_units():
+    return 3
+def apply_backorder_guard():
+    global on_hand, ledger
+    if backorder_guard and on_hand < 0:
+        correction = -on_hand
+        on_hand += correction
+        ledger += correction
+''']
+
+# --- receive: 2 implementations (cartesian leaf). #2 forgets the ledger leg (drift bug) ---
+[[slots]]
+sheet  = "RECEIVE"
+key    = "receive"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''def receive(qty):
+    global on_hand, ledger
+    on_hand += qty
+    ledger += qty
+''',
+'''def receive(qty):
+    global on_hand, ledger
+    on_hand += qty
+''',
+]
+
+# --- ship: 3 implementations (cartesian leaf). #2 forgets the ledger leg (drift bug);
+#     #3 respects backorder protection. ---
+[[slots]]
+sheet  = "SHIP"
+key    = "ship"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''def ship(qty):
+    global on_hand, ledger
+    on_hand -= qty
+    ledger -= qty
+''',
+'''def ship(qty):
+    global on_hand, ledger
+    on_hand -= qty
+''',
+'''def ship(qty):
+    global on_hand, ledger
+    if not backorder_guard or on_hand >= qty:
+        on_hand -= qty
+        ledger -= qty
+''',
+]
+
+# --- round_units: 2 implementations (cartesian leaf) ---
+[[slots]]
+sheet  = "ROUND"
+key    = "round"
+verb   = "FW_Combi(1)"
+raw    = true
+values = [
+'''def round_units(v):
+    return v
+''',
+'''def round_units(v):
+    return (v // 10) * 10
+''',
+]
+
+# --- initialise state and the movement quantity (constant) ---
+[[slots]]
+sheet  = "INIT"
+key    = "init"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''on_hand = 100
+ledger = 100
+move = 120
+''']
+
+# --- optional features (set before the moves). Subsets ⇒ {none, guard, shrink, both} ---
+[[slots]]
+sheet  = "OPT"
+key    = "opt"
+verb   = "FW_Subsets"
+raw    = true
+values = [
+'''backorder_guard = True
+''',
+'''apply_shrinkage = True
+''',
+]
+
+# --- ORDER-sensitive stock movements (permutations). ship uses the chosen impl. 3! = 6 ---
+[[slots]]
+sheet  = "MOVES"
+key    = "moves"
+verb   = "FW_Permut"
+raw    = true
+values = [
+'''receive(move)
+''',
+'''ship(move + 50)
+''',
+'''hint = reorder_estimate(on_hand); on_hand += hint; ledger += hint
+''',
+]
+
+# --- pick 2-of-3 adjustments (combinations). m1/m2 keep lock-step; m3 injects drift. ---
+[[slots]]
+sheet  = "MUT"
+key    = "mut"
+verb   = "FW_Combi(2)"
+raw    = true
+values = [
+'''if apply_shrinkage:
+    s = shrinkage_units(); on_hand -= s; ledger -= s
+''',
+'''on_hand += 0; ledger += 0
+''',
+'''ledger += 2
+''',
+]
+
+# --- constant frame: run the guard, normalise, evaluate the invariant, print ---
+[[slots]]
+sheet  = "VERDICT"
+key    = "verdict"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''apply_backorder_guard()
+on_hand = round_units(on_hand)
+ledger = round_units(ledger)
+drift = (on_hand != ledger)
+negative = (backorder_guard and on_hand < 0)
+FW_VAR = 1 if (drift or negative) else 0
+FW_CUSTOM_VAR = FW_VAR
+print("FW_VAR=%d on_hand=%d ledger=%d" % (FW_VAR, on_hand, ledger))
+''']
+
+[[custom_vars]]
+code = 2
+msg  = "invariant violated: dual-count drift (on_hand != ledger) or negative on-hand under backorder guard"

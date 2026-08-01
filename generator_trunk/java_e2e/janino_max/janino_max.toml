@@ -1,0 +1,95 @@
+# ============================================================================
+# Java E2E #1 — JANINO-MAX: lightweight classic Java exercised to the breadth
+# Janino 3.1.12 supports, with EVERY combination compiling+running on Janino.
+#
+# Combinability discipline (so any FW_Permut order / FW_Subsets subset concatenates
+# into valid Java): ALL shared state is static fields declared in the invariant HEAD;
+# every middle chunk is a SELF-CONTAINED statement that only mutates that state (no
+# chunk declares a local another chunk needs); braces balance only across HEAD/TAIL.
+# Order changes the RESULT (order-sensitive verdict), never compilability.
+#
+# Janino features exercised (all in its lightweight subset — NO lambdas/streams/var/
+# records/switch-expressions): generics with explicit type args, enhanced-for, a nested
+# interface + an anonymous class implementing it, recursion, try/catch/finally,
+# classic switch, StringBuilder, bitwise/ternary, Math.*, and an EXTERNAL dependency
+# (com.example.rules.Scorer from -dirJars) imported + invoked — proving the JAR
+# pass-through resolves through Janino's parent classloader.
+#
+# est = 1(HEAD) x 2(BASE) x 6(OPS=3!) x 4(FLAGS=2^2) x 1(TAIL) = 48 candidates.
+# Verdict (FW_VAR): 0 = PASS, 1 = DOMAIN_FAIL — a deterministic mix across the space.
+# ============================================================================
+title = "Java E2E janino-max (classic Java; every combo compiles+runs on Janino; uses -dirJars dep)"
+note  = "FW_Combi(1) config x FW_Permut op-order x FW_Subsets flags; imports com.example.rules.Scorer."
+args  = ["mode=java_janino_max"]
+
+[[slots]]   # invariant frame: import + class + ALL shared state (static fields) + helpers + main opener
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''import com.example.rules.Scorer;
+public class Candidate {
+    public static int FW_VAR = 0;
+    static int state = 0;
+    static boolean flagA = false, flagB = false;
+    static java.util.List<Integer> trail = new java.util.ArrayList<Integer>();
+    interface IntOp { int apply(int v); }
+    static IntOp doubler = new IntOp() { public int apply(int v) { return v * 2; } };
+    static int fib(int n) { return n < 2 ? n : fib(n - 1) + fib(n - 2); }
+    static int safeDiv(int a, int b) {
+        try { return a / b; }
+        catch (ArithmeticException e) { return -1; }
+        finally { trail.add(b); }
+    }
+    public static void main(String[] args) {
+''']
+
+[[slots]]   # config leaf (cartesian)
+sheet  = "BASE"
+key    = "base"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ["        state = 3;\n", "        state = 7;\n"]
+
+[[slots]]   # ORDER-sensitive op sequence -> permutations (non-commutative -> result varies)
+sheet  = "OPS"
+key    = "ops"
+verb   = "FW_Permut"
+raw    = true
+values = ["        state = doubler.apply(state);\n",
+          "        state = state + fib(6);\n",
+          "        state = safeDiv(state + 100, 3);\n"]
+
+[[slots]]   # optional flags -> subsets (present / absent, any combination)
+sheet  = "FLAGS"
+key    = "flags"
+verb   = "FW_Subsets"
+raw    = true
+values = ["        flagA = true;\n", "        flagB = true;\n"]
+
+[[slots]]   # invariant frame: fold flags, call the EXTERNAL dep (Scorer), classic switch verdict, close
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''        int folded = state
+                + (flagA ? Scorer.blend(state, 5) : 0)
+                + (flagB ? Scorer.score(state) : 0);
+        trail.add(folded);
+        int acc = 0;
+        for (Integer v : trail) { acc ^= v.intValue(); }
+        StringBuilder sb = new StringBuilder();
+        sb.append("app=java_janino_max state=").append(state)
+          .append(" folded=").append(folded).append(" acc=").append(acc);
+        int code;
+        switch (Math.floorMod(acc, 4)) {
+            case 0: code = 0; break;
+            case 1: code = 0; break;
+            default: code = 1; break;
+        }
+        FW_VAR = code;
+        sb.append(" FW_VAR=").append(code);
+        System.out.println(sb.toString());
+    }
+}
+''']

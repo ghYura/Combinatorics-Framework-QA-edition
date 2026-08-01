@@ -1,0 +1,48 @@
+// ── 5_1.txt — variant 1: simplified quote/paren counter ──────────────
+// Same contract, lossy implementation. Scans once and only counts
+// single quotes, double quotes, parens, braces, brackets — ignores
+// heredocs, control-flow keywords, and trailing operators. Faster but
+// reports more false-completes (e.g. on heredoc bodies). Useful for
+// the engine to compare against the precise variant under load — if
+// downstream metrics agree, the lossy variant is safe to keep.
+
+    private static boolean isShellCommandComplete(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p5_invocations++;
+        Metrics.p5_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null) return false;
+            String s = text.replace("\r", "");
+            if (s.trim().isEmpty()) return false;
+
+            boolean sQ = false, dQ = false, escaped = false;
+            int paren = 0, brace = 0, bracket = 0;
+            for (int i = 0; i < s.length(); i++) {
+                char ch = s.charAt(i);
+                if (sQ) { if (ch == '\'') sQ = false; continue; }
+                if (dQ) {
+                    if (escaped) { escaped = false; continue; }
+                    if (ch == '\\') { escaped = true; continue; }
+                    if (ch == '"') dQ = false;
+                    continue;
+                }
+                if (ch == '\\') { escaped = !escaped; continue; }
+                if (ch == '\'') sQ = true;
+                else if (ch == '"') dQ = true;
+                else if (ch == '(') paren++;
+                else if (ch == ')' && paren > 0) paren--;
+                else if (ch == '{') brace++;
+                else if (ch == '}' && brace > 0) brace--;
+                else if (ch == '[') bracket++;
+                else if (ch == ']' && bracket > 0) bracket--;
+            }
+            String trimmed = s.replace("\n", " ").trim();
+            boolean trailing = trimmed.endsWith("\\") || trimmed.endsWith("&&")
+                    || trimmed.endsWith("||") || trimmed.endsWith("|");
+            boolean ok = !sQ && !dQ && paren == 0 && brace == 0 && bracket == 0 && !trailing;
+            if (ok) Metrics.p5_completed_count++;
+            return ok;
+        } finally {
+            Metrics.p5_duration_ns += System.nanoTime() - __t0;
+        }
+    }

@@ -1,0 +1,59 @@
+# Self-posed scenario 15 — second-order recombination (exercises FW_Group + FW_ReplaceRE + FW_Separator).
+# TAGS = FW_Subsets over 3 audit tags -> its result ROWS; FW_Group (first-class `group_replace`) re-combines
+# those PRIOR rows into combinations-of-combinations and FW_ReplaceRE rewrites the Core code-string;
+# FW_Separator (first-class `separator`) weaves the GLUE token between elements (into the fw2_/sub-combo
+# output FW_Group consumes). This is the engine's UNARY second-order operator (the brace is the binary one).
+# Second-order -> the planner cannot fold FW_Group into an exact product -> UNKNOWN/class X. PLAN + GRAPH only
+# (no --allow-extreme / --override-budget / --unleash, per the assignment). Pattern: group_sep_demo + ZEN canonical.
+title = "Second-order tag recombination — FW_Group + FW_ReplaceRE + FW_Separator (plan + graph only, class X)"
+note  = "FW_Subsets tags -> a result db-table; FW_Group GROUPS THE WHOLE RESULT SET of that prior db-table and applies the verb in the NEXT cell of the 'FW_Seq' row to the grouped set (combinations of combinations); FW_ReplaceRE rewrites the code-string; FW_Separator glues. Second-order -> UNKNOWN cardinality. At the Core/XLSX level the Bundle author writes FW_Group directly in the 'FW_Seq' sheet with that next-cell verb; fwgen's first-class group_replace= and separator= fields are the convenience that compile to that directive."
+args  = ["mode=tag_regroup"]
+
+[[goals]]
+key = "groups"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts = []
+''']
+
+[[slots]]   # FW_Subsets over the tags produces result rows; FW_Group recombines THOSE rows (group_replace ->
+            # FW_Group + FW_ReplaceRE), and separator= weaves GLUE into the fw2_ sub-combo FW_Group consumes.
+sheet = "TAGS"
+key   = "tags"
+verb  = "FW_Subsets"
+separator = "GLUE"
+group_replace = [["47", "47"]]
+raw   = true
+values = ['''
+parts.append("audit")
+''', '''
+parts.append("auth")
+''', '''
+parts.append("trace")
+''']
+
+[[slots]]   # GLUE: a non-excluded 1-value helper sheet FW_Separator reads (its first value)
+sheet = "GLUE"
+key   = "glue"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+parts.append("GLUE")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_n = len(parts)
+FW_VAR = 0
+print("app=tag_regroup parts=%s groups=%d FW_VAR=%d" % ("|".join(parts), _n, FW_VAR))
+''']

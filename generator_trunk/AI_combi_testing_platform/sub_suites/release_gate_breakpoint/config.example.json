@@ -1,0 +1,28 @@
+{
+  "schema": "ai-combi-release-gate-config/v1",
+  "target_cells": [
+    {
+      "provider": "provider-name",
+      "model": "exact-model-label",
+      "effort": "effort-label"
+    }
+  ],
+  "difficulty_units": [
+    2,
+    4,
+    8,
+    16,
+    32
+  ],
+  "breakpoint_variants": [
+    {
+      "name": "baseline",
+      "factor_signature": "000000000"
+    },
+    {
+      "name": "max-stress",
+      "factor_signature": "111111111"
+    }
+  ],
+  "session_instruction": "Run each block in a fresh conversation with no prior task context. Paste only the text between its BEGIN and END markers."
+}

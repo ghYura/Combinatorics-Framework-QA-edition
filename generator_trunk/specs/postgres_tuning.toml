@@ -1,0 +1,41 @@
+title = "DevOps/FinOps — PostgreSQL high-load tuning"
+goals = ["tps", "disk_wait_ms", "storage_cost_usd"]
+args  = ["workload=80pct_update_20pct_select", "tool=pgbench"]
+
+[[slots]]
+sheet = "SHAREDBUF"
+key   = "shared_buffers"
+values = ["25pct", "40pct", "50pct"]
+
+[[slots]]
+sheet = "SYNCCOMMIT"
+key   = "synchronous_commit"
+values = ["on", "off", "local"]
+
+[[slots]]
+sheet = "MAXWAL"
+key   = "max_wal_size"
+values = ["1GB", "4GB", "16GB"]
+
+[[slots]]
+sheet = "WORKMEM"
+key   = "work_mem"
+values = ["4MB", "16MB", "64MB"]
+
+[[slots]]
+sheet = "IOPS"
+key   = "storage_iops"
+values = ["3000", "10000"]
+
+[[custom_vars]]
+code = 2
+msg  = "pgbench run failed / connection error"
+[[custom_vars]]
+code = 3
+msg  = "tps below baseline"
+[[custom_vars]]
+code = 4
+msg  = "data-loss-window risk exceeded (synchronous_commit=off)"
+[[custom_vars]]
+code = 5
+msg  = "disk wait time above threshold"

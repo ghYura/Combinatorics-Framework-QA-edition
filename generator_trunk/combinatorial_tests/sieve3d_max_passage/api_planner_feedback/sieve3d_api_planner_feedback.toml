@@ -1,0 +1,82 @@
+spec_version = "1"
+title = "sieve3d API planner feedback smoke suite"
+note = "Enumerates direct-only and richer live-catalog-gated planner portfolios on the same hard snake/eye pair. Passage is maximized and estimated cost breaks equal-passage ties; success, feature coverage, and counters remain validity gates/diagnostics."
+args = ["mode=sieve3d_api_planner_feedback"]
+
+[[goals]]
+key = "planner_passed_volume_pct"
+dir = "max"
+[[goals]]
+key = "planner_estimated_cost"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+import os, sys
+from pathlib import Path
+_candidates = []
+_env = os.environ.get("SIEVE3D_MAX_PASSAGE_ROOT")
+if _env:
+    _candidates.append(Path(_env))
+_cwd = Path(os.getcwd())
+_candidates.extend([
+    _cwd / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+    _cwd / "generator_trunk" / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+    Path(os.environ.get("BUNDLE_REPO_ROOT", _cwd)) / "generator_trunk" / "combinatorial_tests" / "sieve3d_max_passage" / "equivalence_size_first",
+])
+for _p in _candidates:
+    if _p.exists():
+        sys.path.insert(0, str(_p))
+        break
+import max_passage_search as search
+search.reset()
+CASE_ID = "snake_eye"
+ALGORITHMS = "core_portfolio"
+''']
+
+[[slots]]
+sheet = "CASE"
+key = "case"
+verb = "FW_Combi(1)"
+raw = true
+values = ['CASE_ID="snake_eye";']
+
+[[slots]]
+sheet = "ALGORITHMS"
+key = "algorithms"
+verb = "FW_Combi(1)"
+raw = true
+values = [
+  'ALGORITHMS="core_portfolio";',
+  'ALGORITHMS="direct_baseline";',
+]
+
+[[slots]]
+sheet = "RUN"
+key = "run"
+verb = "FW_Combi(1)"
+raw = true
+values = ['search.run_api_probe(CASE_ID, ALGORITHMS);']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_TAIL_READY = True
+FW_VAR = search.api_probe_var()
+FW_CUSTOM_VAR = FW_VAR
+print(search.kv_line("sieve3d_api_planner_feedback", "sieve3d_api_planner_feedback_v1", FW_VAR))
+''']
+
+[[custom_vars]]
+code = 3
+msg = "feedback-thread case did not report feedback cycles/evals"
+[[custom_vars]]
+code = 6
+msg = "planner/features external API contract failed"

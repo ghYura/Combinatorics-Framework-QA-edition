@@ -1,0 +1,59 @@
+{
+  "schema": "bundle.sut-manifest/v1",
+  "id": "fin-tech-to-test",
+  "title": "Fintech stack — identity, accounts, transfers, clearing",
+  "maturity": "experimental",
+  "summary": "An in-memory financial-technology System Under Test covering identity, accounts, cards, transfers, currency, sanctions and clearing. Business rules are explicit, so order- and interaction-sensitive faults are decidable rather than approximate.",
+  "source": {
+    "kind": "sibling-checkout",
+    "sut_paths_key": "fintech",
+    "repository": "https://github.com/ghYura/SUT.git",
+    "revision": "db1ac787d07fe4ea16b084b551576c1da1a055fd",
+    "revision_resolution": "Resolved through BUNDLE_SUT_ROOT."
+  },
+  "lifecycle": {
+    "install": "python -m pip install -r <sut>/requirements.txt",
+    "start": "python -m finance_stack.gateway (loopback HTTP) — the harness starts it per campaign",
+    "health": "python -m pytest -q <sut>/tests",
+    "stop": "terminate the gateway process; the ledger is in memory and does not persist"
+  },
+  "determinism": {
+    "deterministic": true,
+    "reset": "The ledger and identity stores are in-memory: restarting the gateway restores the documented opening balances.",
+    "seed": "Scenario HEAD fixes the client identity, opening balances and instrument set; no random source participates in a verdict."
+  },
+  "oracle": {
+    "kind": "invariant-property",
+    "description": "Conservation and authorization invariants over the ledger: value is neither created nor destroyed by a transfer, an unauthorized or sanctioned party cannot move funds, and a rejected operation leaves no partial effect.",
+    "independence": "The invariants are evaluated over the ledger's observable end state by the scenario TAIL, not by the code that performed the operation — a handler that both moves money and declares the move correct cannot satisfy them by construction.",
+    "implementation": "generator_trunk/scenarios/fintech_client_server/harness.py"
+  },
+  "controls": {
+    "known_pass": ["A fully authorized intra-bank transfer within limits settles and conserves value"],
+    "known_fail": [
+      "A transfer from a sanctioned counterparty is rejected",
+      "A transfer exceeding the declared limit is rejected with no partial ledger effect"
+    ],
+    "intentional_defects": []
+  },
+  "access": {"read": ["{scratch}"], "write": ["{scratch}"], "network": ["127.0.0.1"]},
+  "limits": {"wall_seconds_per_candidate": 45, "memory_mb": 768, "max_candidates_per_gate": 512},
+  "trusted_artifacts": [],
+  "capability_row": {
+    "language": "python", "candidate_sink": "sharded", "handoff": "v2",
+    "run_mode": "verdict", "execution_policy": "networked-api-probe",
+    "executor_pool": "single", "repeat": "k1", "analyzer": "formal"
+  },
+  "candidate_origin": "network-facing",
+  "cleanup": "Stop the gateway process; python generator_trunk/bundle_run.py cleanup <run-dir>.",
+  "ci": {
+    "tier": 3,
+    "workflow_gate": "not-gated-fintech",
+    "tests": ["generator_trunk/scenarios/fintech_client_server/harness.py"],
+    "scenarios": ["generator_trunk/scenarios/fintech_client_server"]
+  },
+  "caveats": [
+    "The referenced harness is candidate code, not an automated test, and no workflow currently starts the required gateway and exercises it. This manifest is experimental until a bounded gate exists.",
+    "The generator_trunk/fintech_oot batches are a broader historical corpus and are deliberately NOT part of the canonical gated set."
+  ]
+}

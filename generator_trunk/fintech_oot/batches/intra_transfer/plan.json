@@ -1,0 +1,340 @@
+{
+  "cardinality": {
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 90,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 90,
+      "value": 90
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π verb_cardinality(slot) over mandatory (non-Exclude/Heading/Optional) slots",
+      "lower": 90,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 90,
+      "value": 90
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional slots -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "AMOUNT": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=5",
+        "lower": 5,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 5,
+        "value": 5
+      },
+      "CURRENCY": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "FAULTS": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(2) over n=3",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "HEAD": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "OPSEQ": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Permut over n=2",
+        "lower": 2,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 2,
+        "value": 2
+      },
+      "TAIL": {
+        "assumptions": [
+          "operand value count `n` is the declared slot size"
+        ],
+        "formula": "FW_Combi(1) over n=1",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": 90,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 90,
+      "value": 90
+    },
+    "raw_values": {
+      "AMOUNT": 5,
+      "CURRENCY": 3,
+      "FAULTS": 3,
+      "HEAD": 1,
+      "OPSEQ": 2,
+      "TAIL": 1
+    }
+  },
+  "constraints_present": 0,
+  "dependency_graph": {
+    "graph": {
+      "edges": [],
+      "nodes": [
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 5,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "AMOUNT",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "CURRENCY",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(2)"
+          },
+          "id": "FAULTS",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 2,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Permut"
+          },
+          "id": "OPSEQ",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:6e226e3b29f270f136ee56bf65f7defd45020ebced81e8241f2a91d7c2361149",
+    "warnings": []
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [90, 90] × 500-5000 per unit",
+      "lower": 45000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 450000,
+      "value": 247500
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [90, 90] × 200-2000 per unit",
+      "lower": 18000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 180000,
+      "value": 99000
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (247500) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ final candidates count [90, 90] × 0.05-2 per unit",
+      "lower": 4,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 180,
+      "value": 92
+    },
+    "final_count": 90,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [90, 90] × 1 per unit",
+      "lower": 90,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 90,
+      "value": 90
+    },
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate, no retries/attempts modelled",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ final candidates count [90, 90] × 1 per unit",
+      "lower": 90,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 90,
+      "value": 90
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ final candidates count [90, 90] × 150-1500 per unit",
+      "lower": 13500,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 135000,
+      "value": 74250
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 0,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 5,
+      "sheet": "AMOUNT",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "CURRENCY",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 2,
+      "sheet": "OPSEQ",
+      "verb": "FW_Permut"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "FAULTS",
+      "verb": "FW_Combi(2)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "intra_transfer",
+  "spec_path": "fintech_oot/batches/intra_transfer/intra_transfer.toml",
+  "spec_sha256": "7a029f2dc3170e134b6c631f9cb6474cf388167564bddef0cb5a02a3232f2e03",
+  "spec_version": "legacy",
+  "warnings": [
+    "spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)"
+  ]
+}

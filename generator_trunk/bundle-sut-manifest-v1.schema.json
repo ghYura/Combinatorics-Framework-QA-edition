@@ -1,0 +1,198 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "bundle-sut-manifest-v1.schema.json",
+  "title": "Canonical SUT adapter manifest (bundle.sut-manifest/v1)",
+  "description": "A versioned declaration of one System Under Test the Bundle is verified against: how it is resolved, started, reset and stopped; what its oracle is and how independent that oracle is from the SUT; which known-pass and known-fail controls exist; which intentional defects it carries; its resource and access boundaries; the capability-matrix row it runs under; and the CI test that proves it. Only SUTs meeting deterministic reset, bounded runtime, an exact or independent oracle, and source availability belong in the canonical set — a manifest is not a place to promote a historical experiment. Validated by bundle/sut_manifests.py; CI fails on drift.",
+  "type": "object",
+  "required": [
+    "schema", "id", "title", "maturity", "summary", "source", "lifecycle", "determinism",
+    "oracle", "controls", "access", "limits", "capability_row", "cleanup", "ci"
+  ],
+  "properties": {
+    "schema": {
+      "type": "string",
+      "const": "bundle.sut-manifest/v1",
+      "description": "Schema identifier. Consumers reject any value whose name or major differs."
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]*$",
+      "description": "Stable identifier, also the manifest filename stem."
+    },
+    "title": {"type": "string", "minLength": 1},
+    "maturity": {
+      "type": "string",
+      "enum": ["canonical", "reference", "experimental"],
+      "description": "'canonical' = part of the release gate set. 'reference' = maintained and usable but not gated. 'experimental' = neither."
+    },
+    "summary": {"type": "string", "minLength": 1},
+    "source": {
+      "type": "object",
+      "description": "How the SUT is located. `sut_paths_key` resolves through BUNDLE_SUT_ROOT rather than any machine-specific absolute path; `in_repository` SUTs need no external checkout at all.",
+      "required": ["kind"],
+      "properties": {
+        "kind": {"type": "string", "enum": ["in-repository", "sibling-checkout"]},
+        "path": {"type": "string", "description": "Repository-relative path for an in-repository SUT."},
+        "sut_paths_key": {"type": "string", "description": "Key in generator_trunk/sut_paths.py for a sibling checkout."},
+        "repository": {"type": "string"},
+        "revision": {"type": "string", "description": "Pinned revision, or the resolution rule when the checkout floats."},
+        "revision_resolution": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "lifecycle": {
+      "type": "object",
+      "description": "Commands, or an explicit statement that a phase is not applicable. An empty string is not permitted: 'not needed' must be said, not implied by silence.",
+      "required": ["install", "start", "health", "stop"],
+      "properties": {
+        "install": {"type": "string", "minLength": 1},
+        "start": {"type": "string", "minLength": 1},
+        "health": {"type": "string", "minLength": 1},
+        "stop": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "determinism": {
+      "type": "object",
+      "required": ["reset", "seed", "deterministic"],
+      "properties": {
+        "deterministic": {
+          "type": "boolean",
+          "description": "Whether identical inputs produce identical observable behaviour. A false value must be explained in `caveats`."
+        },
+        "reset": {"type": "string", "minLength": 1, "description": "How state is returned to a known baseline between candidates."},
+        "seed": {"type": "string", "minLength": 1, "description": "How the deterministic seed is supplied, or why none is needed."},
+        "caveats": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "oracle": {
+      "type": "object",
+      "required": ["kind", "description", "independence"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["exact-differential", "exact-solver", "reference-implementation", "invariant-property", "schema-and-rules", "threshold"],
+          "description": "'threshold' is the weakest and must state its limits in `independence`."
+        },
+        "description": {"type": "string", "minLength": 1},
+        "independence": {
+          "type": "string",
+          "minLength": 1,
+          "description": "How the oracle is independent of the thing it judges. An oracle that shares an implementation with the SUT must say so plainly rather than imply independence."
+        },
+        "implementation": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "controls": {
+      "type": "object",
+      "description": "A SUT with no known-fail control cannot demonstrate that its oracle detects anything.",
+      "required": ["known_pass", "known_fail"],
+      "properties": {
+        "known_pass": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "known_fail": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "intentional_defects": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["id", "description", "detected_by"],
+            "properties": {
+              "id": {"type": "string"},
+              "description": {"type": "string"},
+              "detected_by": {"type": "string"},
+              "interaction_only": {
+                "type": "boolean",
+                "description": "True when the defect only appears under a specific relation, order, or optional event — the class of fault flat construction misses."
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "access": {
+      "type": "object",
+      "description": "What the SUT and its candidates are permitted to touch. Declared so a policy violation is detectable rather than merely unlikely.",
+      "required": ["read", "write", "network"],
+      "properties": {
+        "read": {"type": "array", "items": {"type": "string"}},
+        "write": {"type": "array", "items": {"type": "string"}},
+        "network": {"type": "array", "items": {"type": "string"}, "description": "Empty array = no network access at all."}
+      },
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "required": ["wall_seconds_per_candidate", "memory_mb"],
+      "properties": {
+        "wall_seconds_per_candidate": {"type": "number", "exclusiveMinimum": 0},
+        "memory_mb": {"type": "integer", "exclusiveMinimum": 0},
+        "max_candidates_per_gate": {"type": "integer", "exclusiveMinimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "trusted_artifacts": {
+      "type": "array",
+      "description": "Binary or downloaded inputs whose integrity matters, with their checksums. Empty for a pure-source SUT — which is itself a fact worth recording.",
+      "items": {
+        "type": "object",
+        "required": ["path", "sha256"],
+        "properties": {
+          "path": {"type": "string"},
+          "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+          "note": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "capability_row": {
+      "type": "object",
+      "description": "The capability-matrix coordinates this SUT is gated at. Validated against bundle/capabilities.py, so a manifest cannot claim a combination the registry refuses.",
+      "required": ["language", "candidate_sink", "execution_policy"],
+      "properties": {
+        "language": {"type": "string"},
+        "candidate_sink": {"type": "string"},
+        "handoff": {"type": "string"},
+        "run_mode": {"type": "string"},
+        "execution_policy": {"type": "string"},
+        "executor_pool": {"type": "string"},
+        "repeat": {"type": "string"},
+        "analyzer": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "candidate_origin": {
+      "type": "string",
+      "enum": ["reviewed-checked-in", "locally-authored", "generated", "imported-untrusted", "network-facing"],
+      "description": "The origin class the operator declares when launching this SUT's scenarios (audit F1)."
+    },
+    "cleanup": {"type": "string", "minLength": 1},
+    "ci": {
+      "type": "object",
+      "required": ["tier", "tests"],
+      "properties": {
+        "tier": {
+          "type": "integer",
+          "enum": [1, 2, 3],
+          "description": "1 = fast pull-request gate, 2 = critical integration, 3 = scheduled/release evidence."
+        },
+        "tests": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "scenarios": {"type": "array", "items": {"type": "string"}},
+        "workflow_gate": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "description": "Stable marker that must occur in .github/workflows/ci.yml for a canonical SUT; a path that merely exists is not CI execution."
+        }
+      },
+      "additionalProperties": false
+    },
+    "caveats": {
+      "type": "array",
+      "items": {"type": "string"},
+      "description": "Known limitations. Required in spirit for anything less than an exact oracle."
+    }
+  },
+  "additionalProperties": false
+}

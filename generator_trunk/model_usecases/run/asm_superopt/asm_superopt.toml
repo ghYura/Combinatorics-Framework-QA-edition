@@ -1,0 +1,108 @@
+title = "ASM superoptimization (RUN) — fastest correct sum_to_n for THIS hardware, full Bundle"
+note  = "Middle slots INIT x LOOP = the combinatorial asm object; HEAD/TAIL assemble+verify+time on the host; RunMeFirstOnce observes the hardware/OS. FW_VAR=0 iff correct; Analyzer ns_total:min picks the hardware-optimal variant."
+args = ["kernel=sum_to_n", "metric=ns_total_min", "target=this_host"]
+runme = '''
+import os, platform, subprocess, sys
+def v(c):
+    try: return subprocess.run(c, capture_output=True, text=True).stdout.splitlines()[0]
+    except Exception: return 'n/a'
+cpu = 'unknown'
+try:
+    for ln in open('/proc/cpuinfo'):
+        if ln.startswith('model name'): cpu = ln.split(':',1)[1].strip(); break
+except Exception: pass
+cand = os.path.basename(sys.argv[1]) if len(sys.argv) > 1 else '-'
+print('[RunMeFirstOnce] optimizing FOR: %s | %s | cores %s | %s %s | %s | observing asm candidate %s'
+      % (cpu, platform.machine(), os.cpu_count(), platform.system(), platform.release(), v(['gcc','--version']), cand))
+'''
+
+[[goals]]
+key = "ns_total"
+dir = "min"
+[[goals]]
+key = "correct"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+import ctypes, subprocess, tempfile, os, time
+ASM = '.intel_syntax noprefix\n.globl sum_to_n\nsum_to_n:\n'
+''',
+]
+
+[[slots]]
+sheet = "INIT"
+key   = "init"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+ASM += '  xor rax, rax\n'
+''',
+'''
+ASM += '  mov rax, 0\n'
+''',
+'''
+ASM += '  sub rax, rax\n'
+''',
+]
+
+[[slots]]
+sheet = "LOOP"
+key   = "loop"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+ASM += '  mov rcx, rdi\n.Ld:\n  add rax, rcx\n  dec rcx\n  jnz .Ld\n'
+''',
+'''
+ASM += '  mov rcx, 1\n.Lu:\n  cmp rcx, rdi\n  jg .Eu\n  add rax, rcx\n  inc rcx\n  jmp .Lu\n.Eu:\n'
+''',
+'''
+ASM += '  mov rcx, rdi\n.Lh:\n  add rax, rcx\n  loop .Lh\n'
+''',
+'''
+ASM += '  mov rcx, rdi\n.L2:\n  cmp rcx, 2\n  jl .R2\n  add rax, rcx\n  lea rdx, [rcx-1]\n  add rax, rdx\n  sub rcx, 2\n  jmp .L2\n.R2:\n  test rcx, rcx\n  jz .E2\n  add rax, rcx\n.E2:\n'
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''
+ASM += '  ret\n'
+_d = tempfile.mkdtemp(); _s = os.path.join(_d, 'k.s'); _so = os.path.join(_d, 'k.so')
+open(_s, 'w').write(ASM)
+_r = subprocess.run(['gcc','-shared','-fPIC','-Wa,--noexecstack','-O0','-o',_so,_s], capture_output=True, text=True)
+def _ref(n): return n*(n+1)//2
+if _r.returncode != 0:
+    FW_VAR = 3; print('app=asm_superopt assembled=0 correct=0 ns_total=0 FW_VAR=3')
+else:
+    _lib = ctypes.CDLL(_so); _lib.sum_to_n.restype = ctypes.c_int64; _lib.sum_to_n.argtypes = [ctypes.c_int64]
+    if not all(_lib.sum_to_n(_n) == _ref(_n) for _n in (1,2,3,10,1000,100000)):
+        FW_VAR = 2; print('app=asm_superopt assembled=1 correct=0 ns_total=0 FW_VAR=2')
+    else:
+        _N = 20000000; _lib.sum_to_n(_N); _best = None
+        for _ in range(7):
+            _t = time.perf_counter_ns(); _lib.sum_to_n(_N); _e = time.perf_counter_ns() - _t
+            _best = _e if _best is None or _e < _best else _best
+        FW_VAR = 0
+        print('app=asm_superopt assembled=1 correct=1 ns_total=%d ns_per_elem=%.4f FW_VAR=0' % (_best, _best/_N))
+''',
+]
+
+[[custom_vars]]
+code = 2
+msg  = "asm computed the wrong sum"
+[[custom_vars]]
+code = 3
+msg  = "asm did not assemble"

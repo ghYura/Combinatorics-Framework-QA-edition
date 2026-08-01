@@ -1,0 +1,144 @@
+spec_version = "1"
+title = "LLM-Arch search — BONDS demo: a compatibility sieve (n_heads must divide d_model)"
+note = """The 'bonds' layer as a COMPATIBILITY COMPILER — the fail-loud alternative to the Conversation2
+design's silent auto-projection. The design space is D_MODEL(3) x N_HEADS(3) = 9 (d_model in {48,64,72},
+n_heads in {4,6,8}), token-mixer fixed to mhsa (which REQUIRES d_model %% n_heads == 0). One pair (64,6)
+is incompatible. The sieve constraint 'heads_divide_dmodel' DELETES that row BEFORE the model is ever
+built -> post-sieve 8. Defense-in-depth: if you run WITHOUT --sieve, the incompatible (64,6) reaches the
+oracle and arch_zoo FAILS LOUD -> code 8 (DOMAIN_FAIL 'PRUNE-ME'), never a silently-wrong model. So:
+with --sieve the invalid arch is pruned at the relation level; without it, it is caught at build. Either
+way it is NEVER silently auto-projected away. Run with --sieve to see 9 -> 8; the Analyzer ranks the 8
+valid (d_model,n_heads) shapes by params:min, latency_ms:min, proxy_gradnorm:max.
+Freedom->verb: each axis is exactly-one-of-a-set -> FW_Combi(1); the COMPATIBILITY RULE is a bond -> sieve."""
+args = ["mode=arch_compat"]
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+[[params]]
+sheet = "D_MODEL"
+value = 'geno["d_model"] = 48'
+dm = 48
+[[params]]
+sheet = "D_MODEL"
+value = 'geno["d_model"] = 64'
+dm = 64
+[[params]]
+sheet = "D_MODEL"
+value = 'geno["d_model"] = 72'
+dm = 72
+[[params]]
+sheet = "N_HEADS"
+value = 'geno["n_heads"] = 4'
+nh = 4
+[[params]]
+sheet = "N_HEADS"
+value = 'geno["n_heads"] = 6'
+nh = 6
+[[params]]
+sheet = "N_HEADS"
+value = 'geno["n_heads"] = 8'
+nh = 8
+
+[[constraints]]
+id = "heads_divide_dmodel"
+sheets = ["D_MODEL", "N_HEADS"]
+when = "D_MODEL.dm % N_HEADS.nh != 0"
+gate = {}
+desc = "head count must divide d_model — prune the incompatible (d_model,n_heads) before building"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "llm_arch_search"))
+import arch_zoo
+geno = dict(vocab=64, d_model=64, n_heads=4, d_ffn=128, num_experts=4, top_k=2,
+            max_seq_len=64, n_layers=2, prenorm=True, norm="rmsnorm",
+            token_mixer="mhsa", channel_mixer="swiglu")
+''']
+
+[[slots]]
+sheet = "D_MODEL"
+key   = "d_model"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["d_model"] = 48
+''', '''
+geno["d_model"] = 64
+''', '''
+geno["d_model"] = 72
+''']
+
+[[slots]]
+sheet = "N_HEADS"
+key   = "n_heads"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["n_heads"] = 4
+''', '''
+geno["n_heads"] = 6
+''', '''
+geno["n_heads"] = 8
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = arch_zoo.evaluate(geno, batch=2, seq=16, benchmark_threads=1)
+_div = 1 if (geno["d_model"] % geno["n_heads"]) == 0 else 0
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_compat d_model=%d n_heads=%d divisible=%d params=%d model_bytes=%d "
+      "latency_ms=%.3f eval_ms=%.1f tokens_per_s=%.1f loss=%.4f out_std=%.4f "
+      "proxy_gradnorm=%.4f grad_coverage=%.4f step_delta=%.8f loss_after_step=%.6f loss_improvement=%.8f nonzero_grad_coverage=%.4f causal_checks=%d benchmark_threads=%d causal_ok=%d "
+      "deterministic_ok=%d aux=%.4f code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % (geno["d_model"], geno["n_heads"], _div,
+         _m["params"], _m["model_bytes"], _m["latency_ms"], _m["eval_ms"], _m["tokens_per_s"],
+         _m["loss"], _m["out_std"], _m["proxy_gradnorm"], _m["grad_coverage"], _m["step_delta"], _m["loss_after_step"], _m["loss_improvement"],
+         _m["nonzero_grad_coverage"], _m["causal_checks"], _m["benchmark_threads"],
+         _m["causal_ok"], _m["deterministic_ok"], _m["aux"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a compatible architecture produced the wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a compatible architecture produced non-finite output or loss"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: a compatible architecture is untrainable"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: a compatible architecture leaks future-token information"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: a compatible architecture is non-deterministic in evaluation mode"
+[[custom_vars]]
+code = 6
+msg  = "DEFECT: optimizer step failed to reduce the same-batch objective"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible (d_model,n_heads) caught fail-loud — the sieve should remove this upstream"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: a compatible architecture crashed unexpectedly"

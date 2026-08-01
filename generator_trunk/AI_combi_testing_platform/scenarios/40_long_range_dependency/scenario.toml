@@ -1,0 +1,69 @@
+spec_version = "1"
+title = "Long-range definition and delayed-use study"
+note = "FW_PermutR repeats and orders neutral context and delayed-definition pressure before an exact cancellation task."
+args = ["suite=ai_combi_testing", "study=long-range"]
+
+[[goals]]
+key = "correct"
+dir = "max"
+[[goals]]
+key = "semantic_invariance_ok"
+dir = "max"
+[[goals]]
+key = "complexity"
+dir = "max"
+[[goals]]
+key = "input_tokens"
+dir = "min"
+[[goals]]
+key = "latency_us"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.AI_combi_testing_platform.engine import initialize_candidate, run_candidate
+from generator_trunk.AI_combi_testing_platform.renderers import emit_atom
+PLAN = initialize_candidate(family="cancellation", seed=17320, complexity=4)
+PLAN.semantic_mode = "loaded"
+PLAN.costume = "loaded"
+''']
+
+[[slots]]
+sheet = "DELAY_MOTIFS"
+key = "delay_motifs"
+verb = "FW_PermutR(2)"
+raw = true
+values = [
+'''emit_atom(PLAN.program_stream, "long_range:3")
+''',
+'''emit_atom(PLAN.program_stream, "distractor:contradictory")
+''',
+'''emit_atom(PLAN.program_stream, "instruction_order:constraints_first")
+'''
+]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = run_candidate(PLAN)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction or structural validation failure"
+[[custom_vars]]
+code = 4
+msg = "response format or invariant failure"
+[[custom_vars]]
+code = 5
+msg = "exact answer or declared constraint failure"

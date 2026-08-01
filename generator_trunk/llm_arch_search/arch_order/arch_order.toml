@@ -1,0 +1,95 @@
+spec_version = "1"
+title = "LLM-Arch search — layer ORDER: FW_Permut over a heterogeneous block alphabet (the T-M-T-M question)"
+note = """The hybrid-ordering problem from CombinatoricsInDesignOfLLMtransformers.txt made concrete: given 3
+DIFFERENT block types, does their ORDER in a depth-3 stack matter? FW_Permut enumerates all 3! = 6 orderings.
+Each candidate stacks the 3 blocks in its permuted order, builds the model, and tests forward+backward+proxy.
+Block alphabet: A = attention(mhsa)+SwiGLU, L = linear-attn+SwiGLU, M = attention(mhsa)+MoE.
+Verdict: codes 1-6/8/9 as in arch_grid; FW_VAR=0 = the ordering yields a valid trainable model. The Analyzer
+(params:min, latency_ms:min, proxy_gradnorm:max) then shows whether order changes the cost/trainability shape.
+Freedom->verb: 'an ordering, where order IS the variable' -> FW_Permut (n!)."""
+args = ["mode=arch_order"]
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "llm_arch_search"))
+import arch_zoo
+geno = dict(vocab=64, d_model=64, n_heads=4, d_ffn=128, num_experts=4, top_k=2,
+            max_seq_len=64, prenorm=True, norm="rmsnorm", layers=[])
+order = []
+''']
+
+[[slots]]
+sheet = "BLOCKS"
+key   = "blocks"
+verb  = "FW_Permut"
+raw   = true
+values = ['''
+geno["layers"].append({"token_mixer": "mhsa", "channel_mixer": "swiglu"}); order.append("A")
+''', '''
+geno["layers"].append({"token_mixer": "linattn", "channel_mixer": "swiglu"}); order.append("L")
+''', '''
+geno["layers"].append({"token_mixer": "mhsa", "channel_mixer": "moe"}); order.append("M")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = arch_zoo.evaluate(geno, batch=2, seq=16, benchmark_threads=1)
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_order order=%s nlayers=%d params=%d model_bytes=%d latency_ms=%.3f "
+      "eval_ms=%.1f tokens_per_s=%.1f loss=%.4f out_std=%.4f proxy_gradnorm=%.4f "
+      "grad_coverage=%.4f step_delta=%.8f loss_after_step=%.6f loss_improvement=%.8f nonzero_grad_coverage=%.4f causal_checks=%d benchmark_threads=%d causal_ok=%d deterministic_ok=%d aux=%.4f "
+      "code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % ("-".join(order), len(geno["layers"]), _m["params"], _m["model_bytes"],
+         _m["latency_ms"], _m["eval_ms"], _m["tokens_per_s"], _m["loss"], _m["out_std"],
+         _m["proxy_gradnorm"], _m["grad_coverage"], _m["step_delta"], _m["loss_after_step"], _m["loss_improvement"],
+         _m["nonzero_grad_coverage"], _m["causal_checks"], _m["benchmark_threads"], _m["causal_ok"],
+         _m["deterministic_ok"], _m["aux"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a block ordering produced the wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a block ordering produced non-finite logits"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: a block ordering is untrainable (non-finite/absent gradient)"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: a block ordering leaks future-token information"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: a block ordering is non-deterministic in evaluation mode"
+[[custom_vars]]
+code = 6
+msg  = "DEFECT: optimizer step failed to reduce the same-batch objective"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible block ordering caught fail-loud"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: a block ordering crashed unexpectedly"

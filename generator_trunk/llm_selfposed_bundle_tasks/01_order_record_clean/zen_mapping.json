@@ -1,0 +1,23 @@
+{
+  "schema": "bundle.selfposed-zen-mapping/v1",
+  "scenario_id": "selfposed_01_order_record_clean",
+  "user_problem": "Clean a messy customer list (normalize fields, apply a null-email policy, de-duplicate); does the order of those steps change correctness?",
+  "bundle_offer": "Bundle enumerates every order of the three cleaning steps, crosses with null-policy and dedupe-key, runs each against a fixed dataset, and a data-quality oracle reports which orders leak duplicates/nulls.",
+  "hypothesis": "Orders running dedupe before normalize leave case/spacing duplicates uncollapsed -> a duplicate id survives (DOMAIN_FAIL).",
+  "zen_mapping": [
+    {"freedom": "cleaning-step order", "shape": "an ordering (order is the variable)", "verb": "FW_Permut", "cardinality": "3! = 6"},
+    {"freedom": "null-email policy", "shape": "exactly one of a set", "verb": "FW_Combi(1)", "cardinality": "2"},
+    {"freedom": "dedupe key", "shape": "exactly one of a set", "verb": "FW_Combi(1)", "cardinality": "2"}
+  ],
+  "entities": {
+    "sheets": ["HEAD", "NULLPOLICY", "DEDUP", "ORDER", "TAIL"],
+    "values": ["normalize/nullfix/dedup steps", "drop/keep null policy", "by_id/by_email dedupe key"],
+    "constraints": [],
+    "goals": [{"key": "rows_out", "dir": "max"}],
+    "oracle": "FW_VAR=2 duplicate id survived; FW_VAR=3 null email leaked under non-keep policy; FW_VAR=0 clean"
+  },
+  "evidence": [
+    {"kind": "zen", "path": "ZEN_OF_COMBINATORICS.md", "rule": "an ordering -> FW_Permut (n!); exactly one -> FW_Combi(1) (n)"},
+    {"kind": "pattern", "path": "generator_trunk/usecases/etl_pipeline/etl_pipeline.toml"}
+  ]
+}

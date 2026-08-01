@@ -1,0 +1,49 @@
+title = "NAS #3 — neural ARCHITECTURE search (topology), real-trained, multi-objective"
+note  = "FW_Combi(1) breeds width/activation; FW_Subsets toggles a second layer (DEPTH) and an L2 regulariser. Each shape is really trained (sklearn MLP on make_moons); Analyzer returns the accuracy/params Pareto front (Model's best trade-off)."
+args  = ["dataset=make_moons_400_noise0.22", "split=0.3_holdout", "seed=0"]
+[[goals]]
+key = "accuracy"
+dir = "max"
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "fit_ms"
+dir = "min"
+
+[[slots]]
+sheet = "WIDTH1"
+key = "width1"
+verb = "FW_Combi(1)"
+values = ["4", "8", "16", "32"]
+
+[[slots]]
+sheet = "DEEP"
+key = "deep"
+verb = "FW_Subsets"
+values = ["second_layer"]
+
+[[slots]]
+sheet = "WIDTH2"
+key = "width2"
+verb = "FW_Combi(1)"
+values = ["4", "8", "16"]
+
+[[slots]]
+sheet = "ACT"
+key = "act"
+verb = "FW_Combi(1)"
+values = ["relu", "tanh", "logistic"]
+
+[[slots]]
+sheet = "L2"
+key = "l2"
+verb = "FW_Subsets"
+values = ["l2_reg"]
+
+[[custom_vars]]
+code = 2
+msg  = "accuracy below threshold"
+[[custom_vars]]
+code = 3
+msg  = "training did not converge in max_iter"

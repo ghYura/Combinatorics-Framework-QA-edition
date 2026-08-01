@@ -1,0 +1,93 @@
+# Self-posed scenario 14 — standalone choose-k axis with FW_Combi(2).
+# Category: security/control-pair selection. Demonstrates k-of-n WITHOUT repetition and order irrelevant:
+# choose exactly 2 controls from 4 = C(4,2) = 6, crossed with traffic profile 2 -> 12 candidates.
+title = "Security control pair selection — FW_Combi(2) controls x traffic profile"
+note  = "FW_Combi(2) models choosing exactly two distinct controls, order irrelevant; traffic profile is FW_Combi(1); TAIL oracle catches admin-without-WAF and public excessive-friction pairs."
+args  = ["mode=control_pair_combi2"]
+
+[[goals]]
+key = "coverage_score"
+dir = "max"
+[[goals]]
+key = "friction_score"
+dir = "min"
+[[goals]]
+key = "cost_units"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''CONTROLS = []
+COVERAGE_SCORE = 0
+FRICTION_SCORE = 0
+COST_UNITS = 0
+TRAFFIC_PROFILE = "public_api"
+RISK_WEIGHT = 1.0
+REQUIRES_WAF = False
+
+def _controls_name(controls):
+    return "+".join(sorted(controls))
+''']
+
+[[slots]]
+sheet = "CONTROL"
+key = "control"
+verb = "FW_Combi(2)"
+raw = true
+values = ['''CONTROLS.append("rate_limit")
+COVERAGE_SCORE += 35
+FRICTION_SCORE += 1
+COST_UNITS += 1
+''', '''CONTROLS.append("captcha")
+COVERAGE_SCORE += 30
+FRICTION_SCORE += 4
+COST_UNITS += 2
+''', '''CONTROLS.append("waf")
+COVERAGE_SCORE += 45
+FRICTION_SCORE += 2
+COST_UNITS += 4
+''', '''CONTROLS.append("review_queue")
+COVERAGE_SCORE += 25
+FRICTION_SCORE += 5
+COST_UNITS += 3
+''']
+
+[[slots]]
+sheet = "TRAFFIC"
+key = "traffic"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''TRAFFIC_PROFILE = "public_api"
+RISK_WEIGHT = 1.0
+REQUIRES_WAF = False
+''', '''TRAFFIC_PROFILE = "admin_api"
+RISK_WEIGHT = 1.2
+REQUIRES_WAF = True
+''']
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''_coverage = int(COVERAGE_SCORE * RISK_WEIGHT)
+if REQUIRES_WAF and "waf" not in CONTROLS:
+    FW_VAR = 2      # admin traffic must include WAF
+elif TRAFFIC_PROFILE == "public_api" and "captcha" in CONTROLS and "review_queue" in CONTROLS:
+    FW_VAR = 3      # too much user friction for public traffic
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+print("app=control_pair traffic=%s controls=%s coverage_score=%d friction_score=%d cost_units=%d FW_VAR=%d"
+      % (TRAFFIC_PROFILE, _controls_name(CONTROLS), _coverage, FRICTION_SCORE, COST_UNITS, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "admin traffic control pair is missing WAF"
+[[custom_vars]]
+code = 3
+msg = "public traffic control pair has excessive user friction"

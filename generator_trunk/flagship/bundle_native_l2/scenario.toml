@@ -1,0 +1,296 @@
+spec_version = "1"
+title = "Flagship L2 — Bundle-native construction of the record-pipeline factor space"
+note = "The flagship comparison, constructed by the ENGINE instead of by Python. FW_Group re-combines the module stage, FW_PermutR(2) orders the two-stage motif, FW_Optional toggles a sudden duplicate-batch action, and a FIVE-link nested-brace chain composes the parallel join, its reducer, an optional repeat wrapper and the finalizer. 128 mandatory rows x 2 optional = 256 candidates, the same 2^8 space the in-process baseline study enumerates, so the two chains reconcile candidate-for-candidate. FLAGSHIP_SUT_VERSION selects which of the three SUT versions the candidates execute against."
+args = ["suite=flagship", "tier=bundle-native-l2"]
+
+# TOP-LEVEL key: a brace row placed after a table would bind to that table and be
+# silently dropped from FW_Seq. Five links, each consuming the previous RESULT
+# TABLE through FW_(), so this is genuine 2nd..6th-order composition:
+#
+#   SEQ_RESULT    = seq_open  . group(module) . permutR2(motif) . seq_close
+#   BRANCH_RESULT = SEQ_RESULT . side                     -> the two parallel branches
+#   PAR_RESULT    = par_open(reducer) . BRANCH_RESULT . par_close
+#   NEST_RESULT   = nest_open(kind)   . PAR_RESULT    . nest_close
+#   ROOT_RESULT   = root_open . NEST_RESULT . finalizer . root_close
+#
+# Note that FW_() appears in BOTH operand positions: links 2 and 5 consume the
+# prior result as E1, links 3 and 4 as E2. That is what lets an operand be
+# PREPENDED to the accumulated structure rather than only appended, which is
+# exactly what an opening marker has to do.
+seq_extra = [
+  ["SEQ_RESULT",    "FW_Reuse", "FW_(SEQ_OPEN,,GROUPED_STAGE,,REPEATED_MOTIF,,SEQ_CLOSE,,M:N)"],
+  ["BRANCH_RESULT", "FW_Reuse", "FW_(NOP,,FW_(),,SIDE_BRANCH,,NOP,,M:N)"],
+  ["PAR_RESULT",    "FW_Reuse", "FW_(NOP,,PAR_OPEN,,FW_(),,PAR_CLOSE,,M:N)"],
+  ["NEST_RESULT",   "FW_Reuse", "FW_(NOP,,NEST_OPEN,,FW_(),,NEST_CLOSE,,M:N)"],
+  ["ROOT_RESULT",   "FW_Reuse", "FW_(ROOT_OPEN,,FW_(),,FINALIZER,,ROOT_CLOSE,,M:N)"],
+]
+
+# Declared objectives for the FORMAL Analyzer. Correctness is NOT an objective: a
+# non-zero FW_VAR removes a candidate from formal eligibility entirely, so the
+# Analyzer never trades correctness against a metric.
+[[goals]]
+key = "stages"
+dir = "max"
+[[goals]]
+key = "retained"
+dir = "max"
+[[goals]]
+key = "ops"
+dir = "min"
+
+[[slots]]
+sheet = "HEAD"
+key = "head"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+from generator_trunk.engine_demo.record_pipeline import (
+    emit_atom, emit_close, emit_node, emit_open, template
+)
+from generator_trunk.flagship.pipeline_flagship import evaluate_stream_under
+STREAM = []
+FAULT = 0
+FAULT_DONE = 0
+''']
+
+# FW_Optional — the "sudden action" axis. The slot is present or absent, so Core
+# routes it out of the mandatory Cartesian into fw_opt<i> and multiplies the final
+# space by 1 + C(1,1) = 2. Absent, this fragment does not exist in the candidate
+# at all; present, it arms the transient duplicate-batch event that SEQ_CLOSE
+# splices into the inner sequence.
+[[slots]]
+sheet = "FAULT_EVENT"
+key = "fault_event"
+verb = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw = true
+values = ['''FAULT = 1
+''']
+
+# FW_Group: re-combines this sheet's own prior result rows as atoms and rewrites
+# the generated code-string. The rewrite is the identity pattern — the operator
+# under demonstration is the grouping, not the regex surgery.
+[[slots]]
+sheet = "GROUPED_STAGE"
+key = "grouped_stage"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+group_replace = [["47", "47"]]
+raw = true
+values = [
+'''emit_node(STREAM, template("normalize"))
+''',
+'''emit_node(STREAM, template("spread"))
+''',
+]
+
+# FW_PermutR(2): an ordered length-2 sequence WITH repetition over two stages —
+# 2^2 = 4 orders. `sort` and `scale(k=-1)` do not commute, so stage order is a
+# real, exactly decidable degree of freedom, not a cosmetic axis.
+[[slots]]
+sheet = "REPEATED_MOTIF"
+key = "repeated_motif"
+verb = "FW_PermutR(2)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_atom(STREAM, "sort")
+''',
+'''emit_atom(STREAM, "scale", k=-1)
+''',
+]
+
+[[slots]]
+sheet = "SIDE_BRANCH"
+key = "side_branch"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_node(STREAM, template("guard"))
+''',
+'''emit_node(STREAM, template("compact"))
+''',
+]
+
+# The reducer axis is a brace OPERAND, not a helper: helpers are read first-value
+# only (Core safeFirst), so a two-level axis must enter through E1/E2.
+[[slots]]
+sheet = "PAR_OPEN"
+key = "par_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 2, "parallel", reducer="merge")
+''',
+'''emit_open(STREAM, 2, "parallel", reducer="concat")
+''',
+]
+
+# The nesting axis, same reasoning. A single-child `sequence` scope is
+# semantically transparent, so "flat" really is the unnested pipeline while the
+# emitted stream still carries a scope the parser must handle either way.
+[[slots]]
+sheet = "NEST_OPEN"
+key = "nest_open"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_open(STREAM, 4, "sequence")
+''',
+'''emit_open(STREAM, 4, "repeat", count=2)
+''',
+]
+
+[[slots]]
+sheet = "FINALIZER"
+key = "finalizer"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = [
+'''emit_node(STREAM, template("compact"))
+''',
+'''emit_atom(STREAM, "clamp", low=-30, high=30)
+''',
+]
+
+# Intermediate brace targets are assembly temporaries. Without FW_Exclude each
+# would ALSO multiply into fw_final: 8 x 16 x 32 x 64 x 128 redundant rows
+# instead of 128 meaningful ones.
+[[slots]]
+sheet = "SEQ_RESULT"
+key = "seq_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "BRANCH_RESULT"
+key = "branch_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "PAR_RESULT"
+key = "par_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "NEST_RESULT"
+key = "nest_result"
+verb = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw = true
+values = ["pass\n"]
+
+# The highest-order root is the ONLY brace target that enters the final product.
+[[slots]]
+sheet = "ROOT_RESULT"
+key = "root_result"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+# Helper sheets, declared AFTER the root so Core's ordinary re-emission of them
+# lands after the assembled structure, where the parser drops it as debris (an
+# unmatched close, or a scope that opens and closes with nothing inside).
+[[slots]]
+sheet = "SEQ_OPEN"
+key = "seq_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 1, "sequence")
+''']
+
+# The optional sudden action is spliced in here, at the END of the inner
+# sequence, because that is where it is structurally meaningful. FAULT_DONE makes
+# the debris copy of this fragment a no-op: the brace weaves this sheet once per
+# candidate, and Core re-emits it once more as an ordinary column.
+[[slots]]
+sheet = "SEQ_CLOSE"
+key = "seq_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+if FAULT and not FAULT_DONE:
+    FAULT_DONE = 1
+    emit_open(STREAM, 5, "repeat", count=2)
+    emit_atom(STREAM, "drop_below", threshold=-99)
+    emit_close(STREAM, 5)
+emit_close(STREAM, 1)
+''']
+
+[[slots]]
+sheet = "PAR_CLOSE"
+key = "par_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 2)
+''']
+
+[[slots]]
+sheet = "NEST_CLOSE"
+key = "nest_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 4)
+''']
+
+[[slots]]
+sheet = "ROOT_OPEN"
+key = "root_open"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_open(STREAM, 3, "sequence")
+''']
+
+[[slots]]
+sheet = "ROOT_CLOSE"
+key = "root_close"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''emit_close(STREAM, 3)
+''']
+
+# A brace's start/end fields must name a sheet. Links 2-4 need no wrapper, so
+# they point at this no-op rather than at a marker they would emit twice.
+[[slots]]
+sheet = "NOP"
+key = "nop"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "TAIL"
+key = "tail"
+verb = "FW_Combi(1)"
+raw = true
+values = ['''
+_RESULT = evaluate_stream_under(STREAM)
+FW_VAR = _RESULT.code
+FW_CUSTOM_VAR = FW_VAR
+print(_RESULT.metrics_line())
+''']
+
+[[custom_vars]]
+code = 2
+msg = "candidate construction/compile/validation failure"
+[[custom_vars]]
+code = 3
+msg = "pipeline execution failure"
+[[custom_vars]]
+code = 4
+msg = "independent oracle disagreement or structural-bound violation"
+[[custom_vars]]
+code = 5
+msg = "record service contract violated"

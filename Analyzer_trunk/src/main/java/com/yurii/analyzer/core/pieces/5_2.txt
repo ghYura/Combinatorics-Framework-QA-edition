@@ -1,0 +1,40 @@
+// ── 5_2.txt — variant 2: precompiled-regex sanity-check ──────────────
+// Same contract. Defers entirely to a battery of pre-compiled regex
+// patterns; no per-character state machine. Drastically simpler code
+// path; loses precision on nested heredocs and on quoted control-flow
+// keywords. Provided here mostly as a useful stress-test for the
+// combinatorics engine — when this variant is glued in, the analyzer
+// should observe higher p5_completed_count against ground truth.
+//
+// (For full grammar accuracy a real parser like ANTLR4 + a bash
+//  grammar would be the right move; that variant is omitted here
+//  because it requires runtime classpath additions.)
+
+    private static final Pattern OPEN_QUOTE_SINGLE = Pattern.compile("(?<!\\\\)'(?:[^'])*$", Pattern.DOTALL);
+    private static final Pattern OPEN_QUOTE_DOUBLE = Pattern.compile("(?<!\\\\)\"(?:[^\"\\\\]|\\\\.)*$", Pattern.DOTALL);
+    private static final Pattern TRAILING_CONT = Pattern.compile(".*[\\\\&|({]\\s*$|.*&&\\s*$|.*\\|\\|\\s*$", Pattern.DOTALL);
+
+    public static boolean isShellCommandComplete(String text) {
+        long __t0 = System.nanoTime();
+        Metrics.p5_invocations++;
+        Metrics.p5_total_input_chars += (text == null ? 0 : text.length());
+        try {
+            if (text == null) return false;
+            String s = text.replace("\r", "");
+            if (s.trim().isEmpty()) return false;
+            int balance = 0;
+            for (int i = 0; i < s.length(); i++) {
+                char ch = s.charAt(i);
+                if (ch == '(' || ch == '{' || ch == '[') balance++;
+                else if ((ch == ')' || ch == '}' || ch == ']') && balance > 0) balance--;
+            }
+            boolean ok = balance == 0
+                    && !OPEN_QUOTE_SINGLE.matcher(s).find()
+                    && !OPEN_QUOTE_DOUBLE.matcher(s).find()
+                    && !TRAILING_CONT.matcher(s.trim()).matches();
+            if (ok) Metrics.p5_completed_count++;
+            return ok;
+        } finally {
+            Metrics.p5_duration_ns += System.nanoTime() - __t0;
+        }
+    }

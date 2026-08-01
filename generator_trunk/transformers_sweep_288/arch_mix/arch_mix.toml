@@ -1,0 +1,186 @@
+spec_version = "1"
+title = "considerme_as_upgradeMIXtest — synthesize ternary Medusa transformers from chunk-variants (Combinatorics)"
+note = """GENERATIVE architecture synthesis using the Bundle. The transformer in ../../ was decomposed
+(across considerme_as_upgrade1..4) into independent logical UNITS; each candidate COMPOSES a brand-new
+tiny ternary Medusa transformer from one variant of every unit, builds it, runs forward+backward+1 SGD
+step + cheap proxies, and emits a verdict. Freedom->verb: every unit is 'exactly one of a set' ->
+FW_Combi(1): NORM(2) x TOKENMIX(3) x CHANMIX(3) x NORMPOS(2) x MEDUSA(2) = 72 mandatory architectures.
+Two add-ons are 'may or may not fire, in any combination' -> FW_Optional (present (+) absent): router
+JITTER and an extra Conv1D on Q -> x 2^2. Total fw_final = 72 x 4 = 288 candidates (EXACT).
+FW_RunMeFirstOnce is the one-time BOOTSTRAP (compile the FX-8320 C++ kernel once, seed, smoke) — it is
+NOT an axis and does not multiply the count. The TAIL is the FW_VAR oracle (the 'meaning' layer):
+code0 valid; 1 wrong shape; 2 non-finite; 3 untrainable grad; 4 causal leak; 5 non-deterministic;
+6 optimizer did not reduce the same-batch loss; 7 recurrence cache inexact; 8 incompatible genotype
+caught fail-loud (sieve should prune); 9 crash. The Analyzer then surfaces the Pareto front over
+params:min x latency_ms:min x proxy_gradnorm:max. Everything is TINY on purpose (weak FX-8320 PC)."""
+args = ["mode=arch_mix"]
+
+# FW_RunMeFirstOnce — one-time, run-level BOOTSTRAP (not an axis): compile kernel once + seed + smoke.
+runme = '''
+# class RunMeFirstOnce { public static String FW_ARGS = ""; }  // satisfies Core WorkbookParser.validateRunMeFirstOnce (no-op Python comment)
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "transformers_sweep_288"))
+import mix_arch
+_boot = mix_arch.bootstrap(threads=4, compile_kernel=True)
+print("FW_RunMeFirstOnce[BOOTSTRAP] kernel_backend=%s smoke_code=%d" % (_boot["kernel_backend"], _boot["smoke_code"]))
+'''
+
+[[goals]]
+key = "params"
+dir = "min"
+[[goals]]
+key = "latency_ms"
+dir = "min"
+[[goals]]
+key = "proxy_gradnorm"
+dir = "max"
+
+# ---------------- HEAD : metrics initialization (per-candidate scaffold) ----------------
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+sys.path.insert(0, str(_repo_root / "generator_trunk" / "transformers_sweep_288"))
+import mix_arch
+geno = mix_arch.default_geno()
+desc = dict(norm="rmsnorm", tok="lin_cumsum", chan="moe_shared_top1", pos="pre", med="vectorized", opt=[])
+''']
+
+# ---------------- FW_Combi(1) axes : one variant of each logical unit ----------------
+[[slots]]
+sheet = "NORM"
+key   = "norm"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["norm"] = "rmsnorm"; desc["norm"] = "rmsnorm"
+''', '''
+geno["norm"] = "layernorm"; desc["norm"] = "layernorm"
+''']
+
+[[slots]]
+sheet = "TOKENMIX"
+key   = "tokenmix"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["token_mixer"] = "lin_cumsum"; desc["tok"] = "lin_cumsum"
+''', '''
+geno["token_mixer"] = "lin_fused_qkvg"; desc["tok"] = "lin_fused_qkvg"
+''', '''
+geno["token_mixer"] = "lin_decay"; desc["tok"] = "lin_decay"
+''']
+
+[[slots]]
+sheet = "CHANMIX"
+key   = "chanmix"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["channel_mixer"] = "dense"; geno["load_balance"] = False; desc["chan"] = "dense"
+''', '''
+geno["channel_mixer"] = "moe_top2"; geno["load_balance"] = True; desc["chan"] = "moe_top2"
+''', '''
+geno["channel_mixer"] = "moe_shared_top1"; geno["load_balance"] = True; desc["chan"] = "moe_shared_top1"
+''']
+
+[[slots]]
+sheet = "NORMPOS"
+key   = "normpos"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["normpos"] = "pre"; desc["pos"] = "pre"
+''', '''
+geno["normpos"] = "post"; desc["pos"] = "post"
+''']
+
+[[slots]]
+sheet = "MEDUSA"
+key   = "medusa"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+geno["medusa"] = "separate"; desc["med"] = "separate"
+''', '''
+geno["medusa"] = "vectorized"; desc["med"] = "vectorized"
+''']
+
+# ---------------- FW_Optional : sudden actions (present (+) absent), x 2^2 ----------------
+[[slots]]
+sheet = "OPT_JITTER"
+key   = "opt_jitter"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["router_jitter"] = 0.02; desc["opt"].append("jitter")
+''']
+
+[[slots]]
+sheet = "OPT_CONVQ"
+key   = "opt_convq"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+geno["conv_q"] = True; desc["opt"].append("convq")
+''']
+
+# ---------------- TAIL : FW_VAR oracle + metrics gathering + stdout ----------------
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_m = mix_arch.evaluate(geno, batch=2, seq=10)
+FW_VAR = 0 if _m["code"] == 0 else 1
+FW_CUSTOM_VAR = _m["code"]
+print("app=arch_mix norm=%s tok=%s chan=%s pos=%s med=%s opt=%s "
+      "params=%d model_bytes=%d latency_ms=%.3f tokens_per_s=%.1f loss=%.4f loss_improvement=%.8f "
+      "proxy_gradnorm=%.4f grad_coverage=%.4f recur_delta=%.3e recur_ok=%d deterministic_ok=%d "
+      "causal_ok=%d causal_checks=%d int8_ok=%d aux=%.4f code=%d err=%s FW_VAR=%d FW_CUSTOM_VAR=%d"
+      % (desc["norm"], desc["tok"], desc["chan"], desc["pos"], desc["med"],
+         ("+".join(desc["opt"]) if desc["opt"] else "none"),
+         _m["params"], _m["model_bytes"], _m["latency_ms"], _m["tokens_per_s"], _m["loss"], _m["loss_improvement"],
+         _m["proxy_gradnorm"], _m["grad_coverage"], max(_m["recur_delta"], 0.0), _m["recur_ok"], _m["deterministic_ok"],
+         _m["causal_ok"], _m["causal_checks"], _m["int8_ok"], _m["aux"], _m["code"], _m["err"], FW_VAR, FW_CUSTOM_VAR))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: composed architecture produced the wrong logit shape"
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: composed architecture produced non-finite output/loss"
+[[custom_vars]]
+code = 3
+msg  = "DEFECT: composed architecture is untrainable (absent/non-finite gradient)"
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: composed architecture leaks future-token information (causal leak)"
+[[custom_vars]]
+code = 5
+msg  = "DEFECT: composed architecture is non-deterministic in eval mode"
+[[custom_vars]]
+code = 6
+msg  = "WEAK: optimizer did not reduce the same-batch objective in one step"
+[[custom_vars]]
+code = 7
+msg  = "DEFECT: O(1) recurrence cache disagrees with the full pass (inexact)"
+[[custom_vars]]
+code = 8
+msg  = "PRUNE-ME: incompatible genotype caught fail-loud (sieve should prune upstream)"
+[[custom_vars]]
+code = 9
+msg  = "DEFECT: composed architecture crashed unexpectedly"

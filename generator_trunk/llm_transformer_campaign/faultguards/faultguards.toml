@@ -1,0 +1,153 @@
+title = "LLM-Transformer fault guards — FW_Optional sudden actions vs the ValueError validation guards"
+note  = """Defensive / negative test of CPUTransformerSeq2Seq. Each FW_Optional slot is a SUDDEN ACTION
+that corrupts the config or input just before the probe — 5 independent faults that co-fire in every
+combination (2^5 = 32). The verdict CONVICTS a guard gap: when >=1 fault is injected the build/forward
+MUST raise a clean ValueError; code1 = a malformed config slipped through (missing guard), code4 = it
+crashed with a non-ValueError (unguarded torch crash). With zero faults the baseline must run clean
+(code2 = false alarm). FW_VAR=0 means the guard behaved correctly for that fault-subset.
+Freedom→verb: 'an action that may or may not fire, in any combination with the others' is exactly the
+FW_Optional shape — present XOR absent per slot, across all 2^5 subsets (the Zen 'sudden actions')."""
+goals = ["latency_ms", "nfaults"]
+args  = ["mode=faultguards"]
+
+[[slots]]
+sheet = "HEAD"
+key   = "head"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+import os, sys, time
+from pathlib import Path
+_repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
+_repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
+_sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
+if not _sut_root.is_absolute():
+    _sut_root = _repo_root / _sut_root
+sys.path.insert(0, str((_sut_root / "llm_transformer_testme").resolve()))
+import torch
+from llm_transformer_testme import CPUTransformerSeq2Seq
+cfg = dict(vocab=64, d_model=16, n_layers=1, n_heads=4, n_kv_heads=2,
+           d_ffn=24, max_seq_len=64, batch=2, src_len=5, tgt_len=4)
+faults = []
+METRICS = dict(app="faultguards", nfaults=0, raised=0, etype="none",
+               latency_ms=0.0, code=0, defect=0, guard="")
+''']
+
+[[slots]]
+sheet = "F_DIVIS"
+key   = "f_divis"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+faults.append("divis")
+''']
+
+[[slots]]
+sheet = "F_KVHEADS"
+key   = "f_kvheads"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+faults.append("kvheads")
+''']
+
+[[slots]]
+sheet = "F_ODDHEAD"
+key   = "f_oddhead"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+faults.append("oddhead")
+''']
+
+[[slots]]
+sheet = "F_SEQLEN"
+key   = "f_seqlen"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+faults.append("seqlen")
+''']
+
+[[slots]]
+sheet = "F_EMPTY"
+key   = "f_empty"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''
+faults.append("empty")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''
+_t0 = time.time()
+if "divis" in faults:
+    cfg["d_model"] = 18
+if "oddhead" in faults:
+    cfg["d_model"] = 12
+if "kvheads" in faults:
+    cfg["n_kv_heads"] = 3
+if "seqlen" in faults:
+    cfg["max_seq_len"] = 4
+    cfg["src_len"] = 8
+if "empty" in faults:
+    cfg["src_len"] = 0
+raised = False
+etype = "none"
+guard = ""
+try:
+    M = CPUTransformerSeq2Seq(cfg["vocab"], cfg["d_model"], cfg["n_layers"],
+        cfg["n_heads"], cfg["n_kv_heads"], cfg["d_ffn"], max_seq_len=cfg["max_seq_len"])
+    src = torch.randint(0, cfg["vocab"], (cfg["batch"], cfg["src_len"])) if cfg["src_len"] > 0 else torch.zeros((cfg["batch"], 0), dtype=torch.long)
+    tgt = torch.randint(0, cfg["vocab"], (cfg["batch"], cfg["tgt_len"]))
+    _ = M(src, tgt)
+except ValueError as e:
+    raised = True
+    etype = "ValueError"
+    guard = str(e)[:48]
+except Exception as e:
+    raised = True
+    etype = type(e).__name__
+    guard = str(e)[:48]
+if faults:
+    if etype == "ValueError":
+        code = 0
+    elif not raised:
+        code = 1
+    else:
+        code = 4
+else:
+    code = 0 if not raised else 2
+METRICS["nfaults"] = len(faults)
+METRICS["raised"] = 1 if raised else 0
+METRICS["etype"] = etype
+METRICS["guard"] = guard.replace(" ", "_")
+METRICS["latency_ms"] = round((time.time() - _t0) * 1000.0, 1)
+METRICS["code"] = code
+METRICS["defect"] = 1 if code else 0
+FW_VAR = code
+FW_CUSTOM_VAR = code
+METRICS["FW_VAR"] = code
+print(" ".join("%s=%s" % (k, v) for k, v in METRICS.items()))
+''']
+
+[[custom_vars]]
+code = 1
+msg  = "DEFECT: a malformed config/input slipped through with NO exception (missing guard)"
+
+[[custom_vars]]
+code = 2
+msg  = "DEFECT: a false alarm — the clean baseline (zero faults) raised an exception"
+
+[[custom_vars]]
+code = 4
+msg  = "DEFECT: a fault crashed with a non-ValueError (unguarded torch crash, not a clean guard)"

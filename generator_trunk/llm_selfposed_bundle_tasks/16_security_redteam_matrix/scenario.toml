@@ -1,0 +1,80 @@
+# Self-posed scenario 16 — security red-team matrix (the Bundle's sharpest narrative).
+# Security checks run in some ORDER (authn/authz/ratelimit) -> FW_Permut (3!=6); optional sudden ATTACK
+# steps (token replay, privilege escalation) may or may not fire -> 2x FW_Optional. The oracle detects a
+# BREACH that depends on the check order AND which attacks fired. 6 x optional 4 = 24 candidates.
+# Verdict codes kept small (0,2,3,4) to fit the combo-column capacity. Self-contained -> trusted-local.
+title = "Security red-team matrix — FW_Permut check order + FW_Optional sudden attacks, breach oracle"
+note  = "Interaction/order security testing: authn/authz/ratelimit order x optional token-replay/privilege-escalation. A breach depends on order + attack combination. The Bundle's strongest story: interactions, order, and sudden state-changes."
+args  = ["mode=security_redteam"]
+
+[[goals]]
+key = "breach"
+dir = "max"
+
+[[slots]]   # HEAD: deterministic security state machine + step impl
+sheet  = "HEAD"
+key    = "head"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''ORDER = []
+REPLAY = 0
+ESCALATE = 0
+''']
+
+[[slots]]   # ORDER-sensitive security check sequence -> permutations (canonical: authn < authz < ratelimit)
+sheet  = "CHECKS"
+key    = "checks"
+verb   = "FW_Permut"
+raw    = true
+values = ["ORDER.append(\"authn\")\n", "ORDER.append(\"authz\")\n", "ORDER.append(\"ratelimit\")\n"]
+
+[[slots]]   # sudden attack: stolen-token replay (may or may not fire)
+sheet  = "OPT_REPLAY"
+key    = "opt_replay"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["REPLAY = 1\n"]
+
+[[slots]]   # sudden attack: privilege escalation (may or may not fire)
+sheet  = "OPT_ESCALATE"
+key    = "opt_escalate"
+verb   = "FW_Combi(1)"
+flags  = ["FW_Optional"]
+raw    = true
+values = ["ESCALATE = 1\n"]
+
+[[slots]]   # TAIL: evaluate the breach oracle (order + attack dependent), emit metrics
+sheet  = "TAIL"
+key    = "tail"
+verb   = "FW_Combi(1)"
+raw    = true
+values = ['''_pos = {step: i for i, step in enumerate(ORDER)}
+# canonical defense requires authn before authz; authn must be first to bind the session;
+# the privilege check (authz) must precede rate limiting or escalation slips through.
+_authz_before_authn = int(_pos["authz"] < _pos["authn"])
+_replay_breach = int(REPLAY and _pos["authn"] != 0)              # replay accepted: authn not bound first
+_escalate_breach = int(ESCALATE and _pos["ratelimit"] < _pos["authz"])  # escalation: ratelimit before authz
+if _authz_before_authn:
+    FW_VAR = 2
+elif _replay_breach:
+    FW_VAR = 3
+elif _escalate_breach:
+    FW_VAR = 4
+else:
+    FW_VAR = 0
+FW_CUSTOM_VAR = FW_VAR
+_breach = int(FW_VAR != 0)
+print("app=security_redteam order=%s replay=%d escalate=%d breach=%d FW_VAR=%d"
+      % (">".join(ORDER), REPLAY, ESCALATE, _breach, FW_VAR))
+''']
+
+[[custom_vars]]
+code = 2
+msg = "broken access control: authorize before authenticate (authz before authn)"
+[[custom_vars]]
+code = 3
+msg = "token replay accepted: authn was not bound first"
+[[custom_vars]]
+code = 4
+msg = "privilege escalation: rate limiting ran before the authorization check"
