@@ -50,5 +50,34 @@ if [[ -z "$JAR" || ! -f "$JAR" ]]; then
     exit 2
 fi
 
+# SortMockupRun is the one driver that needs an input corpus: a file whose every
+# line is an executable command emitting agnostic metrics. It used to be an
+# unversioned local file, so a clean checkout always reported
+# `SKIP (input file not present)` and the driver never ran. The corpus is
+# runtime output and must not be committed, so generate it into a temporary
+# directory from its checked-in generator and delete it again on exit. An
+# operator who exports ANALYZER_SORT_CORPUS keeps full control and we touch
+# nothing.
+CORPUS_TMPDIR=""
+cleanup() {
+    [[ -n "$CORPUS_TMPDIR" && -d "$CORPUS_TMPDIR" ]] && rm -rf "$CORPUS_TMPDIR"
+    return 0
+}
+trap cleanup EXIT
+
+if [[ -z "${ANALYZER_SORT_CORPUS:-}" ]]; then
+    if CORPUS_TMPDIR="$(mktemp -d)"; then
+        if python3 samples/make_sort_corpus.py "$CORPUS_TMPDIR/sort_corpus.txt" >/dev/null 2>&1; then
+            export ANALYZER_SORT_CORPUS="$CORPUS_TMPDIR/sort_corpus.txt"
+        else
+            echo "NOTE: could not generate the sort corpus (python3 unavailable?)," >&2
+            echo "      SortMockupRun will self-skip." >&2
+            rm -rf "$CORPUS_TMPDIR"; CORPUS_TMPDIR=""
+        fi
+    else
+        CORPUS_TMPDIR=""
+    fi
+fi
+
 echo "── Running AllVerifiersRunner from $JAR ──"
-exec java -cp "$JAR" com.yurii.analyzer.AllVerifiersRunner "$@"
+java -cp "$JAR" com.yurii.analyzer.AllVerifiersRunner "$@"

@@ -22,13 +22,20 @@ import java.util.Locale;
 import java.util.Map;
 
 /**
- * Driver that runs the analyser end-to-end on SortAlgoPyMockup3.py — a file
- * where every line is a self-contained `python3 -c "…"` command that prints
- * agnostic timing / memory metrics on stdout (Wall, CPU, Blocks, Peak Mem,
- * GC, Correct).  This is the most realistic "executable lines emitting
+ * Driver that runs the analyser end-to-end on a corpus of sort workloads — a
+ * file where every line is a self-contained `python3 -c "…"` command that
+ * prints agnostic timing / memory metrics on stdout (Wall, CPU, Blocks, Peak
+ * Mem, GC, Correct).  This is the most realistic "executable lines emitting
  * agnostic metrics" workload in the project, and a strong test of the full
  * pipeline (executeCommands=true → stdout capture → KV parsing → numeric
  * extraction → MetricStreamAnalyzer → BestLinesReporter).
+ *
+ * The corpus is runtime output and is therefore not committed:
+ * {@code Analyzer_trunk/samples/make_sort_corpus.py} generates it
+ * deterministically, and {@code run-tests.sh} writes it to a temporary
+ * directory, exports {@code ANALYZER_SORT_CORPUS}, and deletes it afterwards.
+ * Nothing here asserts on measured values — only that the metric keys are
+ * discovered and the reports are non-empty.
  *
  * Run:  java -cp target/classes:&lt;deps&gt;
  *             com.yurii.analyzer.core.optimization.SortMockupRun [path]

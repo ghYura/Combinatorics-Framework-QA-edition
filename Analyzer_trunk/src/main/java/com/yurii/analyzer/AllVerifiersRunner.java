@@ -96,8 +96,12 @@ public final class AllVerifiersRunner {
                 "Tier-2.1: CoverageProbe shelf (JaCoCo XML / coverage.py JSON / gcov text) + decorator + cache composition"),
         Verifier.req("com.yurii.analyzer.core.parallel.SchedulerVerify",
                 "Tier-3.3: pluggable Scheduler shelf — WorkStealing / LeastLoaded / CapabilityAware (numerical equivalence + balance + routing)"),
+        // run-tests.sh generates the corpus (samples/make_sort_corpus.py) into a
+        // temporary directory and exports ANALYZER_SORT_CORPUS, so this runs on a
+        // clean checkout. It stays `opt` for a direct `java AllVerifiersRunner`
+        // invocation that has no corpus.
         Verifier.opt("com.yurii.analyzer.core.optimization.SortMockupRun",
-                "Real executable-line corpus (SortAlgoPyMockup3.py)",
+                "Real executable-line corpus (generated sort workloads)",
                 new String[]{System.getenv().getOrDefault("ANALYZER_SORT_CORPUS", "")}),
         // Pass a smaller N for `mvn test` so the suite stays fast; the 1M-scale
         // stress is run ad-hoc via `java ... StreamingVerify 1000000`.
