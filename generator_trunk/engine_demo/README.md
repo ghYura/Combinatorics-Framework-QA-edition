@@ -8,12 +8,43 @@ If you want to understand what the Bundle is, start here — not with an applica
 
 ```bash
 python generator_trunk/engine_demo/run_direct_engine_smoke.py plan     # no database needed
-python generator_trunk/engine_demo/run_direct_engine_smoke.py run      # bounded full chain
+python generator_trunk/engine_demo/run_direct_engine_smoke.py run --db-endpoint deploy
 ```
 
-`run` needs `BUNDLE_MAIN_DB_PASSWORD` and `BUNDLE_RESULTS_DB_PASSWORD`, and must be launched from
-the repository root (candidate code imports `generator_trunk.engine_demo...`). Runtime output goes
-to `/tmp/fw_work`; nothing here writes into the source tree.
+`plan` is side-effect-free and needs no database, container, network or credential.
+
+`run` executes the full chain and therefore **needs two PostgreSQL endpoints and their
+credentials**. It must also be launched from the repository root (candidate code imports
+`generator_trunk.engine_demo...`). Runtime output goes to `/tmp/fw_work`; nothing here writes into
+the source tree.
+
+### Choosing the database endpoint
+
+`--db-endpoint` is required for `run` and has **no default**. Ports and credentials always come
+from one source together:
+
+| Selection | Ports from | Credentials from |
+|---|---|---|
+| `--db-endpoint deploy` | `generator_trunk/deploy/.env` | the same file |
+| `--db-endpoint manual --main-port P --results-port Q` | those flags | `BUNDLE_MAIN_DB_PASSWORD` / `BUNDLE_RESULTS_DB_PASSWORD` |
+
+For the local stack, start it first and select it:
+
+```bash
+python generator_trunk/bundle_run.py deploy up
+python generator_trunk/engine_demo/run_direct_engine_smoke.py run --db-endpoint deploy
+```
+
+The launcher prints a preflight banner naming the resolved hosts, ports, database and the *source*
+of each setting — never a credential value — and it rebuilds the child environment from that one
+source, so ambient `BUNDLE_*_DB_*` exports from another cluster cannot redirect the run or supply
+half its settings.
+
+There is deliberately no implicit fallback to `5433`/`5432`. Those defaults used to make the
+demonstration look like it exercised the deployed stack while it was actually writing into whatever
+PostgreSQL happened to listen on the host's default ports. A mixed selection (deploy credentials
+with hand-picked ports, or manual ports addressing the deploy stack with foreign credentials) is
+refused with an explanation rather than attempted.
 
 ## Two demonstrations, one engine
 
@@ -106,10 +137,25 @@ exists to show.
 launcher therefore pairs `--allow-extreme` with explicit budget ceilings — a bounded materialization
 gate instead of a fabricated exact count.
 
+### Why `plan` prints `⛔ BUDGET BLOCKING` and still exits 0
+
+Expected, and not a failure. Because the cardinality is statically `UNKNOWN`, the plan cannot prove
+in advance that the run fits under the configured hard ceilings, so every affected dimension is
+reported `[BLOCKING]`. Budget evaluation on the plan path is **analysis-only** — the plan itself
+labels it `budget evaluation (analysis-only; the run path is the enforcement point)`. Enforcement
+belongs to `run`, which is where the ceilings are actually applied and where this launcher passes
+its own much smaller gate (`--budget-final-candidates 64`, `--budget-mandatory-rows 64`) plus the
+recorded `--override-budget` reason.
+
+So `plan` exits 0 by design: it completed the analysis it was asked for. Do not gate a pipeline on
+`plan`'s exit status alone — read the `cardinality`/`budget` fields of the emitted `plan.json`, or
+run the `run` path, which fails closed.
+
 ## Tests
 
 ```bash
-python -m pytest -q generator_trunk/engine_demo/test_engine_demo.py
+python -m pytest -q generator_trunk/engine_demo/test_engine_demo.py \
+                   generator_trunk/engine_demo/test_engine_demo_endpoint.py
 ```
 
 Self-contained: no database, no network. They characterize the structural semantics, prove the
