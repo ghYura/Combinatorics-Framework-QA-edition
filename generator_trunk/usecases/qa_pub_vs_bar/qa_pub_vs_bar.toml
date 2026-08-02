@@ -20,7 +20,8 @@ sheet  = "HEAD"
 key    = "head"
 verb   = "FW_Combi(1)"
 raw    = true
-values = ['''import sys, zlib
+values = ['''import os, sys, zlib
+from pathlib import Path
 _repo_hint = Path(os.environ.get("BUNDLE_REPO_ROOT", Path.cwd())).expanduser().resolve()
 _repo_root = next((p for p in (_repo_hint, *_repo_hint.parents) if (p / "generator_trunk" / "sut_paths.py").is_file()), _repo_hint)
 _sut_root = Path(os.environ.get("BUNDLE_SUT_ROOT", _repo_root / "suts")).expanduser()
