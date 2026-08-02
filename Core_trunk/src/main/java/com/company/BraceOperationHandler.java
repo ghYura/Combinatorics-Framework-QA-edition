@@ -462,7 +462,9 @@ private final class PgBraceOperand implements BraceOperand {
     }
     public void dispose() {
         if (isTemp && tableName != null) {
-            db.executeSilently("DROP TABLE IF EXISTS " + tableName + ";");
+            // IF EXISTS covers the only benign case (already gone); any other
+            // failure to drop a temp operand table is a real problem.
+            db.executeOrThrow("DROP TABLE IF EXISTS " + tableName + ";");
             log.debug("[Issue2] Dropped temp operand table {}", tableName);
         }
     }
@@ -552,7 +554,9 @@ private BraceOperand preparePgBraceOperand(Short outerKey, String slot,
             return new PgBraceOperand(fw2, false);
         }
         String tmpName = TMP_BRACE_PREFIX + outerKey + "_" + slot;
-        db.executeSilently("DROP TABLE IF EXISTS " + tmpName + ";");
+        // Strict: IF EXISTS makes absence benign; a drop that fails otherwise
+        // would leave a stale operand table for the CREATE below to trip on.
+        db.executeOrThrow("DROP TABLE IF EXISTS " + tmpName + ";");
         try {
             db.execute("CREATE UNLOGGED TABLE " + tmpName + " AS "
                     + "SELECT combi_id, combos AS combos_1 FROM " + fw1 + ";");
@@ -570,7 +574,9 @@ private BraceOperand preparePgBraceOperand(Short outerKey, String slot,
     String comboCol    = comboColForSourceTable(sourceTable);
 
     String tmpName = TMP_BRACE_PREFIX + outerKey + "_" + slot;
-    db.executeSilently("DROP TABLE IF EXISTS " + tmpName + ";");
+    // Strict for the same reason as the non-nested path above: absence is the
+    // one benign case and IF EXISTS already covers it.
+    db.executeOrThrow("DROP TABLE IF EXISTS " + tmpName + ";");
 
     String ddl;
     if (grouped) {

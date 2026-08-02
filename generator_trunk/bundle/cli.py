@@ -2782,6 +2782,35 @@ def _main_constraints(argv):
         report_and_exit(exc, debug=a.debug)
 
 
+#: The verbs dispatched from ``sys.argv[1]`` below, before the legacy pipeline
+#: parser ever runs. argparse therefore cannot discover them on its own, so the
+#: list is restated here and shown as the pipeline parser's epilog — otherwise
+#: `bundle_run.py --help` documents only the pipeline form and silently implies
+#: that `doctor`, `plan`, `deploy`, ... do not exist.
+_VERBS = (
+    ("plan", "compile a spec to a plan + exact cardinality (no DB, no run)"),
+    ("doctor", "diagnose host config; --deploy checks the deploy stack"),
+    ("resume", "continue an interrupted or failed run in place"),
+    ("cancel", "stop a running run"),
+    ("cleanup", "remove a run's scratch state (and its credential files)"),
+    ("constraints", "inspect a spec's constraint sidecar"),
+    ("iterate", "closed-loop iteration over a spec"),
+    ("bench", "stage benchmark harness"),
+    ("deploy", "local PostgreSQL profile: validate | up | down | status"),
+    ("inventory", "component/version/sha256 matrix + toolchain"),
+    ("hygiene", "repository hygiene report for the production trunks"),
+    ("architecture", "layer model + dependency-direction gate"),
+    ("coverage", "engine capability vs. what each application exercises"),
+    ("capabilities", "the capability registry and how a row is classified"),
+    ("sut-manifests", "the SUT registry: canonical/reference/experimental + exclusions"),
+    ("release", "release reproducibility report"),
+    ("provenance", "provenance report for a run"),
+)
+
+_VERB_HELP = "subcommands (run `bundle_run <verb> --help` for each):\n" + "\n".join(
+    f"  {name:<15} {blurb}" for name, blurb in _VERBS)
+
+
 def main():
     # `bundle plan <spec-dir>` (STEP 10) is a side-effect-free subcommand — kept
     # as a thin argv dispatch ahead of the legacy single-purpose parser so the
@@ -2848,7 +2877,9 @@ def main():
     # `bundle provenance`: publication evidence. Non-operative.
     if len(sys.argv) > 1 and sys.argv[1] == "provenance":
         return _main_provenance(sys.argv[2:])
-    ap = argparse.ArgumentParser(prog="bundle_run", description="One command: Core->Reader->Executor->Analyzer.")
+    ap = argparse.ArgumentParser(
+        prog="bundle_run", description="One command: Core->Reader->Executor->Analyzer.",
+        epilog=_VERB_HELP, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("spec_dir")
     ap.add_argument("--db", default="")
     ap.add_argument("--lang", default="py", choices=["py", "python", "java"],

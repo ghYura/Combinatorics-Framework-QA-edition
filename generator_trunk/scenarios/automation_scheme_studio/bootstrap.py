@@ -24,6 +24,23 @@ def _sut_project() -> Path:
     return project
 
 
+def ensure_sut_on_path() -> bool:
+    """Put the SUT's ``src/`` on ``sys.path`` if the checkout can be located.
+
+    Returns True when ``automation_constructor`` is importable afterwards. Unlike
+    :func:`_sut_project` this never raises, so a caller that must decide between
+    "run the gate" and "skip the gate" — a pytest module at collection time — can
+    ask without handling an exception first.
+    """
+    try:
+        source = _sut_project() / "src"
+    except RuntimeError:
+        return False
+    if str(source) not in sys.path:
+        sys.path.insert(0, str(source))
+    return True
+
+
 def _api() -> dict[str, Any]:
     source = _sut_project() / "src"
     if str(source) not in sys.path:

@@ -122,18 +122,21 @@ PrintPretty.configure(config.flags.printPretty);
 
 
 if (config.flags.preEraseDb) {
+// Each statement is strict; the enclosing catch below is the ONE deliberate
+// tolerance here (pre-erase is best-effort by design), and it now sees the
+// real failure with SQLSTATE + statement instead of a swallowed WARN line.
 try (DbClient pgAdmin = DbClient.createForDb(config.db, "postgres")) {
-pgAdmin.executeSilently(
+pgAdmin.executeOrThrow(
 "SELECT pg_terminate_backend(pg_stat_activity.pid)\n"
 + "FROM pg_stat_activity\n"
 + "WHERE pg_stat_activity.datname = '" + config.db.name + "'\n"
 + "  AND pid <> pg_backend_pid();");
-pgAdmin.executeSilently(
+pgAdmin.executeOrThrow(
 "DROP DATABASE IF EXISTS \"" + config.db.name + "\";");
 // [Fast-fix 18052026] Without this CREATE, the very next DbClient.create()
 // below blows up Hibernate's C3P0 with 235× "FATAL: database <name> does not
 // exist" (SQLState 08001) and the engine spends 3+ min in retry storms.
-pgAdmin.executeSilently(
+pgAdmin.executeOrThrow(
 "CREATE DATABASE \"" + config.db.name + "\";");
 log.info("Pre-erase completed for database '{}' (dropped + recreated)", config.db.name);
 } catch (Exception e) {
@@ -159,7 +162,9 @@ if (!"1".equals(exists)) {
 log.warn("Database '{}' does not exist — auto-creating "
 + "(preEraseDB=false; data-preserving one-shot CREATE)",
 config.db.name);
-pgAdmin.executeSilently(
+// Tolerate 42P04 only: the pg_database check above is racy, and a
+// concurrently-created database IS the desired end state here.
+pgAdmin.executeTolerateAlreadyExists(
 "CREATE DATABASE \"" + config.db.name + "\";");
 } else {
 log.debug("Database '{}' already exists — skipping auto-create",
@@ -182,13 +187,14 @@ config.paths.combinatoricsReaderPath,
 }
 
 
+// Fail closed: SchemaProvisioner refuses topologies where the PostgreSQL
+// server cannot see the requested tablespace directories. Catching that
+// here would silently land every table on pg_default — the exact defect
+// this call used to have — so the exception is left to abort the run.
 try (DbClient pgAdmin = DbClient.createForDb(config.db, "postgres")) {
 SchemaProvisioner provisioner =
 new SchemaProvisioner(pgAdmin, config.tablespace);
 provisioner.provisionTablespaces(pgAdmin);
-log.info("Tablespaces provisioned");
-} catch (Exception e) {
-log.error("Tablespace provisioning failed", e);
 }
 
 
@@ -546,7 +552,9 @@ return;
 }
 
 
-db.executeSilently(
+// Strict: CREATE OR REPLACE cannot hit a benign duplicate; any failure
+// here means the cleanup function is absent and the SELECT below lies.
+db.executeOrThrow(
 "CREATE OR REPLACE FUNCTION footgun(IN _schema TEXT, IN _base TEXT)\n"
 + "RETURNS void LANGUAGE plpgsql AS $$\n"
 + "DECLARE row record;\n"
@@ -561,11 +569,15 @@ db.executeSilently(
 + "||'.'||quote_ident(row.table_name);\n"
 + "  END LOOP;\n"
 + "END; $$;");
-db.executeSilently("SELECT footgun('public','fw_');");
+// Strict: a failed sweep used to leave stale fw_ tables for later runs
+// to trip over, behind one WARN line nobody read.
+db.executeOrThrow("SELECT footgun('public','fw_');");
 
-db.executeSilently(
-"DELETE FROM public.fw_final_base;\n"
-+ "DROP TABLE public.fw_final_base;");
+// IF EXISTS instead of the old DELETE-then-DROP pair: fw_final_base only
+// exists when the assembler's base path ran, and its absence is expected —
+// the old swallow was papering over exactly that 42P01. (The DELETE before
+// a DROP did nothing and could not survive the absence case either.)
+db.executeOrThrow("DROP TABLE IF EXISTS public.fw_final_base;");
 
 
 if (config.tablespace.isCopyDb) {
@@ -574,7 +586,9 @@ copyCrossDatabase(config, db);
 
 
 if (config.flags.setLoggedTablesAtEnd) {
-db.executeSilently(
+// Strict: the user explicitly asked for LOGGED tables; delivering
+// UNLOGGED ones behind a WARN would betray that request on crash.
+db.executeOrThrow(
 "DO $$DECLARE r record;\n"
 + "DECLARE v_schema varchar := 'public';\n"
 + "BEGIN\n"
@@ -715,7 +729,9 @@ if (sheet == null) return;
 DataFormatter fmt = new DataFormatter();
 sheet.forEach(row -> row.forEach(cell -> {
 String v = fmt.formatCellValue(cell);
-db.executeSilently(
+// Strict: the table always exists (schema-init.sql); a lost INSERT here
+// silently dropped user-authored setup code from the run.
+db.executeOrThrow(
 "INSERT INTO public.runmefirstonce (code_once) VALUES ($$" + v + "$$)");
 }));
 log.info("RunMeFirstOnce written to DB");
@@ -727,7 +743,9 @@ if (sheet == null) return;
 DataFormatter fmt = new DataFormatter();
 sheet.forEach(row -> row.forEach(cell -> {
 String v = fmt.formatCellValue(cell);
-db.executeSilently(
+// Strict: same as RunMeFirstOnce — a lost row here was a silently
+// incomplete arguments table.
+db.executeOrThrow(
 "INSERT INTO public.arguments (args) VALUES ($$" + v + "$$)");
 }));
 log.info("Arguments written to DB");
@@ -757,7 +775,10 @@ String connTemplate = "port=" + config.db.port
 + " user=" + config.db.user
 + " password=" + config.db.passwordAsString()
 + " dbname=";
-db.executeSilently(
+// Strict: the batch is self-idempotent (IF EXISTS / IF NOT EXISTS), so a
+// failure means dblink is genuinely unavailable or the copy itself broke —
+// the one thing the isCopyDb user asked for cannot be allowed to no-op.
+db.executeOrThrow(
 "DROP EXTENSION IF EXISTS dblink CASCADE;\n"
 + "CREATE EXTENSION IF NOT EXISTS dblink;\n"
 + "DO $$\n"

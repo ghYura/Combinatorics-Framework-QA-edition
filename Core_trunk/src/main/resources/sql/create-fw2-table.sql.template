@@ -11,5 +11,5 @@ CREATE UNLOGGED TABLE public.fw2_${KEY}
 WITH (OIDS = FALSE)
 TABLESPACE "${TABLESPACE}";
 
-ALTER TABLE public.fw2_${KEY} OWNER TO postgres;
+ALTER TABLE public.fw2_${KEY} OWNER TO CURRENT_USER;
 ALTER TABLE public.fw2_${KEY} SET (autovacuum_enabled = false);

@@ -71,7 +71,11 @@ String tblspc = db.queryString(
 "SELECT tablespace FROM pg_tables "
 + "WHERE tablename = '" + tableToDistinct + "' AND schemaname = 'public';");
 
-db.executeSilently(
+// Strict, and deliberately NOT tolerate-already-exists: a leftover
+// _distincted table from a crashed earlier attempt still holds that
+// attempt's rows, and quietly INSERTing into it would poison the swap
+// below. 42P07 here is corruption waiting to happen, not benignity.
+db.executeOrThrow(
 "CREATE TABLE \"" + tableTempDistincted + "\"\n"
 + (tblspc != null ? "TABLESPACE \"" + tblspc + "\"\n" : "")
 + " AS TABLE \"" + tableToDistinct + "\" WITH NO DATA;");
@@ -137,10 +141,17 @@ String insertDistinctSql = db.queryString(
 + "  " + excludedCols + ";");
 
 if (insertDistinctSql != null && !insertDistinctSql.isBlank()) {
-db.executeSilently(insertDistinctSql);
+// Strict: if this INSERT fails, the temp table is EMPTY — and the swap
+// below would then happily replace the original with nothing. The old
+// swallow made that scenario a silent total data loss.
+db.executeOrThrow(insertDistinctSql);
 }
 
-db.executeSilently(
+// Strict: the destructive swap. Any failure inside this batch (it runs as
+// one implicit transaction on a single Statement) must abort the run, not
+// leave a half-swapped table behind a one-line WARN. Multi-statement —
+// Statement-based executeOrThrow is required, prepared execute() refuses it.
+db.executeOrThrow(
 "DELETE FROM \"" + tableToDistinct + "\";\n"
 + "DROP TABLE \"" + tableToDistinct + "\";\n"
 + "CREATE TABLE \"" + tableDistincted + "\"\n"

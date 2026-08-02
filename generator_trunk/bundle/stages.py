@@ -335,6 +335,13 @@ def _props(template: Path, edits: dict, out: Path):
         if k not in seen:
             lines.append(f"{k}={v}")
     out.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # fw.properties carries the database password in cleartext, so it gets the
+    # same owner-only treatment as the deploy `.env`. Best-effort: a filesystem
+    # without POSIX modes must not fail the run.
+    try:
+        out.chmod(0o600)
+    except OSError:
+        pass
 
 
 # ----------------------------------- stages --------------------------------- #

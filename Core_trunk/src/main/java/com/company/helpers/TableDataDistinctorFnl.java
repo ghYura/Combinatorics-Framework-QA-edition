@@ -209,7 +209,10 @@ String inPlaceSql =
 + "SELECT MIN(combi_id) FROM \"" + tableToDistinct + "\" GROUP BY " + dataColsCsv
 + ");";
 
-db.executeSilently(inPlaceSql);
+// Strict: this DELETE IS the distinctify. Swallowing its failure (the old
+// executeSilently) meant duplicates survived and every downstream count
+// was silently wrong — the run must die here instead.
+db.executeOrThrow(inPlaceSql);
 
 // [Refactor 18052026 / step #9] Plain VACUUM, not FULL.
 // VACUUM FULL takes AccessExclusiveLock and writes a NEW heap file —
@@ -222,7 +225,10 @@ db.executeSilently(inPlaceSql);
 // The table file doesn't shrink (PG won't return pages to the OS), but
 // teardown_db drops the entire database at end-of-run anyway, so the
 // observable disk usage is identical at the only point that matters.
-db.executeSilently("VACUUM \"" + tableToDistinct + "\";");
+// Strict: VACUUM here is load-bearing disk-space reclamation (see the
+// chunk_241 DISK_FULL history above); a silent failure resurfaces later
+// as an inexplicable disk-full several steps downstream.
+db.executeOrThrow("VACUUM \"" + tableToDistinct + "\";");
 }
 
 /** [Iter3.2 Option C] In-JVM distinctify.
@@ -305,7 +311,8 @@ tableToDistinct, total, duplicateCombiIds.size());
 
 if (duplicateCombiIds.isEmpty()) {
 log.info("[Iter3.2/Option C] Table '{}': zero duplicates — VACUUM only", tableToDistinct);
-db.executeSilently("VACUUM \"" + tableToDistinct + "\";");
+// Strict — same disk-space rationale as the PG-side path's VACUUM.
+db.executeOrThrow("VACUUM \"" + tableToDistinct + "\";");
 return;
 }
 
@@ -343,7 +350,8 @@ try { conn.setAutoCommit(prevAutoCommit); } catch (Exception ignored) {}
 throw new SQLException("[Iter3.2/Option C] COPY-IN to temp failed: " + ioe.getMessage(), ioe);
 }
 
-db.executeSilently("VACUUM \"" + tableToDistinct + "\";");
+// Strict — same disk-space rationale as the PG-side path's VACUUM.
+db.executeOrThrow("VACUUM \"" + tableToDistinct + "\";");
 }
 
 // [Iter3-postfix] FNV-1a 64-bit constants.  Replaces the prior `h * 31 + x`

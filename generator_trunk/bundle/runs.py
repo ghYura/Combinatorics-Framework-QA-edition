@@ -23,6 +23,18 @@ _RUN_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.-]{0,127}$")
 _LAYOUT_DIRS = ("stages", "logs", "workbooks", "candidates", "handoff", "metrics", "reports")
 
 
+def _restrict(path: Path, mode: int = 0o700) -> None:
+    """Best-effort owner-only permissions on a credential-bearing path.
+
+    Never fatal: a filesystem that cannot represent POSIX modes must not stop a
+    run, it just does not get the extra protection.
+    """
+    try:
+        path.chmod(mode)
+    except OSError:
+        pass
+
+
 class RunCollisionError(BundleError):
     """An existing run directory must not be silently reused or overwritten."""
 
@@ -112,6 +124,11 @@ def create_run(*, runs_root: "Path | str", db_name: str, spec_path: "Path | str"
     if layout.root.exists():
         raise RunCollisionError(f"run '{rid}' already exists at {layout.root}")
     layout.root.mkdir(parents=True)
+    # A run directory holds database credentials: the Core/Reader `fw.properties`,
+    # the Reader's `resultsDbURL.properties`, and whatever the Executor logs. The
+    # default 0755 under a world-traversable scratch root made those readable by
+    # every local user, which contradicted the 0600 the deploy `.env` already gets.
+    _restrict(layout.root)
     for name in _LAYOUT_DIRS:
         (layout.root / name).mkdir()
     manifest = RunManifest(

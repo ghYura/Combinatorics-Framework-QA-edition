@@ -9,7 +9,7 @@
 |---|---|---|
 | Python | 3.12.3 | control plane, Generator, Executor, sieve |
 | `pg8000` (pure-Python driver) | present | control plane / Executor DB access |
-| Java | 21 on the dated evidence host; **25 required for the current full reactor** | Core/Analyzer/shared libraries target 21; Reader/Executor target 25 |
+| Java | **25** — JDK 25 is required to build the reactor at all | Core/Analyzer/shared libraries target release 21, Reader/Executor target release 25, so a JDK 21 host builds the first half and fails the second. The dated evidence host ran 21 against a tree whose Reader/Executor still targeted 21. |
 | Maven | 3.9.15 | offline component builds |
 | PostgreSQL | 18.4 host (16.9 deploy containers) | main + results DBs |
 | Docker | 29.5.3 (rootless) | secure sandbox + deploy stack |

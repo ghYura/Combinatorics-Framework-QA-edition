@@ -14,7 +14,7 @@ from .config import BundleConfig
 from .database import psql
 from .process import run
 from .runs import file_sha256
-from .stages import CORE_JAR, READER_JAR, SRC
+from .stages import CORE_JAR, CORE_PROPS, READER_JAR, SRC
 
 DOCTOR_SCHEMA = "bundle.doctor/v1"
 
@@ -190,6 +190,57 @@ def _check_db_privileges(cfg: BundleConfig) -> DoctorCheck:
     return _check(name, Severity.OK, f"role '{cfg.main_db_user}' has CREATEDB")
 
 
+def _parse_properties_kv_csv(raw: str) -> "dict[str, str]":
+    """Mirror of Core's AppConfig.parseKvMap: comma-separated `key ; value`
+    pairs (whitespace-tolerant); entries without a `;` are ignored."""
+    out: "dict[str, str]" = {}
+    for pair in raw.split(","):
+        if ";" in pair:
+            k, _, v = pair.partition(";")
+            if k.strip():
+                out[k.strip()] = v.strip()
+    return out
+
+
+def _check_tablespace_provisioning(cfg: BundleConfig) -> DoctorCheck:
+    """States whether Core-side named-tablespace provisioning is active for the
+    properties this Bundle ships to a run. Nothing requested (the canonical
+    default) → provisioning is inert and tables land on the database's default
+    tablespace. Requests present → Core provisions them only when the
+    PostgreSQL server can see the configured directories, and FAILS the run
+    closed otherwise — there is no silent fall-through to pg_default."""
+    name = "tablespace_provisioning"
+    props = Path(cfg.core_props) if getattr(cfg, "core_props", None) else CORE_PROPS
+    if not props.exists():
+        return _check(name, Severity.WARNING, f"core properties not found: {props}",
+                      "cannot determine whether tablespace provisioning is requested")
+    # .properties line-continuations: join backslash-terminated lines first.
+    text = re.sub(r"\\\s*\n", " ", props.read_text(encoding="utf-8"))
+    tablespaces: "dict[str, str]" = {}
+    databases: "dict[str, str]" = {}
+    for line in text.splitlines():
+        line = line.strip()
+        if line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        key = key.strip()
+        if key == "db.tablespace2pathMappingCSVList":
+            tablespaces = _parse_properties_kv_csv(value)
+        elif key == "db.database2tablespaceMappingCSVList":
+            databases = _parse_properties_kv_csv(value)
+    if not tablespaces and not databases:
+        return _check(name, Severity.OK,
+                      "inactive — no named tablespaces requested; tables use the database default tablespace",
+                      f"source={props}")
+    details = [f"source={props}"]
+    details += [f"tablespace {k} -> {v}" for k, v in tablespaces.items()]
+    details += [f"database {k} -> tablespace {v}" for k, v in databases.items()]
+    return _check(name, Severity.WARNING,
+                  f"ACTIVE — {len(tablespaces)} tablespace(s), {len(databases)} database(s) requested; "
+                  "Core fails the run closed unless the PostgreSQL server can see the configured directories",
+                  *details)
+
+
 def _check_scratch(cfg: BundleConfig) -> DoctorCheck:
     name = "scratch"
     root = Path(cfg.scratch_root) if cfg.scratch_root else Path("/tmp/fw_work")
@@ -338,6 +389,7 @@ _PROBES = (
     _check_main_db,
     _check_results_db,
     _check_db_privileges,
+    _check_tablespace_provisioning,
     _check_scratch,
     _check_container_runtime,
     _check_sandbox,
