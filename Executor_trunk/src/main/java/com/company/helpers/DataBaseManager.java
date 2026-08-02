@@ -50,7 +50,7 @@ if (DB_URL == null) {
 cpds.setJdbcUrl("jdbc:postgresql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME);
 cpds.setUser(DB_USER);
 cpds.setPassword(DB_PASS);
-} else {cpds.setJdbcUrl(DB_URL);}
+} else {applyUrlWithoutCredentials(cpds, DB_URL);}
 
 cpds.setMinPoolSize(MINIMUM_POOL_SIZE);
 cpds.setAcquireIncrement(INCREMENT_SIZE);
@@ -72,7 +72,7 @@ if (DB_URL == null) {
 cpds.setJdbcUrl("jdbc:postgresql://" + DB_HOST + ":" + DB_PORT + "/" + DB_NAME);
 cpds.setUser(DB_USER);
 cpds.setPassword(DB_PASS);
-} else {cpds.setJdbcUrl(DB_URL);}
+} else {applyUrlWithoutCredentials(cpds, DB_URL);}
 
 cpds.setMinPoolSize(MINIMUM_POOL_SIZE);
 cpds.setAcquireIncrement(INCREMENT_SIZE);
@@ -80,6 +80,57 @@ cpds.setMaxPoolSize(MAXIMUM_POOL_SIZE);
 cpds.setMaxStatements(MAX_STATEMENTS);
 cpds.setAutoCommitOnClose(false);
 
+}
+
+/**
+ * Point the pool at {@code url}, moving any {@code user}/{@code password} out of
+ * the query string and into the pool's own properties.
+ *
+ * c3p0 dumps every property of {@link ComboPooledDataSource} at INFO on the first
+ * checkout, including {@code jdbcUrl} verbatim. When the handshake URL carried
+ * {@code ?user=...&password=...}, that dump wrote the database password to the
+ * console and into the run's executor.log. c3p0 masks {@code password} itself, so
+ * the credentials survive here but stop appearing in logs.
+ */
+private static void applyUrlWithoutCredentials(ComboPooledDataSource pool, String url) {
+int q = url.indexOf('?');
+if (q < 0) {
+pool.setJdbcUrl(url);
+return;
+}
+String user = null;
+String password = null;
+StringBuilder keep = new StringBuilder();
+for (String param : url.substring(q + 1).split("&")) {
+if (param.isEmpty()) continue;
+int eq = param.indexOf('=');
+String key = eq < 0 ? param : param.substring(0, eq);
+String value = eq < 0 ? "" : param.substring(eq + 1);
+if ("user".equals(key)) {
+user = decodeParam(value);
+} else if ("password".equals(key)) {
+password = decodeParam(value);
+} else {
+if (keep.length() > 0) keep.append('&');
+keep.append(param);
+}
+}
+pool.setJdbcUrl(keep.length() > 0 ? url.substring(0, q) + "?" + keep : url.substring(0, q));
+if (user != null) pool.setUser(user);
+if (password != null) pool.setPassword(password);
+}
+
+/**
+ * Decode one query-string value the way pgjdbc would, so moving a parameter out of
+ * the URL does not change its value. A value that is not valid percent-encoding is
+ * passed through unchanged rather than throwing.
+ */
+private static String decodeParam(String value) {
+try {
+return java.net.URLDecoder.decode(value, java.nio.charset.StandardCharsets.UTF_8);
+} catch (IllegalArgumentException e) {
+return value;
+}
 }
 
 public static DataBaseManager getInstance() {

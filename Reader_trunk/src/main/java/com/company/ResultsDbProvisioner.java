@@ -13,6 +13,24 @@ import java.util.*;
 public final class ResultsDbProvisioner {
     private ResultsDbProvisioner() {}
 
+/**
+ * Reduce {@code file} to owner-only access, best effort.
+ *
+ * Used for the handshake file that carries the results-database password. Never
+ * fatal: a filesystem that cannot represent POSIX permissions (or a JDK that
+ * declines) must not fail the run, it simply does not gain the extra protection.
+ */
+private static void restrictToOwner(File file) {
+    try {
+        java.nio.file.Files.setPosixFilePermissions(
+                file.toPath(),
+                java.nio.file.attribute.PosixFilePermissions.fromString("rw-------"));
+    } catch (IOException | UnsupportedOperationException | SecurityException e) {
+        // Fall back to the platform-independent API; still better than 0644.
+        boolean ignored = file.setReadable(false, false) && file.setReadable(true, true);
+    }
+}
+
 public static void create(String DB_HOST_results, int DB_PORT_results, String DB_USER_results, String DB_PASSWORD_results) {
 System.out.print("createResultDBandTable() at work.\n DB RESULTS creation: ...\n");
 QueryToDB q2d0 = new QueryToDB();
@@ -278,6 +296,11 @@ System.out.println("Done.");
 try {
 File file = new File(cfg().pathFwResultsDbCfgFileResults());
 file.createNewFile();
+// This handshake file carries the results-database password in cleartext — it is
+// the credential the Executor picks up. Restrict it to the owner before writing,
+// so it is protected even if the handshake directory is copied out of the run
+// directory (which the run itself now creates as 0700).
+restrictToOwner(file);
 FileWriter myWriter = new FileWriter(cfg().pathFwResultsDbCfgFileResults());
 myWriter.write("jdbc:postgresql://" + cfg().dbHostResults() + ":" + cfg().dbPortResults() + "/" + cfg().dbName() + "?user=" + cfg().dbUserResults() + "&password=" + cfg().dbPasswordResults() + "");
 myWriter.close();
