@@ -7,10 +7,24 @@ import pytest
 # Tier classification (Prompt 03 Part C): this suite needs the sibling SUT
 # checkout on the import path. A missing optional SUT must be a classified skip,
 # not a collection error that reads as a broken suite.
+#
+# Resolve the checkout the same way `bootstrap.py` does *before* deciding to skip.
+# Previously this module went straight to `importorskip`, which runs at collection
+# time — before any bootstrap could extend `sys.path`. The result was that
+# automation-scheme-studio, a *canonical* release gate, self-skipped on every
+# clean install unless the operator had set PYTHONPATH by hand, and a skip reads
+# as green. The gate is only genuinely unavailable when the checkout is absent.
+from generator_trunk.scenarios.automation_scheme_studio.bootstrap import (  # noqa: E402
+    ensure_sut_on_path,
+)
+
+ensure_sut_on_path()
+
 pytest.importorskip(
     "automation_constructor",
-    reason="MISSING_AUTHORIZED_BACKEND: needs the sibling SUT checkout on PYTHONPATH "
-           "(BUNDLE_SUT_ROOT/automation-scheme-studio/src)")
+    reason="MISSING_AUTHORIZED_BACKEND: the automation-scheme-studio checkout was not found. "
+           "Set BUNDLE_SUT_ROOT to the directory containing it, or AUTOMATION_STUDIO_ROOT to "
+           "the project itself.")
 
 from automation_constructor.experiments.bundle_search import (
     ALL_STAGE_TOKENS,
