@@ -89,10 +89,14 @@ docker buildx imagetools inspect adminer:4.8.1        --format '{{.Manifest.Dige
 docker buildx imagetools inspect eclipse-temurin:25-jdk --format '{{.Manifest.Digest}}'
 ```
 
-The private sibling SUT checkout also needs a repository secret named
-`SUT_REPO_TOKEN` unless the workflow's `GITHUB_TOKEN` has read access. CI checks
-out the exact manifest revision; missing access is a failed canonical gate, not
-an accepted skip.
+The private sibling SUT checkout needs its own repository secret. The workflow's automatic
+`GITHUB_TOKEN` can **never** serve here: GitHub scopes it to this repository alone, so it cannot read
+a second private repository under any setting — and it reports the refusal as a misleading 404
+"not found". Two credentials are accepted, `SUT_DEPLOY_KEY` (a read-only deploy key — preferred) and
+`SUT_REPO_TOKEN` (a fine-grained PAT); see
+[40_SIBLING_SUT_CREDENTIAL.md](40_SIBLING_SUT_CREDENTIAL.md) for setup, rotation and how to read the
+pre-flight's failure messages. CI checks out the exact manifest revision; missing access is a failed
+canonical gate, not an accepted skip.
 
 ### Pin refresh evidence — 2026-08-02 (Node 24 action generation)
 

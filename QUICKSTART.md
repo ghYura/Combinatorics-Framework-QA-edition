@@ -4,6 +4,11 @@ This is the authoritative clean-checkout path for the Framework Bundle and its c
 portfolio. Both repositories are private technical-preview material. Your GitHub account must have
 access to both before cloning.
 
+> **In a hurry?** [`QUICK_INSTALL_ALL.sh`](QUICK_INSTALL_ALL.sh) performs every step on this page —
+> clone, build, per-SUT environments, self-audits and smoke tests — in one command, asserting the
+> counts stated below rather than just exit status. `--with-db` adds §6's database run.
+> Read on to do it by hand, or to understand what each step proves.
+
 ## 1. Prerequisites
 
 - Linux or another POSIX-like environment

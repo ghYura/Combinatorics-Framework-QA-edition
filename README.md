@@ -74,9 +74,23 @@ record pipeline; an exact differential oracle judges it. See
 
 ## Quick start
 
-For an authenticated clean clone of both private repositories, the 24-case no-database smoke,
-deterministic companion-SUT verification, and the optional local database run, follow
-[QUICKSTART.md](QUICKSTART.md).
+One command, from nothing to a verified installation — clones both private repositories side by
+side, builds the Python and Java components, provisions the per-SUT environments, runs the
+self-audits, and checks the documented smoke-test counts rather than merely exit status:
+
+```bash
+./QUICK_INSTALL_ALL.sh              # install + smoke tests (no database)
+./QUICK_INSTALL_ALL.sh --with-db    # also start PostgreSQL and run the full pipeline
+./QUICK_INSTALL_ALL.sh --help
+```
+
+It is idempotent, installs nothing system-wide, and picks free database ports so it cannot collide
+with another checkout's stack.
+
+To do the same steps by hand, or to understand what each one proves, follow
+[QUICKSTART.md](QUICKSTART.md): an authenticated clean clone of both private repositories, the
+24-case no-database smoke, deterministic companion-SUT verification, and the optional local
+database run.
 
 ## Repository map
 
