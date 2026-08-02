@@ -260,12 +260,19 @@ jobs:
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # No `|| github.token` fallback: that token is repo-scoped, can never
-          # read the sibling, and turned a missing secret into a bogus 404.
           # actions/checkout prefers ssh-key when it is non-empty and falls back to
           # token otherwise, so both supported credentials are offered here.
+          #
+          # `token` is declared required by the action and is validated before it
+          # decides which transport to use, so it must be non-empty even on the
+          # ssh-key path where it is never used — an empty value fails the step
+          # with "Input required and not supplied: token". github.token is the
+          # harmless filler. It was previously removed because it silently turned
+          # a missing credential into a bogus 404; that can no longer happen,
+          # because the pre-flight above has already proved a real credential
+          # works and fails the job outright when neither secret is configured.
           ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
-          token: ${{ secrets.SUT_REPO_TOKEN }}
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -490,12 +497,19 @@ jobs:
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # No `|| github.token` fallback: that token is repo-scoped, can never
-          # read the sibling, and turned a missing secret into a bogus 404.
           # actions/checkout prefers ssh-key when it is non-empty and falls back to
           # token otherwise, so both supported credentials are offered here.
+          #
+          # `token` is declared required by the action and is validated before it
+          # decides which transport to use, so it must be non-empty even on the
+          # ssh-key path where it is never used — an empty value fails the step
+          # with "Input required and not supplied: token". github.token is the
+          # harmless filler. It was previously removed because it silently turned
+          # a missing credential into a bogus 404; that can no longer happen,
+          # because the pre-flight above has already proved a real credential
+          # works and fails the job outright when neither secret is configured.
           ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
-          token: ${{ secrets.SUT_REPO_TOKEN }}
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
 
