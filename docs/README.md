@@ -62,6 +62,7 @@ invariants.
 | Reviewing the AI combinatorial testing proof of concept and count fix | [AI_COMBI_SESSION_FINDINGS_2026-07-29.md](AI_COMBI_SESSION_FINDINGS_2026-07-29.md) |
 | Doing it end-to-end the first time | [15_FLAGSHIP_TUTORIAL.md](15_FLAGSHIP_TUTORIAL.md) |
 | **A command that used to work has stopped working** (Phases 01-05 breaking changes, migration and how to revert) | [38_MIGRATION_PHASE_01_05.md](38_MIGRATION_PHASE_01_05.md) |
+| **CI cannot check out the private sibling SUT** (the deploy key / PAT it needs, rotation, and what each pre-flight failure means) | [40_SIBLING_SUT_CREDENTIAL.md](40_SIBLING_SUT_CREDENTIAL.md) |
 | Migrating from the pre-refactor Bundle | [16_LEGACY_TO_V2_MIGRATION.md](16_LEGACY_TO_V2_MIGRATION.md) |
 | Extending the code | [17_DEVELOPER_GUIDE.md](17_DEVELOPER_GUIDE.md), [19_API_AND_SCHEMA_REFERENCE.md](19_API_AND_SCHEMA_REFERENCE.md) |
 | Implementing or independently verifying repeat-policy / Loom plans | [22_PLAN1_PLAN2_QA_READINESS.md](22_PLAN1_PLAN2_QA_READINESS.md) |
