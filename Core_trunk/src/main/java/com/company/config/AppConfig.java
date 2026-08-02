@@ -57,6 +57,74 @@ public final IntermediateStorageMode intermediateStorage;
 public enum PrecomputeMode { AUTO, DB, JAVA }
 public final PrecomputeMode precomputeMode;
 
+// ---------------------------------------------------------------------------
+// FW_ReplaceRE authoring policies.
+//
+// `FW_ReplaceRE` inside `FW_Group` rewrites the *code-string* of a produced
+// combination — `w.toString()` over a list of `Short` value-codes, e.g.
+// "[47, 48]" — and the result is parsed straight back with Integer.parseInt.
+// That is deliberate and powerful: it is how one expresses tuple surgery
+// (remap a symbol, splice one in from another sheet, delete one) and it
+// composes to depths a typed operator would not reach.
+//
+// Per the author, Yurii Baranov: the functionality that existed at this place
+// beforehand allowed one to combine even deeper. Operating on the interned
+// keys — rather than on the text they stand for — is the reason. These
+// policies therefore add observation only; they remove no reach, and the
+// pre-existing behaviour remains the default in every one of them.
+//
+// The cost is that both ways of getting it wrong are silent. A pattern written
+// against rendered *value text* (say "@S@") can never match a code-string, so
+// it is a no-op and the run still reports green; a replacement that is not
+// integer-parseable makes the row unparseable and it is dropped. Both have
+// cost real debugging time (see ZEN_OF_COMBINATORICS.md, 2026-06-12).
+//
+// These policies make each of those observable — and, at the operator's
+// choice, fatal — WITHOUT restricting what the feature can express. Every
+// default is exactly the behaviour that shipped before they existed, so an
+// existing fw.properties, or none at all, changes nothing.
+// ---------------------------------------------------------------------------
+
+/** What to do with a `FW_ReplaceRE` pattern that cannot match a code-string.
+ *  Property: {@code core.replace.patternPolicy=permissive|warn|strict}.
+ *  Default {@link ReplacePatternPolicy#PERMISSIVE} — the historical behaviour.
+ *  A code-string contains only digits, comma, space and bracket characters, so
+ *  a pattern needing anything else is provably a no-op before the run starts. */
+public enum ReplacePatternPolicy { PERMISSIVE, WARN, STRICT }
+public final ReplacePatternPolicy replacePatternPolicy;
+
+/** What to do when a declared replacement matches nothing over the whole sheet.
+ *  Property: {@code core.replace.unmatchedPolicy=ignore|warn|fail}.
+ *  Default {@link ReplaceUnmatchedPolicy#IGNORE} — the historical behaviour.
+ *  Catches patterns that are syntactically capable of matching but never do. */
+public enum ReplaceUnmatchedPolicy { IGNORE, WARN, FAIL }
+public final ReplaceUnmatchedPolicy replaceUnmatchedPolicy;
+
+/** What to do when a rewritten combination no longer parses as short codes.
+ *  Property: {@code core.replace.unparseablePolicy=warn|drop|fail}.
+ *  Default {@link ReplaceUnparseablePolicy#WARN} — the historical behaviour
+ *  (log one WARN and drop the row). {@code drop} silences the warning for
+ *  rewrites that discard rows on purpose; {@code fail} refuses the run. */
+public enum ReplaceUnparseablePolicy { WARN, DROP, FAIL }
+public final ReplaceUnparseablePolicy replaceUnparseablePolicy;
+
+/** What to do with a replacement whose pattern and replacement are identical.
+ *  Property: {@code core.replace.identityPolicy=allow|warn}.
+ *  Default {@link ReplaceIdentityPolicy#ALLOW} — the historical behaviour.
+ *  An identity rewrite such as ("47","47") does nothing at run time yet still
+ *  changes the emitted directive, and therefore the FW_Seq graph fingerprint. */
+public enum ReplaceIdentityPolicy { ALLOW, WARN }
+public final ReplaceIdentityPolicy replaceIdentityPolicy;
+
+/** Per-sheet rewrite accounting.
+ *  Property: {@code core.replace.diagnostics=off|summary}.
+ *  Default {@link ReplaceDiagnostics#OFF} — the historical behaviour.
+ *  {@code summary} logs one INFO line per grouped sheet: rows seen, rows whose
+ *  code-string the rewrites changed, rows dropped, and the per-pattern match
+ *  counts. It changes no outcome; it makes a silent no-op visible. */
+public enum ReplaceDiagnostics { OFF, SUMMARY }
+public final ReplaceDiagnostics replaceDiagnostics;
+
 /** Tier-1 win 1.2: raw properties bag.  Lets callers read arbitrary
  *  keys (e.g. {@code core.input.format}) without needing a typed field
  *  for every new property.  Always non-null; empty if the constructor
@@ -88,6 +156,37 @@ this.seq        = seq;
 this.raw        = (raw == null) ? new Properties() : raw;
 this.intermediateStorage = parseStorageMode(this.raw.getProperty("core.intermediate.storage"));
 this.precomputeMode = parsePrecomputeMode(this.raw.getProperty("core.precompute"));
+this.replacePatternPolicy = parseEnum(this.raw.getProperty("core.replace.patternPolicy"),
+        ReplacePatternPolicy.class, ReplacePatternPolicy.PERMISSIVE, "core.replace.patternPolicy");
+this.replaceUnmatchedPolicy = parseEnum(this.raw.getProperty("core.replace.unmatchedPolicy"),
+        ReplaceUnmatchedPolicy.class, ReplaceUnmatchedPolicy.IGNORE, "core.replace.unmatchedPolicy");
+this.replaceUnparseablePolicy = parseEnum(this.raw.getProperty("core.replace.unparseablePolicy"),
+        ReplaceUnparseablePolicy.class, ReplaceUnparseablePolicy.WARN, "core.replace.unparseablePolicy");
+this.replaceIdentityPolicy = parseEnum(this.raw.getProperty("core.replace.identityPolicy"),
+        ReplaceIdentityPolicy.class, ReplaceIdentityPolicy.ALLOW, "core.replace.identityPolicy");
+this.replaceDiagnostics = parseEnum(this.raw.getProperty("core.replace.diagnostics"),
+        ReplaceDiagnostics.class, ReplaceDiagnostics.OFF, "core.replace.diagnostics");
+}
+
+/**
+ * Case-insensitive enum property with a default for absent/blank.
+ *
+ * An unrecognised value throws rather than falling back: a policy key exists to
+ * make something fail loudly, so silently ignoring a typo in that very key —
+ * `strict` spelled `stict` quietly meaning `permissive` — would defeat it.
+ */
+private static <E extends Enum<E>> E parseEnum(String raw, Class<E> type, E fallback, String key) {
+    if (raw == null || raw.isBlank()) return fallback;
+    for (E candidate : type.getEnumConstants()) {
+        if (candidate.name().equalsIgnoreCase(raw.trim())) return candidate;
+    }
+    StringBuilder allowed = new StringBuilder();
+    for (E candidate : type.getEnumConstants()) {
+        if (allowed.length() > 0) allowed.append('|');
+        allowed.append(candidate.name().toLowerCase(java.util.Locale.ROOT));
+    }
+    throw new IllegalArgumentException(
+            "'" + key + "': unknown value '" + raw.trim() + "'; allowed: " + allowed);
 }
 
 private static PrecomputeMode parsePrecomputeMode(String raw) {
