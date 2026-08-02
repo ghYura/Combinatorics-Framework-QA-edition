@@ -182,13 +182,14 @@ config.paths.combinatoricsReaderPath,
 }
 
 
+// Fail closed: SchemaProvisioner refuses topologies where the PostgreSQL
+// server cannot see the requested tablespace directories. Catching that
+// here would silently land every table on pg_default — the exact defect
+// this call used to have — so the exception is left to abort the run.
 try (DbClient pgAdmin = DbClient.createForDb(config.db, "postgres")) {
 SchemaProvisioner provisioner =
 new SchemaProvisioner(pgAdmin, config.tablespace);
 provisioner.provisionTablespaces(pgAdmin);
-log.info("Tablespaces provisioned");
-} catch (Exception e) {
-log.error("Tablespace provisioning failed", e);
 }
 
 
