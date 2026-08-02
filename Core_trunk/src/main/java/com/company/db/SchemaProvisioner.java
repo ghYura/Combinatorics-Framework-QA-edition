@@ -45,7 +45,7 @@ pgAdminClient.executeSilently(
 tbl.database2Tablespace.forEach((dbName, tsName) ->
 pgAdminClient.executeSilently(
 "CREATE DATABASE \"" + dbName.trim()
-+ "\" OWNER postgres TABLESPACE \"" + tsName.trim() + "\";"));
++ "\" OWNER DEFAULT TABLESPACE \"" + tsName.trim() + "\";"));
 }
 
 
