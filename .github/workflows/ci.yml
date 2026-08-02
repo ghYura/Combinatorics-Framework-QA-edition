@@ -31,6 +31,7 @@ env:
   PYTHONDONTWRITEBYTECODE: "1"
   # The canonical sibling SUT revision Tier 2/3 build against. One source for
   # both jobs; their pre-flight steps verify this exact commit is fetchable.
+  SUT_SIBLING_REPO: ghYura/SUT
   SUT_SIBLING_PIN: db1ac787d07fe4ea16b084b551576c1da1a055fd
 
 jobs:
@@ -202,39 +203,76 @@ jobs:
           persist-credentials: false
       - name: "Pre-flight: the private sibling SUT repository must be readable"
         env:
+          SUT_DEPLOY_KEY: ${{ secrets.SUT_DEPLOY_KEY }}
           GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
         run: |
           # github.token is scoped to THIS repository only; it can never read the
-          # private sibling ghYura/SUT, and GitHub reports an unreadable private
-          # repo as a misleading 404 "Repository not found" instead of a
-          # permission error. Establish readability with the one token that can
-          # work BEFORE actions/checkout runs, so a misconfigured secret is
-          # diagnosed here in one line instead of masquerading as a missing
-          # repository. This gate FAILS — it never skips: a canonical gate that
-          # self-skips reads as green while the gate never ran.
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::secret SUT_REPO_TOKEN is not configured, so this job cannot read the private sibling repository ghYura/SUT (github.token is scoped to this repo only and can never work). Fix: create a fine-grained PAT with 'Contents: Read' on ghYura/SUT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+          # private sibling, and GitHub reports an unreadable private repo as a
+          # misleading 404 "Repository not found" rather than a permission error.
+          # Establish readability BEFORE actions/checkout runs, so a misconfigured
+          # credential is diagnosed here in one line instead of masquerading as a
+          # missing repository. This gate FAILS — it never skips: a canonical gate
+          # that self-skips reads as green while the gate never ran.
+          #
+          # Two credentials are accepted. SUT_DEPLOY_KEY is preferred: a read-only
+          # deploy key is bound to that one repository, carries no user identity,
+          # grants no write anywhere, and does not expire — so it can neither widen
+          # nor silently lapse the way a personal token does. SUT_REPO_TOKEN (a
+          # fine-grained PAT with Contents: Read) stays supported as an alternative.
+          if [ -n "${SUT_DEPLOY_KEY}" ]; then
+            key="$(mktemp)"
+            chmod 600 "$key"
+            { printf '%s' "${SUT_DEPLOY_KEY}"; echo; } > "$key"
+            export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+            if ! git ls-remote "git@github.com:${SUT_SIBLING_REPO}.git" HEAD >/dev/null 2>&1; then
+              rm -f "$key"
+              echo "::error::SUT_DEPLOY_KEY is set but cannot read ${SUT_SIBLING_REPO} over SSH. It must hold the PRIVATE half of a key whose public half is registered as a deploy key on ${SUT_SIBLING_REPO} (Settings -> Deploy keys). Re-add it, or use a fine-grained PAT in SUT_REPO_TOKEN instead. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+              exit 1
+            fi
+            probe="$(mktemp -d)"
+            git init -q "$probe"
+            git -C "$probe" remote add origin "git@github.com:${SUT_SIBLING_REPO}.git"
+            if ! git -C "$probe" fetch -q --depth=1 origin "${SUT_SIBLING_PIN}"; then
+              rm -f "$key"; rm -rf "$probe"
+              echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+              exit 1
+            fi
+            rm -f "$key"; rm -rf "$probe"
+            echo "Pre-flight OK (deploy key): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
+          elif [ -n "${GH_TOKEN}" ]; then
+            if ! gh api "repos/${SUT_SIBLING_REPO}" --silent; then
+              echo "::error::SUT_REPO_TOKEN is set but cannot read ${SUT_SIBLING_REPO} (GitHub shows an unreadable private repository as 404 'not found'). It must be a fine-grained PAT granting 'Contents: Read' on ${SUT_SIBLING_REPO}, and it must not have expired. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+              exit 1
+            fi
+            if ! gh api "repos/${SUT_SIBLING_REPO}/commits/${SUT_SIBLING_PIN}" --silent; then
+              echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+              exit 1
+            fi
+            echo "Pre-flight OK (PAT): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
+          else
+            echo "::error::no credential for the private sibling ${SUT_SIBLING_REPO} is configured, so this job cannot check it out (github.token is scoped to this repository only and can never work). Preferred fix: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY. Alternative: a fine-grained PAT with 'Contents: Read' stored as SUT_REPO_TOKEN. See docs/40_SIBLING_SUT_CREDENTIAL.md"
             exit 1
           fi
-          if ! gh api repos/ghYura/SUT --silent; then
-            echo "::error::SUT_REPO_TOKEN is configured but cannot read ghYura/SUT (GitHub shows an unreadable private repository as 404 'not found'). The token must be a fine-grained PAT granting 'Contents: Read' on ghYura/SUT. Fix: mint such a PAT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
-            exit 1
-          fi
-          if ! gh api "repos/ghYura/SUT/commits/${SUT_SIBLING_PIN}" --silent; then
-            echo "::error::ghYura/SUT is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a token or setup problem."
-            exit 1
-          fi
-          echo "Pre-flight OK: ghYura/SUT is readable and pinned revision ${SUT_SIBLING_PIN} exists."
       - name: Check out the exact canonical sibling SUT revision
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          repository: ghYura/SUT
+          repository: ${{ env.SUT_SIBLING_REPO }}
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # No `|| github.token` fallback: that token is repo-scoped, can never
-          # read the sibling, and turned a missing secret into a bogus 404.
-          token: ${{ secrets.SUT_REPO_TOKEN }}
+          # actions/checkout prefers ssh-key when it is non-empty and falls back to
+          # token otherwise, so both supported credentials are offered here.
+          #
+          # `token` is declared required by the action and is validated before it
+          # decides which transport to use, so it must be non-empty even on the
+          # ssh-key path where it is never used — an empty value fails the step
+          # with "Input required and not supplied: token". github.token is the
+          # harmless filler. It was previously removed because it silently turned
+          # a missing credential into a bogus 404; that can no longer happen,
+          # because the pre-flight above has already proved a real credential
+          # works and fails the job outright when neither secret is configured.
+          ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -259,9 +297,19 @@ jobs:
 
       - name: "[canonical-sut-engine-demo] Python full-chain direct engine demonstration"
         run: |
+          # --db-endpoint is mandatory: the launcher deliberately has no implicit
+          # host-PostgreSQL default, because an implicit 5433/5432 made the
+          # demonstration look like it exercised the deployed stack while actually
+          # writing into an unrelated host cluster. This step predates that guard
+          # and was never corrected, because Tier 2 could not reach it until the
+          # sibling-checkout credential existed.
+          # 'manual' takes the ports given here and the passwords from the job env.
           python generator_trunk/engine_demo/run_direct_engine_smoke.py run \
             --db ci_engine_demo_${{ github.run_id }} \
-            --run-id ci-eds-${{ github.run_id }}
+            --run-id ci-eds-${{ github.run_id }} \
+            --db-endpoint manual \
+            --main-port "${BUNDLE_MAIN_DB_PORT}" \
+            --results-port "${BUNDLE_RESULTS_DB_PORT}"
 
       - name: "[canonical-sut-java-compiler-routing] Java full-chain and compiler routing"
         run: |
@@ -314,7 +362,23 @@ jobs:
           if [ "$rc" -eq 0 ]; then
             echo "::error::a secure profile completed without a sandbox backend"; cat /tmp/failclosed.txt; exit 1
           fi
-          grep -Eq "requires the 'container' sandbox backend|refusing to run generated candidates unsandboxed" \
+          # Accept either genuine fail-closed refusal, and nothing else — the point
+          # of this gate is that the run refused *for the sandbox reason*, not that
+          # it merely failed.
+          #
+          #   "refusing a secure run ..."  the launcher's STEP 30 invariant
+          #                                (bundle/cli.py), covered by
+          #                                test_bundle_execution_safety.py and
+          #                                test_bundle_resume.py. This is the one
+          #                                that fires on the GitHub runner.
+          #   "refusing to run generated   the Executor's own earlier refusal
+          #    candidates unsandboxed"     (docs/10_SECURITY_AND_SANDBOXING.md),
+          #                                reachable on hosts that get further.
+          #
+          # The previous alternation also listed "requires the 'container' sandbox
+          # backend", which exists nowhere in the tree — a pattern that can never
+          # match hides drift rather than catching it, so it is dropped.
+          grep -Eq "refusing a secure run that did not go through the .* sandbox|refusing to run generated candidates unsandboxed" \
             /tmp/failclosed.txt || {
               echo "::error::command failed, but not for the expected fail-closed sandbox reason";
               cat /tmp/failclosed.txt; exit 1; }
@@ -402,34 +466,76 @@ jobs:
           fetch-depth: 0
       - name: "Pre-flight: the private sibling SUT repository must be readable"
         env:
+          SUT_DEPLOY_KEY: ${{ secrets.SUT_DEPLOY_KEY }}
           GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
         run: |
-          # Same gate as Tier 2 (see the comment there): github.token can never
-          # read the private sibling, and a missing/underscoped SUT_REPO_TOKEN
-          # must fail loudly here — never skip, never surface as a bogus 404.
-          if [ -z "${GH_TOKEN}" ]; then
-            echo "::error::secret SUT_REPO_TOKEN is not configured, so this job cannot read the private sibling repository ghYura/SUT (github.token is scoped to this repo only and can never work). Fix: create a fine-grained PAT with 'Contents: Read' on ghYura/SUT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+          # github.token is scoped to THIS repository only; it can never read the
+          # private sibling, and GitHub reports an unreadable private repo as a
+          # misleading 404 "Repository not found" rather than a permission error.
+          # Establish readability BEFORE actions/checkout runs, so a misconfigured
+          # credential is diagnosed here in one line instead of masquerading as a
+          # missing repository. This gate FAILS — it never skips: a canonical gate
+          # that self-skips reads as green while the gate never ran.
+          #
+          # Two credentials are accepted. SUT_DEPLOY_KEY is preferred: a read-only
+          # deploy key is bound to that one repository, carries no user identity,
+          # grants no write anywhere, and does not expire — so it can neither widen
+          # nor silently lapse the way a personal token does. SUT_REPO_TOKEN (a
+          # fine-grained PAT with Contents: Read) stays supported as an alternative.
+          if [ -n "${SUT_DEPLOY_KEY}" ]; then
+            key="$(mktemp)"
+            chmod 600 "$key"
+            { printf '%s' "${SUT_DEPLOY_KEY}"; echo; } > "$key"
+            export GIT_SSH_COMMAND="ssh -i $key -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"
+            if ! git ls-remote "git@github.com:${SUT_SIBLING_REPO}.git" HEAD >/dev/null 2>&1; then
+              rm -f "$key"
+              echo "::error::SUT_DEPLOY_KEY is set but cannot read ${SUT_SIBLING_REPO} over SSH. It must hold the PRIVATE half of a key whose public half is registered as a deploy key on ${SUT_SIBLING_REPO} (Settings -> Deploy keys). Re-add it, or use a fine-grained PAT in SUT_REPO_TOKEN instead. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+              exit 1
+            fi
+            probe="$(mktemp -d)"
+            git init -q "$probe"
+            git -C "$probe" remote add origin "git@github.com:${SUT_SIBLING_REPO}.git"
+            if ! git -C "$probe" fetch -q --depth=1 origin "${SUT_SIBLING_PIN}"; then
+              rm -f "$key"; rm -rf "$probe"
+              echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+              exit 1
+            fi
+            rm -f "$key"; rm -rf "$probe"
+            echo "Pre-flight OK (deploy key): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
+          elif [ -n "${GH_TOKEN}" ]; then
+            if ! gh api "repos/${SUT_SIBLING_REPO}" --silent; then
+              echo "::error::SUT_REPO_TOKEN is set but cannot read ${SUT_SIBLING_REPO} (GitHub shows an unreadable private repository as 404 'not found'). It must be a fine-grained PAT granting 'Contents: Read' on ${SUT_SIBLING_REPO}, and it must not have expired. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+              exit 1
+            fi
+            if ! gh api "repos/${SUT_SIBLING_REPO}/commits/${SUT_SIBLING_PIN}" --silent; then
+              echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+              exit 1
+            fi
+            echo "Pre-flight OK (PAT): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
+          else
+            echo "::error::no credential for the private sibling ${SUT_SIBLING_REPO} is configured, so this job cannot check it out (github.token is scoped to this repository only and can never work). Preferred fix: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY. Alternative: a fine-grained PAT with 'Contents: Read' stored as SUT_REPO_TOKEN. See docs/40_SIBLING_SUT_CREDENTIAL.md"
             exit 1
           fi
-          if ! gh api repos/ghYura/SUT --silent; then
-            echo "::error::SUT_REPO_TOKEN is configured but cannot read ghYura/SUT (GitHub shows an unreadable private repository as 404 'not found'). The token must be a fine-grained PAT granting 'Contents: Read' on ghYura/SUT. Fix: mint such a PAT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
-            exit 1
-          fi
-          if ! gh api "repos/ghYura/SUT/commits/${SUT_SIBLING_PIN}" --silent; then
-            echo "::error::ghYura/SUT is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a token or setup problem."
-            exit 1
-          fi
-          echo "Pre-flight OK: ghYura/SUT is readable and pinned revision ${SUT_SIBLING_PIN} exists."
       - name: Check out the exact sibling SUT revision for release evidence
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          repository: ghYura/SUT
+          repository: ${{ env.SUT_SIBLING_REPO }}
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # No `|| github.token` fallback: that token is repo-scoped, can never
-          # read the sibling, and turned a missing secret into a bogus 404.
-          token: ${{ secrets.SUT_REPO_TOKEN }}
+          # actions/checkout prefers ssh-key when it is non-empty and falls back to
+          # token otherwise, so both supported credentials are offered here.
+          #
+          # `token` is declared required by the action and is validated before it
+          # decides which transport to use, so it must be non-empty even on the
+          # ssh-key path where it is never used — an empty value fails the step
+          # with "Input required and not supplied: token". github.token is the
+          # harmless filler. It was previously removed because it silently turned
+          # a missing credential into a bogus 404; that can no longer happen,
+          # because the pre-flight above has already proved a real credential
+          # works and fails the job outright when neither secret is configured.
+          ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
+          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
 
