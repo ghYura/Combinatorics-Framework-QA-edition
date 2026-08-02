@@ -26,7 +26,16 @@ If it is not authenticated, use GitHub CLI's interactive browser flow. Do not pa
 command, script, or repository file:
 
 ```bash
-gh auth login --hostname github.com --git-protocol ssh --web
+gh auth login --hostname github.com --web
+```
+
+That leaves `gh` on its default HTTPS transport, which works with the token `gh` itself stores and
+needs no key management. **Choose SSH only if you already have a key registered with GitHub** — add
+`--git-protocol ssh` in that case. An unregistered key is the most common way to fail at this step,
+because `gh` will then use a transport that cannot authenticate; check before you switch:
+
+```bash
+ssh -T git@github.com     # expect "Hi <user>! You've successfully authenticated"
 ```
 
 Create a new parent directory and clone both repositories as siblings:
