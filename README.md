@@ -13,8 +13,14 @@ domain-neutral: it knows nothing about LLMs, control systems, or any other subje
 This private edition is a clean, history-free source snapshot focused on human-led QA engineering:
 the engine, Control Plane, Analyzer, GUIs, QA/LLM test applications, exact oracles, scenarios, and
 operational documentation remain. Historical handoffs, legal-option collections, provenance media,
-and generated candidate corpora are deliberately omitted. Generators remain source; their runtime
-products stay local and ignored.
+and generated candidate corpora are deliberately omitted. Generators remain source; their bulk
+runtime products — candidate corpora, workbooks, model weights — stay local and are git-ignored.
+
+The one exception worth knowing before you run a generator: the small **run specs** some of them
+emit under `generator_trunk/model_usecases/run/` *are* tracked, deliberately, so the exact spec a
+result came from is reviewable. Re-running such a generator therefore rewrites a tracked file and
+leaves the checkout dirty — `git diff` will show it, and `git checkout --` discards it. That is
+expected, not a sign that something broke.
 
 The owner's draft intent is one complete personal installation for a natural person's lawful
 non-commercial testing, learning, and research, supplied **“AS IS”**. Inference-only AI may help
