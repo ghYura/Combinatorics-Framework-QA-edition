@@ -144,8 +144,18 @@ private volatile Set<Short>  reuseTableOnlySet;
 private volatile List<Short> excl1List;
 private volatile List<Short> excl2List;
 
-
 private volatile boolean cancelled = false;
+
+// `core.replace.*` policy violations recorded while a `fail` policy is active.
+//
+// processAll runs each sheet in its own virtual thread and catches Exception per
+// sheet, logging it and carrying on — so throwing inside a sheet marks that sheet
+// failed but leaves the run reporting success. A `fail` policy that does not fail
+// the run would be worse than no policy at all, so violations are collected here
+// and re-raised on the calling thread once all sheets have finished. Only these
+// policies populate it; general sheet-failure behaviour is untouched.
+private final List<String> replacePolicyFailures =
+java.util.Collections.synchronizedList(new ArrayList<>());
 
 // [Iter4.5] Drain coordination — set by HeapWatchdog drain callback (AUTO-JAVA
 // CRITICAL).  Sheets entering processSheet check {@code drainBarrier}; if non-
@@ -290,8 +300,18 @@ throw new InterruptedException("Interrupted during sheet processing");
 }
 }
 }
-}
 
+// Re-raise any `core.replace.*` violation on this thread: inside a sheet it was
+// swallowed by the per-sheet catch above, which would have left a `fail` policy
+// silently not failing.
+synchronized (replacePolicyFailures) {
+if (!replacePolicyFailures.isEmpty()) {
+throw new IllegalStateException(
+"core.replace policy refused this run:" + System.lineSeparator()
++ "  " + String.join(System.lineSeparator() + "  ", replacePolicyFailures));
+}
+}
+}
 
 public void cancel() { this.cancelled = true; }
 
@@ -621,6 +641,8 @@ sheetState.replacerHM.put(matcher.group(2), matcher.group(4));
 }
 }
 }
+applyReplaceAuthoringPolicies(key, sheetState);
+sheetState.resetReplaceCounters();
 log.debug("FW_Group parsed: {} replacements", sheetState.replacerHM.size());
 return isCombi2;
 }
@@ -1049,10 +1071,20 @@ continue;
 
 gStream.forEach(w -> {
 String curStr = w.toString();
+final String beforeRewrite = curStr;
+sheetState.rowsSeen.increment();
 
 for (var entry : sheetState.replacerHM.entrySet()) {
+final String beforeThisPattern = curStr;
 curStr = curStr.replaceAll(entry.getKey(), entry.getValue());
+// Count a hit when this pattern changed the string. An identity rewrite
+// therefore reads as "no hits", which is exactly what it is.
+if (!curStr.equals(beforeThisPattern)) {
+var hits = sheetState.replaceHits.get(entry.getKey());
+if (hits != null) hits.increment();
 }
+}
+if (!curStr.equals(beforeRewrite)) sheetState.rowsRewritten.increment();
 
 if (sheetState.isSeparate && sheetState.separatorValue != Integer.MIN_VALUE) {
 curStr = curStr.replaceAll(", ", ", " + sheetState.separatorValue + ", ");
@@ -1081,14 +1113,29 @@ synchronized (fwKeyShort) { fwKeyShort.add(parsed); }
 // in the old StringBuilder; store renders the null parent itself).
 store.appendFw2Row(key, fwId2.incrementAndGet(), null, parsed);
 } catch (NumberFormatException e) {
+sheetState.rowsDropped.increment();
+switch (config.replaceUnparseablePolicy) {
+case FAIL:
+final String failure =
+"FW_ReplaceRE produced a combination that is no longer a list of short codes: \""
++ curStr + "\" (was \"" + beforeRewrite + "\"). The rewritten code-string must stay "
++ "integer-parseable — a textual replacement drops the row. "
++ "[core.replace.unparseablePolicy=fail]";
+replacePolicyFailures.add(failure);
+throw new IllegalStateException(failure, e);
+case DROP:
+break;   // intentional discard; the summary still counts it
+case WARN:
+default:
 log.warn("FW_Group: failed to parse combo string: {}", curStr, e);
+}
 }
 });
 }
 
-
 store.flushFw2(key);
 
+reportReplaceOutcome(key, sheetState);
 
 sheetState.replacerHM.clear();
 sheetState.isGroup = false;
@@ -1262,6 +1309,52 @@ this.isCartesFirst  = isCartesFirst;
 
 
 
+/**
+ * Run-time `core.replace.*` accounting, once per grouped sheet after the stream.
+ *
+ * A pattern with zero hits is the failure mode that reads as success: the run is
+ * green, the rows are all there, and the substitution the author intended simply
+ * never happened. Nothing here changes an outcome unless the operator asks for it.
+ */
+private void reportReplaceOutcome(Short key, SheetState sheetState) {
+if (sheetState.replacerHM.isEmpty()) return;
+final String sheetName = workbook.shortStringSheetKey2SheetNameHM.get(key);
+
+if (config.replaceDiagnostics == AppConfig.ReplaceDiagnostics.SUMMARY) {
+final StringBuilder perPattern = new StringBuilder();
+for (var entry : sheetState.replaceHits.entrySet()) {
+if (perPattern.length() > 0) perPattern.append(", ");
+perPattern.append('"').append(entry.getKey()).append("\"=").append(entry.getValue().sum());
+}
+log.info("FW_ReplaceRE summary — sheet {} (key={}): rows seen={} rewritten={} dropped={}; "
++ "rows changed per pattern: {}",
+sheetName, key, sheetState.rowsSeen.sum(), sheetState.rowsRewritten.sum(),
+sheetState.rowsDropped.sum(), perPattern);
+}
+
+if (config.replaceUnmatchedPolicy == AppConfig.ReplaceUnmatchedPolicy.IGNORE) return;
+
+final List<String> unmatched = new ArrayList<>();
+for (var entry : sheetState.replaceHits.entrySet()) {
+if (entry.getValue().sum() == 0L) unmatched.add(entry.getKey());
+}
+if (unmatched.isEmpty()) return;
+
+final String message =
+"FW_ReplaceRE on sheet " + sheetName + " (key=" + key + "): pattern(s) " + unmatched
++ " changed no row out of " + sheetState.rowsSeen.sum() + ". The rewrite runs against the "
++ "code-string of each produced combination (a list of Short value-codes), so a pattern "
++ "written against rendered value text never matches and passes through as a silent no-op.";
+
+if (config.replaceUnmatchedPolicy == AppConfig.ReplaceUnmatchedPolicy.FAIL) {
+final String failure = message + " [core.replace.unmatchedPolicy=fail]";
+replacePolicyFailures.add(failure);
+throw new IllegalStateException(failure);
+}
+log.warn(message);
+}
+
+
 private static final class SheetState {
 
 boolean isSeparate = false;
@@ -1274,6 +1367,81 @@ int separatorValue = Integer.MIN_VALUE;
 boolean isGroup = false;
 
 final Map<String, String> replacerHM = new LinkedHashMap<>();
+
+// Rewrite accounting for core.replace.* policies. The grouped stream may run
+// in parallel (core.threading.parallelizeSubCombosIfPossible), so every
+// counter touched inside gStream.forEach is atomic.
+final Map<String, java.util.concurrent.atomic.LongAdder> replaceHits = new LinkedHashMap<>();
+final java.util.concurrent.atomic.LongAdder rowsSeen = new java.util.concurrent.atomic.LongAdder();
+final java.util.concurrent.atomic.LongAdder rowsRewritten = new java.util.concurrent.atomic.LongAdder();
+final java.util.concurrent.atomic.LongAdder rowsDropped = new java.util.concurrent.atomic.LongAdder();
+
+void resetReplaceCounters() {
+replaceHits.clear();
+for (String pattern : replacerHM.keySet()) {
+replaceHits.put(pattern, new java.util.concurrent.atomic.LongAdder());
+}
+rowsSeen.reset(); rowsRewritten.reset(); rowsDropped.reset();
+}
+}
+
+/**
+ * Authoring-time `core.replace.*` checks, run once per parsed FW_Group directive.
+ *
+ * Nothing here restricts what FW_ReplaceRE can express — every check is inert at
+ * the shipped defaults. They exist because the two ways to get a rewrite wrong are
+ * both silent, and an operator who wants them loud currently has no way to ask.
+ */
+private void applyReplaceAuthoringPolicies(Short key, SheetState sheetState) {
+final String sheetName = workbook.shortStringSheetKey2SheetNameHM.get(key);
+for (var entry : sheetState.replacerHM.entrySet()) {
+final String pattern = entry.getKey();
+
+if (config.replaceIdentityPolicy == AppConfig.ReplaceIdentityPolicy.WARN
+&& pattern.equals(entry.getValue())) {
+log.warn("FW_ReplaceRE on sheet {} (key={}): pattern and replacement are both \"{}\" — "
++ "this rewrite does nothing at run time, but it still changes the emitted "
++ "directive and therefore the FW_Seq graph fingerprint. Remove it, or set "
++ "core.replace.identityPolicy=allow to silence this.",
+sheetName, key, pattern);
+}
+
+if (config.replacePatternPolicy == AppConfig.ReplacePatternPolicy.PERMISSIVE) continue;
+if (canMatchCodeString(pattern)) continue;
+
+final String message =
+"FW_ReplaceRE on sheet " + sheetName + " (key=" + key + "): pattern \"" + pattern
++ "\" cannot match a Core code-string. The rewrite runs against the code-string of a "
++ "produced combination (e.g. \"[47, 48]\" — a list of Short value-codes), never against "
++ "rendered value text, so this pattern can only ever be a silent no-op. Rewrite it "
++ "against codes/structure, or move the substitution to the value itself. "
++ "See ZEN_OF_COMBINATORICS.md (FW_ReplaceRE rewrites the short key, not value text).";
+
+if (config.replacePatternPolicy == AppConfig.ReplacePatternPolicy.STRICT) {
+final String failure = message + " [core.replace.patternPolicy=strict]";
+replacePolicyFailures.add(failure);
+throw new IllegalStateException(failure);
+}
+log.warn(message);
+}
+}
+
+/** Characters a Core code-string can contain: digits, separators, brackets, space.
+ *  A pattern that requires anything outside this set can never match, so it is a
+ *  no-op that {@code core.replace.patternPolicy} can surface before the run. */
+private static final Pattern CODE_STRING_CHARS = Pattern.compile("[0-9,\\[\\]{}\\s]*");
+
+/** True when {@code pattern} could conceivably match a code-string.
+ *  Regex metacharacters are stripped first, so structural patterns such as
+ *  {@code "^\\[|\\]$"} or {@code "\\d+"} stay acceptable; only literal text that
+ *  cannot appear among value-codes (letters, {@code @}, quotes, …) is rejected. */
+private static boolean canMatchCodeString(String pattern) {
+String literals = pattern
+.replaceAll("\\\\[dDwWsSbBAZzGQE]", "")   // classes/anchors that are not literals
+.replaceAll("\\\\[pP]\\{\\w+}", "")        // unicode classes
+.replaceAll("\\\\.", "")                    // any other escaped literal
+.replaceAll("[\\[\\]{}()|.*+?^$\\-]", "");  // regex structure
+return CODE_STRING_CHARS.matcher(literals).matches();
 }
 
 
