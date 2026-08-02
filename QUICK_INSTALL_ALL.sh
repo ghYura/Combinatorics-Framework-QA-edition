@@ -38,11 +38,14 @@ SKIP_SMOKE=0
 # change stays consistent.
 REF=""
 
-# Database endpoints used by --with-db. Deliberately NOT the managed `deploy`
-# profile's 15433/15432: those are fixed host-wide, so a second checkout on the
-# same machine collides with the first. These are private to this installation.
-DB_MAIN_PORT="${BUNDLE_QUICK_MAIN_PORT:-25433}"
-DB_RESULTS_PORT="${BUNDLE_QUICK_RESULTS_PORT:-25432}"
+# Database ports used by --with-db. Deliberately NOT the managed `deploy` profile's
+# fixed host-wide 15433/15432 — those allow only one checkout per machine. These are
+# starting points: unless pinned explicitly, the script searches upward for a free
+# pair, so running this twice, or beside an existing stack, does not collide.
+DB_MAIN_PORT="${BUNDLE_QUICK_MAIN_PORT:-}"
+DB_RESULTS_PORT="${BUNDLE_QUICK_RESULTS_PORT:-}"
+readonly DB_MAIN_PORT_BASE=25433
+readonly DB_RESULTS_PORT_BASE=25432
 DB_MAIN_NAME="bundle-quick-main-db"
 DB_RESULTS_NAME="bundle-quick-results-db"
 # Same pinned digest the repository's own deploy profile uses.
@@ -80,6 +83,22 @@ usage() {
 # Compare dotted versions: have_version <have> <min>  → 0 when have >= min.
 have_version() {
     [ "$(printf '%s\n%s\n' "$2" "$1" | sort -V | head -1)" = "$2" ]
+}
+
+# True when nothing is listening on 127.0.0.1:<port>.
+port_free() {
+    ! (exec 3<>"/dev/tcp/127.0.0.1/$1") 2>/dev/null
+}
+
+# First free port at or above <base>, searching a bounded range. Echoes nothing and
+# returns 1 if the whole range is occupied, so the caller reports rather than loops.
+find_free_port() {
+    local port="$1" limit=$(( $1 + 200 ))
+    while [ "$port" -lt "$limit" ]; do
+        if port_free "$port"; then printf '%s' "$port"; return 0; fi
+        port=$((port + 1))
+    done
+    return 1
 }
 
 # --------------------------------------------------------------------- arguments --
@@ -361,22 +380,46 @@ if [ "$WITH_DB" -eq 1 ]; then
     # a file by this script, never echoed.
     DB_PASSWORD="$("$PY" -c 'import secrets; print("quickinstall_" + secrets.token_hex(12))')"
 
+    # Remove our own containers from a previous run first: they hold an older
+    # generated password, and they are also the most likely thing occupying the
+    # ports we are about to pick. Only ever our own two names — never another
+    # checkout's, and never the managed profile's fwbundle-* stack.
+    for name in "$DB_MAIN_NAME" "$DB_RESULTS_NAME"; do
+        if [ -n "$(docker ps -aq --filter "name=^${name}$" 2>/dev/null)" ]; then
+            docker rm -f "$name" >/dev/null 2>&1 || true
+            info "removed the previous $name"
+        fi
+    done
+
+    # Pick ports only if the caller did not pin them. Anything else on the host —
+    # another checkout's stack, a system PostgreSQL, an unrelated service — simply
+    # moves us along rather than failing the install.
+    if [ -z "$DB_MAIN_PORT" ]; then
+        DB_MAIN_PORT="$(find_free_port "$DB_MAIN_PORT_BASE")" \
+            || die "no free port for the main database in ${DB_MAIN_PORT_BASE}..$((DB_MAIN_PORT_BASE + 200))"
+    fi
+    if [ -z "$DB_RESULTS_PORT" ]; then
+        DB_RESULTS_PORT="$(find_free_port "$DB_RESULTS_PORT_BASE")" \
+            || die "no free port for the results database in ${DB_RESULTS_PORT_BASE}..$((DB_RESULTS_PORT_BASE + 200))"
+        # find_free_port is called twice against a host that has not changed in
+        # between, so the two can only coincide if the bases do; keep them apart.
+        if [ "$DB_RESULTS_PORT" = "$DB_MAIN_PORT" ]; then
+            DB_RESULTS_PORT="$(find_free_port "$((DB_MAIN_PORT + 1))")" \
+                || die "no free port for the results database"
+        fi
+    fi
+    info "databases will use 127.0.0.1:$DB_MAIN_PORT (main) and 127.0.0.1:$DB_RESULTS_PORT (results)"
+
     start_db() {
         local name="$1" port="$2"
-        if [ -n "$(docker ps -q --filter "name=^${name}$" 2>/dev/null)" ]; then
-            ok "$name already running"
-            return 0
-        fi
-        if [ -n "$(docker ps -aq --filter "name=^${name}$" 2>/dev/null)" ]; then
-            # A stopped container from an earlier run holds an older password.
-            docker rm -f "$name" >/dev/null 2>&1 || true
-        fi
         docker run -d --name "$name" \
             -p "127.0.0.1:${port}:5432" \
             -e POSTGRES_USER=postgres \
             -e POSTGRES_PASSWORD="$DB_PASSWORD" \
-            "$PG_IMAGE" >/dev/null \
-            || die "could not start $name on 127.0.0.1:$port (is the port already taken?)"
+            "$PG_IMAGE" >/dev/null 2>&1 \
+            || die "could not start $name on 127.0.0.1:$port
+       Check what holds the port:  ss -ltnp 'sport = :$port'
+       Or pin your own:            BUNDLE_QUICK_MAIN_PORT=... BUNDLE_QUICK_RESULTS_PORT=... $0 --with-db"
         ok "$name started on 127.0.0.1:$port"
     }
 
