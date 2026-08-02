@@ -94,6 +94,27 @@ The private sibling SUT checkout also needs a repository secret named
 out the exact manifest revision; missing access is a failed canonical gate, not
 an accepted skip.
 
+### Pin refresh evidence — 2026-08-02 (Node 24 action generation)
+
+The 2026-08-01 action pins were the heads of their reviewed major tags, but those
+majors (`checkout@v4`, `setup-python@v5`, `setup-java@v4`, `upload-artifact@v4`)
+are the Node.js 20 generation, which GitHub is deprecating and currently
+force-runs on Node 24. The refresh therefore moves the reviewed major itself to
+the Node-24-native generation. Upstream inspection: each new major's release
+notes declare the Node 24 runtime bump (runner ≥ 2.327.1, satisfied by
+GitHub-hosted runners) as the breaking change; no input or behaviour used by
+this workflow changed. Resolved against the official GitHub API on 2026-08-02:
+
+| Mutable label retained for review | Immutable identity selected |
+|---|---|
+| `actions/checkout@v5` | `fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` |
+| `actions/setup-python@v6` | `ece7cb06caefa5fff74198d8649806c4678c61a1` |
+| `actions/setup-java@v5` | `b6effb05e454b25005698d916606bdc6ffcbf961` |
+| `actions/upload-artifact@v5` | `330a01c490aca151604b8cf639adc76d48f6c5d4` |
+
+Container image digests were not part of this pass and remain as selected on
+2026-08-01.
+
 ### Open owner decision: which Python feature surfaces define a release?
 
 `requirements-release.lock` is generated from `test,science,deploy` — the profiles Tier 3 actually
