@@ -48,18 +48,27 @@ Create a new parent directory and clone both repositories as siblings:
 ```bash
 mkdir -p downloaded-repos
 cd downloaded-repos
-gh repo clone ghYura/Combinatorics-Framework-QA-edition
-gh repo clone ghYura/SUT
+gh repo clone ghYura/Combinatorics-Framework-QA-edition Combinatorics-Framework-QA-edition
+gh repo clone ghYura/SUT SUT
+export BUNDLE_SUT_ROOT="$(cd SUT && pwd -P)"
 cd Combinatorics-Framework-QA-edition
-export BUNDLE_SUT_ROOT="$(cd ../SUT && pwd -P)"
 ```
+
+The target directory is given explicitly so the result does not depend on `gh`'s default naming, and
+`pwd -P` resolves symlinks so the value is stable wherever it is later read. `SUT/QUICKSTART.md` uses
+the identical commands; if the two pages ever disagree, that is a documentation bug.
 
 This edition is `ghYura/Combinatorics-Framework-QA-edition`. `ghYura/Combinatorics-Framework` is a
 different repository — cloning it instead gives you a different tree, and every path below assumes
 the QA edition.
 
-Keep the two directory names unchanged for these commands. `BUNDLE_SUT_ROOT` is the supported
-portable connection between the repositories; no symlink or copied SUT tree is required.
+Keep the two directory names unchanged for these commands; no symlink or copied SUT tree is required.
+
+`BUNDLE_SUT_ROOT` is the supported portable connection between the repositories, and the only one
+that works when they are *not* siblings. In the sibling layout above it is in fact optional —
+`generator_trunk/sut_paths.py` falls back to a directory named `SUT` or `SUT-main` beside the
+Framework checkout — but export it anyway: it costs nothing, it keeps working if the directories are
+ever moved apart, and it removes any doubt about which SUT tree a run used.
 
 ## 3. Create the Python environment and build Java components
 
@@ -141,6 +150,27 @@ python generator_trunk/bundle_run.py deploy validate
 python generator_trunk/bundle_run.py deploy up
 python generator_trunk/bundle_run.py doctor --deploy
 ```
+
+> **One checkout per machine.** The profile uses fixed, host-wide container names and ports, so only
+> one checkout's stack can run at a time. On a machine that accumulates checkouts this is the most
+> likely reason `deploy up` refuses:
+>
+> ```
+> ✗ refusing to replace/remove fixed-name container(s) not owned by the selected deploy env …:
+>   fwbundle-main-db, fwbundle-results-db. Stop them from their owning checkout or choose
+>   another host; no container was changed.
+> ```
+>
+> That refusal is deliberate and it changed nothing — it will not adopt or delete another checkout's
+> databases. Three ways forward, in order of least surprise:
+>
+> 1. run `deploy down` **from the checkout that owns them** (it preserves the data volumes);
+> 2. use the *your own cluster* route below — export the `BUNDLE_*` variables at any free ports. This
+>    is a first-class path, not a workaround;
+> 3. run `./QUICK_INSTALL_ALL.sh --with-db`, which starts its own pair on automatically-chosen free
+>    ports and cannot collide with anything already running.
+>
+> `docker ps --filter name=fwbundle` shows what currently holds the names.
 
 `deploy up` starts exactly the two database containers. `deploy validate` additionally validates the
 optional Adminer monitoring service that is declared in the same compose profile but is **not**

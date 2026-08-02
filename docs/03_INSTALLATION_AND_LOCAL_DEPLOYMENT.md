@@ -88,6 +88,13 @@ pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432
 
 The role needs `CREATEDB` (doctor checks this).
 
+**Option A needs root.** `pg_ctlcluster` will not start a cluster as an unprivileged user, so on a
+host where you have no `sudo` — a shared machine, a locked-down CI image, an unattended session —
+this route is unavailable no matter how correctly PostgreSQL is installed. `pg_lsclusters` will still
+list the clusters, and `doctor` will still report the ports as BLOCKING, which reads like a
+configuration error rather than a permission one. Use Option B, or the "your own cluster" route in
+[QUICKSTART.md](../QUICKSTART.md) §6, when that is the case.
+
 ## Option B — local Docker deploy profile (one command)
 
 `generator_trunk/deploy/docker-compose.yml` uses readable version tags plus immutable registry
