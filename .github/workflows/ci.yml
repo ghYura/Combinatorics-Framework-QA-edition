@@ -297,9 +297,19 @@ jobs:
 
       - name: "[canonical-sut-engine-demo] Python full-chain direct engine demonstration"
         run: |
+          # --db-endpoint is mandatory: the launcher deliberately has no implicit
+          # host-PostgreSQL default, because an implicit 5433/5432 made the
+          # demonstration look like it exercised the deployed stack while actually
+          # writing into an unrelated host cluster. This step predates that guard
+          # and was never corrected, because Tier 2 could not reach it until the
+          # sibling-checkout credential existed.
+          # 'manual' takes the ports given here and the passwords from the job env.
           python generator_trunk/engine_demo/run_direct_engine_smoke.py run \
             --db ci_engine_demo_${{ github.run_id }} \
-            --run-id ci-eds-${{ github.run_id }}
+            --run-id ci-eds-${{ github.run_id }} \
+            --db-endpoint manual \
+            --main-port "${BUNDLE_MAIN_DB_PORT}" \
+            --results-port "${BUNDLE_RESULTS_DB_PORT}"
 
       - name: "[canonical-sut-java-compiler-routing] Java full-chain and compiler routing"
         run: |
