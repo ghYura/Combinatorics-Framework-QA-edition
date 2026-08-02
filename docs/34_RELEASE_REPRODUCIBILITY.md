@@ -110,7 +110,16 @@ this workflow changed. Resolved against the official GitHub API on 2026-08-02:
 | `actions/checkout@v5` | `fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09` |
 | `actions/setup-python@v6` | `ece7cb06caefa5fff74198d8649806c4678c61a1` |
 | `actions/setup-java@v5` | `b6effb05e454b25005698d916606bdc6ffcbf961` |
-| `actions/upload-artifact@v5` | `330a01c490aca151604b8cf639adc76d48f6c5d4` |
+| `actions/upload-artifact@v6` | `b7c566a772e6b6bfb58ed0dc250532a479d7789f` |
+
+Correction found by running the refreshed workflow: `upload-artifact@v5`'s
+release notes claim Node 24 support, but its manifest still declares
+`runs.using: node20` (the runner annotated it as a deprecated-Node action) —
+upstream's own v6.0.0 notes confirm "v5 … was by default still running on
+Node.js 20". The reviewed major for upload-artifact is therefore **v6**, whose
+manifest declares `node24` and whose only change over v5 is that runtime bump.
+v7 (ESM, direct-upload feature) was inspected and deliberately not selected:
+a feature major days old is not a supply-chain necessity for this refresh.
 
 Container image digests were not part of this pass and remain as selected on
 2026-08-01.
