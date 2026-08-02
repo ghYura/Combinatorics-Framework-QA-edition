@@ -155,7 +155,8 @@ if [ "$JAVA_MAJOR" -lt 25 ]; then
     die "JDK 25 required (found $JAVA_MAJOR). Reader_trunk and Executor_trunk target release 25; an older JDK builds Core/Analyzer and then fails."
 fi
 ok "java $JAVA_MAJOR"
-ok "maven $(mvn --version 2>/dev/null | sed -n '1s/Apache Maven \([^ ]*\).*/\1/p')"
+# `mvn --version` emits ANSI colour even when piped, so strip escapes before printing.
+ok "maven $(mvn --version 2>/dev/null | head -1 | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/Apache Maven \([^ ]*\).*/\1/')"
 
 # gh must be authenticated: both repositories are private.
 if ! gh auth status --hostname github.com >/dev/null 2>&1; then

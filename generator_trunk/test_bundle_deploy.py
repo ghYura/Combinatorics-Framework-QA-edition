@@ -20,6 +20,15 @@ import pytest
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 
+# `bundle.deploy` imports PyYAML at module scope to read the compose profile, and
+# PyYAML ships only in the optional `deploy` extra. Without this guard the whole
+# module raised ImportError during collection on an install that did not take that
+# extra — which the repository's own CI gate correctly rejects, since a missing
+# OPTIONAL dependency must be a classified skip rather than a collection error.
+pytest.importorskip(
+    "yaml",
+    reason="EXPECTED_OPTIONAL: the deploy profile needs PyYAML (pip install -e '.[deploy]')")
+
 from bundle import deploy, stages
 
 _POSTGRES_IMAGE = deploy.load_compose()["services"]["main-db"]["image"]
