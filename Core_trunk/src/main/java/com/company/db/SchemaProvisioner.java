@@ -59,14 +59,18 @@ tbl.tablespace2Path.forEach((name, path) -> {
 String absPath = Path.of(path.trim()).toAbsolutePath().normalize().toString();
 ensureDirectoryOnClient(absPath);
 requireServerVisibleDirectory(pgAdminClient, name.trim(), absPath);
-pgAdminClient.executeSilently(
+// Re-running against an existing cluster is normal; a tablespace that is
+// already there (42710) is the desired end state. Anything else throws.
+pgAdminClient.executeTolerateAlreadyExists(
 "CREATE TABLESPACE \"" + name.trim() + "\" LOCATION '" + absPath.replace("'", "''") + "';");
 log.info("Tablespace '{}' provisioned at {}", name.trim(), absPath);
 });
 alterTablespaceParams(pgAdminClient, tbl.extendedDiskTablespace, tbl.extendedDiskParams);
 alterTablespaceParams(pgAdminClient, tbl.fastDiskTablespace,     tbl.fastDiskParams);
 tbl.database2Tablespace.forEach((dbName, tsName) ->
-pgAdminClient.executeSilently(
+// Same rerun tolerance (42P04); a missing tablespace or any other
+// failure must abort, not leave the database silently uncreated.
+pgAdminClient.executeTolerateAlreadyExists(
 "CREATE DATABASE \"" + dbName.trim()
 + "\" OWNER DEFAULT TABLESPACE \"" + tsName.trim() + "\";"));
 }
@@ -76,7 +80,9 @@ private static void alterTablespaceParams(DbClient pgAdminClient, String name, S
 // Historically ran unconditionally: an absent property rendered as
 // ALTER TABLESPACE "null" SET (null) and the failure was swallowed.
 if (name == null || name.isBlank() || params == null || params.isBlank()) return;
-pgAdminClient.executeSilently(
+// Strict: the named tablespace exists (pg_default or just provisioned);
+// a failure to apply requested params is a real misconfiguration.
+pgAdminClient.executeOrThrow(
 "ALTER TABLESPACE \"" + name.trim() + "\" SET (" + params.trim() + ");");
 }
 
@@ -123,7 +129,11 @@ throw new IllegalStateException(
 
 public void initStaticSchema() {
 String ddl = loadSqlResource("schema-init.sql");
-db.executeSilently(ddl);
+// Strict: the script is self-idempotent (every CREATE is preceded by
+// DROP TABLE IF EXISTS), so any failure means the static schema is
+// broken and no later stage can be trusted. Multi-statement script —
+// executeOrThrow is Statement-based and runs it as one batch.
+db.executeOrThrow(ddl);
 log.info("Static schema initialised from schema-init.sql");
 }
 

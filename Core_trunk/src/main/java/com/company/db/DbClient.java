@@ -182,13 +182,74 @@ pst.execute();
 }
 }
 
-public void executeSilently(String sql) {
+/** PostgreSQL SQLSTATEs of the duplicate-object family — the ONLY failures
+ * {@link #executeTolerateAlreadyExists} treats as benign. Grow this list only
+ * with a written reason; anything not listed is a real failure and throws.
+ *   42P07 duplicate_table
+ *   42710 duplicate_object   (tablespaces, roles, extensions, ...)
+ *   42P06 duplicate_schema
+ *   42701 duplicate_column
+ *   42P04 duplicate_database (reason: MainRefactored's ensure-database-exists
+ *          paths race against concurrent creators; "it already exists" is the
+ *          caller's desired end state there, exactly like the others). */
+private static final Set<String> DUPLICATE_OBJECT_SQLSTATES =
+Set.of("42P07", "42710", "42P06", "42701", "42P04");
+
+/** Replaces executeSilently(), which caught {@code Exception}, logged one WARN
+ * line and swallowed everything — connection-pool exhaustion, authentication
+ * failures and constraint violations with equal serenity. Real schema failures
+ * therefore surfaced (if at all) several steps later, somewhere misleading.
+ *
+ * <p>Statement-based on purpose: {@link #execute(String)} prepares, and the
+ * PostgreSQL driver refuses multi-statement scripts in a prepared statement,
+ * while several call sites (schema-init.sql, table-swap batches) are scripts.
+ *
+ * <p>Throws unchecked {@link DbExecutionException} (SQLSTATE + failing
+ * statement in the message) rather than checked SQLException because the
+ * migrated call sites never had throws-clauses; failures must propagate, not
+ * force blind signature churn through every caller. Non-SQLException
+ * throwables are never caught here at all — nothing about them is benign. */
+public void executeOrThrow(String sql) {
 try (Connection conn = pool.getConnection();
 Statement  st   = conn.createStatement()) {
-st.setFetchSize(50);
 st.execute(sql);
-} catch (Exception e) {
-log.warn("executeSilently: {}", e.getMessage());
+} catch (SQLException e) {
+throw executionFailure(sql, e);
+}
+}
+
+/** Like {@link #executeOrThrow}, but tolerates — silently, at DEBUG — the
+ * genuine "it already exists" conditions in {@link #DUPLICATE_OBJECT_SQLSTATES}.
+ * The check is on {@link SQLException#getSQLState()}, never on message text:
+ * messages are localised and unstable, SQLSTATEs are contractual. Everything
+ * else throws exactly like {@link #executeOrThrow}. */
+public void executeTolerateAlreadyExists(String sql) {
+try (Connection conn = pool.getConnection();
+Statement  st   = conn.createStatement()) {
+st.execute(sql);
+} catch (SQLException e) {
+if (e.getSQLState() != null && DUPLICATE_OBJECT_SQLSTATES.contains(e.getSQLState())) {
+log.debug("executeTolerateAlreadyExists: benign duplicate (SQLSTATE {}): {}",
+e.getSQLState(), e.getMessage());
+return;
+}
+throw executionFailure(sql, e);
+}
+}
+
+private static DbExecutionException executionFailure(String sql, SQLException e) {
+String stmt = sql != null && sql.length() > 2000
+? sql.substring(0, 2000) + " …(+" + (sql.length() - 2000) + " chars)"
+: sql;
+return new DbExecutionException("SQL failed (SQLSTATE " + e.getSQLState() + "): "
++ e.getMessage() + " — statement: " + stmt, e);
+}
+
+/** Unchecked carrier for {@link #executeOrThrow}/{@link #executeTolerateAlreadyExists}
+ * failures; message always includes the SQLSTATE and the failing statement. */
+public static final class DbExecutionException extends RuntimeException {
+DbExecutionException(String message, SQLException cause) {
+super(message, cause);
 }
 }
 

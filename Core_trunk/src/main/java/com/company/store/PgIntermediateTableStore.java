@@ -258,12 +258,24 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
 
     @Override
     public void deleteRows(short key, boolean fw2) {
-        db.executeSilently("DELETE FROM public." + table(key, fw2) + ";");
+        // Absent table is a no-op by contract: the exclusion cleanup calls this
+        // for BOTH fw_<k> and fw2_<k> without knowing which exists, and the
+        // memory store's deleteRows is likewise a no-op for an unknown key.
+        // That tolerance is expressed as an explicit existence check — a DELETE
+        // that fails for any real reason (locks, auth, pool) must throw, so the
+        // old swallow-everything executeSilently is exactly wrong here.
+        String tbl = table(key, fw2);
+        String exists = db.queryString(
+                "SELECT CASE WHEN to_regclass('public." + tbl + "') IS NOT NULL THEN '1' ELSE '0' END;");
+        if (!"1".equals(exists)) return;
+        db.executeOrThrow("DELETE FROM public." + tbl + ";");
     }
 
     @Override
     public void dropTable(short key, boolean fw2) {
-        db.executeSilently("DROP TABLE IF EXISTS public." + table(key, fw2) + ";");
+        // IF EXISTS already makes absence benign at the SQL level; any error
+        // that still comes back (locks, dependent objects, connection) is real.
+        db.executeOrThrow("DROP TABLE IF EXISTS public." + table(key, fw2) + ";");
     }
 
     @Override
