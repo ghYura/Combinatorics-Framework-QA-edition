@@ -362,7 +362,23 @@ jobs:
           if [ "$rc" -eq 0 ]; then
             echo "::error::a secure profile completed without a sandbox backend"; cat /tmp/failclosed.txt; exit 1
           fi
-          grep -Eq "requires the 'container' sandbox backend|refusing to run generated candidates unsandboxed" \
+          # Accept either genuine fail-closed refusal, and nothing else — the point
+          # of this gate is that the run refused *for the sandbox reason*, not that
+          # it merely failed.
+          #
+          #   "refusing a secure run ..."  the launcher's STEP 30 invariant
+          #                                (bundle/cli.py), covered by
+          #                                test_bundle_execution_safety.py and
+          #                                test_bundle_resume.py. This is the one
+          #                                that fires on the GitHub runner.
+          #   "refusing to run generated   the Executor's own earlier refusal
+          #    candidates unsandboxed"     (docs/10_SECURITY_AND_SANDBOXING.md),
+          #                                reachable on hosts that get further.
+          #
+          # The previous alternation also listed "requires the 'container' sandbox
+          # backend", which exists nowhere in the tree — a pattern that can never
+          # match hides drift rather than catching it, so it is dropped.
+          grep -Eq "refusing a secure run that did not go through the .* sandbox|refusing to run generated candidates unsandboxed" \
             /tmp/failclosed.txt || {
               echo "::error::command failed, but not for the expected fail-closed sandbox reason";
               cat /tmp/failclosed.txt; exit 1; }
