@@ -1591,10 +1591,30 @@ def stage_analyzer(src, scratch, goals, cfg: BundleConfig = BundleConfig(),
     else:                                                # fallback: one-time self-build classpath under /tmp
         clsdir, cpfile = Path("/tmp/analyzekv"), Path("/tmp/analyzer_cp_full.txt")
         if not cpfile.exists():
-            run(f'cd "{az}" && mvn -o -q dependency:build-classpath -Dmdep.outputFile=/tmp/_dep.txt')
-            if Path("/tmp/_dep.txt").exists():
-                cpfile.write_text(f'{jar}:' + Path("/tmp/_dep.txt").read_text().strip())
+            # Offline first: on a warmed ~/.m2 this is fast and needs no network.
+            # But `mvn -o` cannot fetch maven-dependency-plugin itself, and the
+            # reactor build does not pull it in — so on a cold cache (a fresh CI
+            # runner) the offline attempt always fails. Retry online before giving
+            # up, otherwise the analyzer is unrunnable on exactly the hosts that
+            # matter most: clean ones.
+            dep = Path("/tmp/_dep.txt")
+            for offline in (True, False):
+                flag = "-o " if offline else ""
+                run(f'cd "{az}" && mvn {flag}-q dependency:build-classpath -Dmdep.outputFile={dep}')
+                if dep.exists():
+                    cpfile.write_text(f'{jar}:' + dep.read_text().strip())
+                    break
         if not cpfile.exists():
+            # Same condition as the missing-jar check above — the analyzer cannot
+            # run — so it must fail the same way. Degrading here regardless of mode
+            # meant a formal run reported "full Bundle chain green" while the
+            # Analyzer stage had silently not executed, and the caller then died on
+            # the missing provenance.json instead of being told the real cause.
+            if mode == "formal":
+                raise StageError(
+                    f"formal analysis requires the Analyzer, but its classpath could not be "
+                    f"resolved (corpus at {kv}). Build it once with: "
+                    f"cd {az} && mvn -q dependency:build-classpath -Dmdep.outputFile=/tmp/_dep.txt")
             print("    (could not resolve analyzer classpath — corpus ready at", kv, ")"); return
     # Refresh the dependency bytecode (target/classes) AND the AnalyzeKv driver class — in that
     # order — before running AnalyzeKv. A failed dependency rebuild raises (formal) or falls back to
