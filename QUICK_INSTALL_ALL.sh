@@ -10,6 +10,7 @@
 #   ./QUICK_INSTALL_ALL.sh                  # install + smoke tests (no database)
 #   ./QUICK_INSTALL_ALL.sh --with-db        # also start PostgreSQL and run a full pipeline
 #   ./QUICK_INSTALL_ALL.sh --dir ~/bundle   # choose where the checkouts go
+#   ./QUICK_INSTALL_ALL.sh --ref <branch>   # check out a branch or tag instead of the default
 #   ./QUICK_INSTALL_ALL.sh --help
 #
 # Run it from anywhere: inside an existing checkout (it will find the sibling, or
@@ -32,6 +33,10 @@ readonly SUT_DIR_NAME="SUT"
 WITH_DB=0
 TARGET_DIR=""
 SKIP_SMOKE=0
+# Branch or tag to check out in both repositories. Empty means each repository's
+# default branch. Both are checked out at the same ref, so a cross-repository
+# change stays consistent.
+REF=""
 
 # Database endpoints used by --with-db. Deliberately NOT the managed `deploy`
 # profile's 15433/15432: those are fixed host-wide, so a second checkout on the
@@ -85,6 +90,8 @@ while [ $# -gt 0 ]; do
         --no-smoke)   SKIP_SMOKE=1 ;;
         --dir)        TARGET_DIR="${2:-}"; [ -n "$TARGET_DIR" ] || die "--dir needs a path"; shift ;;
         --dir=*)      TARGET_DIR="${1#--dir=}" ;;
+        --ref)        REF="${2:-}"; [ -n "$REF" ] || die "--ref needs a branch or tag"; shift ;;
+        --ref=*)      REF="${1#--ref=}" ;;
         -h|--help)    usage ;;
         *)            die "unknown option '$1' (try --help)" ;;
     esac
@@ -185,6 +192,13 @@ clone_or_keep() {
         gh repo clone "$repo" "$dest" -- --quiet \
             || die "clone of $repo failed. Both repositories are private — confirm your account can read them:  gh repo view $repo"
         ok "$label cloned"
+    fi
+    if [ -n "$REF" ]; then
+        # Fetch explicitly: a fresh clone only has the default branch, and a reused
+        # checkout may predate the ref entirely.
+        (cd "$dest" && git fetch --quiet origin "$REF" && git checkout --quiet FETCH_HEAD) \
+            || die "$label: could not check out ref '$REF'"
+        ok "$label at $REF ($(cd "$dest" && git rev-parse --short HEAD))"
     fi
 }
 
