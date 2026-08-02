@@ -71,6 +71,10 @@ Bootstrap.main                              # entry; AppConfig.load(); → MainR
   **`fw_optX`** = optional combos of size X (one populated column per size-1 row, …).
 - ⚠ `FW_ReplaceRE` rewrites the **code-string** (e.g. `"[47, 48]"`), NOT value text, and the result must
   stay integer-parseable (else `NumberFormatException` → row dropped). See ZEN's 2026-06-12 correction.
+  Both failure modes are silent by default; `core.replace.*` in `fw.properties` makes them visible or
+  fatal at your choice, changing nothing unless set (`AppConfig.ReplacePatternPolicy` &c.,
+  `SheetWorker.applyReplaceAuthoringPolicies` / `reportReplaceOutcome`).
+  See [../docs/41_FW_REPLACERE_POLICIES.md](../docs/41_FW_REPLACERE_POLICIES.md).
 
 ## 5. The verbs (pointer) and the two second-order operators
 

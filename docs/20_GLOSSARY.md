@@ -18,7 +18,9 @@
 - **Brace `FW_(…)`** — a second-order **join** of two prior result tables (9 fields:
   `start,_,E1,rel,E2,_,end,sep,mult`); operands carry `FW_Exclude`.
 - **`FW_Group` + `FW_ReplaceRE`** — second-order **re-combination + rewrite** of one prior result's
-  rows; concatenates by index order (most order-sensitive verb).
+  rows; concatenates by index order (most order-sensitive verb). The rewrite matches the
+  **code-string** of a combination (interned `Short` keys, e.g. `"[47, 48]"`), never value text — see
+  [41_FW_REPLACERE_POLICIES.md](41_FW_REPLACERE_POLICIES.md) for the opt-in `core.replace.*` checks.
 - **`fw_final`** — the materialized mandatory result table in the main DB. **`fw_opt<i>`** — optional
   combination tables (size-i co-firing sudden actions). **`fw2_<k>`** — a sheet's dual/sub-combo
   output that braces/`FW_Group` consume.

@@ -265,3 +265,10 @@ and `group_replace = [["pat","rep"], …]`; the brace is a top-level `seq_extra`
   render use ("strip brackets, quote tokens") rewrites exactly those structural characters of the
   code-string. The "internal short key" is the `Short` code, and the transform is *in-between* the
   grouping and the parse-back.
+- **This trap is now detectable at authoring time, opt-in.** `core.replace.patternPolicy=warn|strict`
+  rejects a pattern that provably cannot match a code-string — it would have caught the `@S@` case
+  above before the campaign ran. `core.replace.unmatchedPolicy` catches the pattern that *could*
+  match but never does, and `core.replace.diagnostics=summary` prints per-pattern hit counts so a
+  no-op is visible without changing behaviour. All five keys default to the historical behaviour and
+  restrict nothing; operating on the short **keys** is the capability, not the bug. See
+  [docs/41_FW_REPLACERE_POLICIES.md](docs/41_FW_REPLACERE_POLICIES.md).

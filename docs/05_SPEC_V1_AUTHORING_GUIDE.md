@@ -97,6 +97,15 @@ second-order operator: it re-combines a sheet's prior **rows** and rewrites the 
 It concatenates **by index order**, so it is the most order-sensitive verb — rely on the Core's
 content-sort for determinism.
 
+> **`group_replace` patterns match value-CODES, not value text.** The rewrite runs against the
+> code-string of each produced combination — `"[47, 48]"`, a list of interned `Short` keys — so a
+> pattern written against rendered text (a placeholder like `@S@`, a word like `"shape"`) can never
+> match and is a silent no-op. While authoring, turn the check on:
+> `core.replace.patternPolicy=warn` rejects such patterns up front and
+> `core.replace.diagnostics=summary` shows how many rows each pattern actually changed. Both default
+> to off, so existing specs are unaffected. See
+> [41_FW_REPLACERE_POLICIES.md](41_FW_REPLACERE_POLICIES.md).
+
 ## Optional behavior, aliases, separators
 
 - **Aliases** (opt-in, compiled to verbs): `choose_one`, `choose_k`, `permute`, `feature_subset`,
