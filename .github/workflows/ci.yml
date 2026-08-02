@@ -29,6 +29,9 @@ concurrency:
 env:
   PIP_DISABLE_PIP_VERSION_CHECK: "1"
   PYTHONDONTWRITEBYTECODE: "1"
+  # The canonical sibling SUT revision Tier 2/3 build against. One source for
+  # both jobs; their pre-flight steps verify this exact commit is fetchable.
+  SUT_SIBLING_PIN: db1ac787d07fe4ea16b084b551576c1da1a055fd
 
 jobs:
   # ------------------------------------------------------------ TIER 1 -------
@@ -197,14 +200,41 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           persist-credentials: false
+      - name: "Pre-flight: the private sibling SUT repository must be readable"
+        env:
+          GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
+        run: |
+          # github.token is scoped to THIS repository only; it can never read the
+          # private sibling ghYura/SUT, and GitHub reports an unreadable private
+          # repo as a misleading 404 "Repository not found" instead of a
+          # permission error. Establish readability with the one token that can
+          # work BEFORE actions/checkout runs, so a misconfigured secret is
+          # diagnosed here in one line instead of masquerading as a missing
+          # repository. This gate FAILS — it never skips: a canonical gate that
+          # self-skips reads as green while the gate never ran.
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::secret SUT_REPO_TOKEN is not configured, so this job cannot read the private sibling repository ghYura/SUT (github.token is scoped to this repo only and can never work). Fix: create a fine-grained PAT with 'Contents: Read' on ghYura/SUT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+            exit 1
+          fi
+          if ! gh api repos/ghYura/SUT --silent; then
+            echo "::error::SUT_REPO_TOKEN is configured but cannot read ghYura/SUT (GitHub shows an unreadable private repository as 404 'not found'). The token must be a fine-grained PAT granting 'Contents: Read' on ghYura/SUT. Fix: mint such a PAT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+            exit 1
+          fi
+          if ! gh api "repos/ghYura/SUT/commits/${SUT_SIBLING_PIN}" --silent; then
+            echo "::error::ghYura/SUT is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a token or setup problem."
+            exit 1
+          fi
+          echo "Pre-flight OK: ghYura/SUT is readable and pinned revision ${SUT_SIBLING_PIN} exists."
       - name: Check out the exact canonical sibling SUT revision
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ghYura/SUT
-          ref: db1ac787d07fe4ea16b084b551576c1da1a055fd
+          ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+          # No `|| github.token` fallback: that token is repo-scoped, can never
+          # read the sibling, and turned a missing secret into a bogus 404.
+          token: ${{ secrets.SUT_REPO_TOKEN }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5
@@ -370,14 +400,36 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+      - name: "Pre-flight: the private sibling SUT repository must be readable"
+        env:
+          GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
+        run: |
+          # Same gate as Tier 2 (see the comment there): github.token can never
+          # read the private sibling, and a missing/underscoped SUT_REPO_TOKEN
+          # must fail loudly here — never skip, never surface as a bogus 404.
+          if [ -z "${GH_TOKEN}" ]; then
+            echo "::error::secret SUT_REPO_TOKEN is not configured, so this job cannot read the private sibling repository ghYura/SUT (github.token is scoped to this repo only and can never work). Fix: create a fine-grained PAT with 'Contents: Read' on ghYura/SUT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+            exit 1
+          fi
+          if ! gh api repos/ghYura/SUT --silent; then
+            echo "::error::SUT_REPO_TOKEN is configured but cannot read ghYura/SUT (GitHub shows an unreadable private repository as 404 'not found'). The token must be a fine-grained PAT granting 'Contents: Read' on ghYura/SUT. Fix: mint such a PAT, then run: gh secret set SUT_REPO_TOKEN --repo ghYura/Combinatorics-Framework-QA-edition"
+            exit 1
+          fi
+          if ! gh api "repos/ghYura/SUT/commits/${SUT_SIBLING_PIN}" --silent; then
+            echo "::error::ghYura/SUT is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a token or setup problem."
+            exit 1
+          fi
+          echo "Pre-flight OK: ghYura/SUT is readable and pinned revision ${SUT_SIBLING_PIN} exists."
       - name: Check out the exact sibling SUT revision for release evidence
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
           repository: ghYura/SUT
-          ref: db1ac787d07fe4ea16b084b551576c1da1a055fd
+          ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+          # No `|| github.token` fallback: that token is repo-scoped, can never
+          # read the sibling, and turned a missing secret into a bogus 404.
+          token: ${{ secrets.SUT_REPO_TOKEN }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
 
