@@ -274,33 +274,68 @@ def _check_scratch(cfg: BundleConfig) -> DoctorCheck:
 # wiring a backend selector that doesn't exist yet).
 _SANDBOX_BACKEND_EXES = ("bwrap", "firejail", "nsjail", "unshare")
 
+#: Backends the Python Executor actually implements (``Executor_trunk/sandbox.py``),
+#: mapped to the host executable each one drives. Kept deliberately narrow: an
+#: isolation tool being installed is not the same as this project being able to
+#: drive it, and reporting `unshare`/`nsjail` as "available backends" overstated
+#: what a secure run can actually select.
+IMPLEMENTED_SANDBOX_BACKENDS = {
+    "container": ("docker", "podman"),
+    "bubblewrap": ("bwrap",),
+}
+
 
 def available_sandbox_backends() -> "tuple[str, ...]":
-    """Which of `_SANDBOX_BACKEND_EXES` are on PATH, in priority order."""
+    """Which of `_SANDBOX_BACKEND_EXES` are on PATH, in priority order.
+
+    Retained for callers that want the raw OS-level probe; `_check_sandbox`
+    reports against `IMPLEMENTED_SANDBOX_BACKENDS` instead, because that is the
+    set a policy can actually name.
+    """
     return tuple(exe for exe in _SANDBOX_BACKEND_EXES if shutil.which(exe))
 
 
+def usable_sandbox_backends() -> "tuple[str, ...]":
+    """Implemented backends whose host dependency is present, in policy order."""
+    return tuple(backend for backend, exes in IMPLEMENTED_SANDBOX_BACKENDS.items()
+                 if any(shutil.which(exe) for exe in exes))
+
+
 def _check_sandbox(cfg: BundleConfig) -> DoctorCheck:
-    """STEP 15 action 1 'sandbox backend availability'. `cfg.sandbox_policy`
-    is itself still a placeholder for STEP 28's real backend *selection*
-    (see `BundleConfig.sandbox_policy` docstring) — but Doctor can already
-    probe whether the OS actually has an isolation mechanism a future backend
-    could drive, which is the part an operator can act on *today* (install
-    bubblewrap/firejail/...). policy='none' means isolation is explicitly
-    opted out, so absence of a backend is not a finding."""
+    """STEP 15 action 1 'sandbox backend availability', reporting what a secure
+    run can actually select today.
+
+    `cfg.sandbox_policy` remains a legacy free-form label; the operative choice
+    is the execution-policy profile's `backend`, and the Python Executor
+    implements `container` (rootless Docker/Podman) and `bubblewrap`. Both are
+    live: `build_sandbox` constructs the backend, self-tests it, and raises
+    `SandboxUnavailable` rather than falling back to unsandboxed execution, so a
+    secure profile on a host without its backend refuses to run instead of
+    quietly degrading.
+
+    policy='none' means isolation is explicitly opted out, so absence of a
+    backend is not a finding.
+    """
     name = "sandbox"
     policy = cfg.sandbox_policy
     if policy == "none":
         return _check(name, Severity.OK, "sandbox_policy='none' — isolation explicitly disabled")
-    backends = available_sandbox_backends()
-    if backends:
+    usable = usable_sandbox_backends()
+    known = ", ".join(IMPLEMENTED_SANDBOX_BACKENDS)
+    if usable:
         return _check(name, Severity.OK,
-                      f"sandbox_policy='{policy}', backend(s) available: {', '.join(backends)}",
-                      "STEP 28 will select among these; none is wired up as an active backend yet")
+                      f"sandbox_policy='{policy}', usable backend(s): {', '.join(usable)}",
+                      "profiles 'generated-default'/'networked-api-probe' select backend "
+                      "'container'; 'trusted-local' is the explicit unsandboxed opt-in",
+                      "a secure profile whose backend is unusable fails closed "
+                      "(SandboxUnavailable) — it never falls back to running candidates "
+                      "unsandboxed")
     return _check(name, Severity.WARNING,
-                  f"sandbox_policy='{policy}', but no isolation backend found ({'/'.join(_SANDBOX_BACKEND_EXES)})",
-                  "install one (e.g. bubblewrap) before STEP 28 wires up real sandboxing — "
-                  "not blocking today since no backend is active yet")
+                  f"sandbox_policy='{policy}', but no implemented backend is usable "
+                  f"(need one of: {known})",
+                  "install a container runtime (docker/podman) or bubblewrap; without one, "
+                  "every sandboxed profile refuses to start",
+                  "not blocking on its own — 'trusted-local' still runs, unsandboxed by design")
 
 
 def _check_container_runtime(cfg: BundleConfig) -> DoctorCheck:

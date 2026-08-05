@@ -2,8 +2,12 @@
 
 The normal launcher remains authoritative for preflight, budgets, stage journals,
 Core/Reader/Executor/Analyzer behavior, cancellation semantics and results.  The
-only substitution is ``stage_gen``: it validates and copies the workbook already
-authored by the user into the run directory.
+only substitution is the Generator stage: it validates and copies the workbook
+already authored by the user into the run directory.
+
+The substitution is passed as a `StageTable` (``bundle.stagetable``) rather than
+rebound on ``bundle.cli``, so it is visible at the call site and unaffected by
+where the orchestrator happens to live.
 """
 
 from __future__ import annotations
@@ -14,7 +18,13 @@ import shutil
 import sys
 
 
-def install_exact_workbook_stage(workbook: Path) -> None:
+def exact_workbook_stage_table(workbook: Path):
+    """The production stage table with only the Generator substituted.
+
+    Returns a `StageTable` rather than rebinding ``bundle.cli.stage_gen``: the
+    substitution is then visible in the call that uses it, and it survives the
+    orchestrator moving between modules.
+    """
     import bundle.cli as bundle_cli
     from bundle.errors import StageError, ok
     import fwgen
@@ -33,7 +43,7 @@ def install_exact_workbook_stage(workbook: Path) -> None:
         ok(f"exact workbook -> {destination.name} (validated; directive positions preserved)")
         return destination
 
-    bundle_cli.stage_gen = stage_exact_workbook
+    return bundle_cli.default_stage_table().with_(gen=stage_exact_workbook)
 
 
 def parse_args(argv: list[str] | None = None) -> tuple[Path, list[str]]:
@@ -55,12 +65,12 @@ def main(argv: list[str] | None = None) -> None:
     workbook, bundle_args = parse_args(argv)
     if not workbook.is_file():
         raise SystemExit(f"workbook not found: {workbook}")
-    install_exact_workbook_stage(workbook)
+    stages = exact_workbook_stage_table(workbook)
     import bundle.cli as bundle_cli
     old_argv = sys.argv
     try:
         sys.argv = ["bundle_run.py", *bundle_args]
-        bundle_cli.main()
+        bundle_cli.main(stages=stages)
     finally:
         sys.argv = old_argv
 

@@ -75,6 +75,58 @@ def test_available_sandbox_backends_only_returns_present_executables():
         assert shutil.which(exe), f"{exe} reported available but not on PATH"
 
 
+def test_usable_backends_are_only_ones_the_executor_implements():
+    """`unshare`/`nsjail` being installed does not make them selectable.
+
+    Doctor used to list every isolation executable on PATH as an available
+    backend, which overstated what a secure policy can actually name: the Python
+    Executor implements `container` and `bubblewrap` only.
+    """
+    import shutil
+
+    from bundle.doctor import IMPLEMENTED_SANDBOX_BACKENDS, usable_sandbox_backends
+
+    usable = usable_sandbox_backends()
+    assert isinstance(usable, tuple)
+    assert set(usable) <= set(IMPLEMENTED_SANDBOX_BACKENDS)
+    for backend in usable:
+        exes = IMPLEMENTED_SANDBOX_BACKENDS[backend]
+        assert any(shutil.which(e) for e in exes), f"{backend} reported usable with no host exe"
+
+
+def test_sandbox_check_does_not_claim_backends_are_unwired(monkeypatch):
+    """Regression: the check reported "none is wired up as an active backend yet"
+    long after `build_sandbox` was driving container/bubblewrap for real."""
+    from bundle.config import BundleConfig
+
+    monkeypatch.setattr(doctor_module, "usable_sandbox_backends", lambda: ("container",))
+    check = doctor_module._check_sandbox(BundleConfig())
+    blob = " ".join((check.message,) + tuple(check.details)).lower()
+    assert check.severity is Severity.OK
+    assert "container" in blob
+    assert "not wired" not in blob and "none is wired" not in blob
+    # the fail-closed guarantee is the point of the check, so it must be stated
+    assert "fails closed" in blob
+
+
+def test_sandbox_check_warns_when_no_implemented_backend_is_usable(monkeypatch):
+    from bundle.config import BundleConfig
+
+    monkeypatch.setattr(doctor_module, "usable_sandbox_backends", lambda: ())
+    check = doctor_module._check_sandbox(BundleConfig())
+    assert check.severity is Severity.WARNING
+    assert "no implemented backend is usable" in check.message
+
+
+def test_sandbox_check_stays_ok_when_isolation_is_opted_out(monkeypatch):
+    from bundle.config import BundleConfig
+
+    monkeypatch.setattr(doctor_module, "usable_sandbox_backends", lambda: ())
+    check = doctor_module._check_sandbox(BundleConfig(sandbox_policy="none"))
+    assert check.severity is Severity.OK
+    assert "explicitly disabled" in check.message
+
+
 def test_analyzer_canonical_jar_is_ready_without_legacy_persisted_files():
     with tempfile.TemporaryDirectory() as d:
         root = Path(d)

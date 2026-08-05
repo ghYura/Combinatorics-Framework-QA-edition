@@ -16,6 +16,7 @@ from unittest.mock import patch
 import pytest
 
 from bundle import cli
+from bundle import orchestrator as orch
 from bundle.config import BundleConfig
 from bundle.handoff import (
     CandidateTransport,
@@ -62,7 +63,7 @@ CRITICAL = InvariantSeverity.CRITICAL
 # it. Keep checked-in source/config fingerprints while omitting only build
 # outputs from this unit-test fixture. The real-shard tests below still require
 # and explicitly detect the compiled Reader classes before running.
-_REAL_STAGE_COMPONENT_ARTIFACTS = cli._stage_component_artifacts
+_REAL_STAGE_COMPONENT_ARTIFACTS = orch._stage_component_artifacts
 _GENERATED_COMPONENT_KINDS = frozenset({
     "component.core_jar",
     "component.reader_jar",
@@ -81,7 +82,7 @@ def _source_only_component_artifacts(monkeypatch):
             if artifact.kind not in _GENERATED_COMPONENT_KINDS
         )
 
-    monkeypatch.setattr(cli, "_stage_component_artifacts", source_only)
+    monkeypatch.setattr(orch, "_stage_component_artifacts", source_only)
 
 
 def _inv(id, *, passed=True, severity=CRITICAL) -> InvariantResult:
@@ -151,7 +152,7 @@ def _build_run(d, *, n_cands=3, executor_status=StageStatus.FAILED, sharded=Fals
                   # continue under a different policy. A run recorded without it
                   # cannot be resumed at all -- see the dedicated test below.
                   "execution_authorization": authorization,
-                  "optional_table_contract": cli.contract_from_spec(
+                  "optional_table_contract": orch.contract_from_spec(
                       SimpleNamespace(slots=[])).to_dict()})
     write_json_atomic(layout.manifest_path, manifest)
     workbook = root / "wb" / "demo.xlsx"
@@ -161,12 +162,12 @@ def _build_run(d, *, n_cands=3, executor_status=StageStatus.FAILED, sharded=Fals
     _write_stage(layout, "gen", StageStatus.SUCCEEDED,
                  artifacts=(file_artifact("input.spec", spec_path),
                             file_artifact("output.workbook", workbook),
-                            *cli._stage_component_artifacts("gen", cfg)))
+                            *orch._stage_component_artifacts("gen", cfg)))
     _write_stage(layout, "core", StageStatus.SUCCEEDED,
                  counts=(CountObservation(name="fw_final", expected=12, actual=12),),
                  invariants=(_inv("core.count_positive"),),
                  artifacts=(file_artifact("input.workbook", workbook),
-                            *cli._stage_component_artifacts("core", cfg)))
+                            *orch._stage_component_artifacts("core", cfg)))
 
     if sharded:
         _emit_shards(root / "src", n_cands)
@@ -191,10 +192,10 @@ def _build_run(d, *, n_cands=3, executor_status=StageStatus.FAILED, sharded=Fals
                  invariants=(_inv("reader.emitted_eq_expected"), _inv("reader.empty_zero"),
                              _inv("handoff.run_id_matches"), _inv("handoff.candidate_count_matches")),
                  artifacts=(candidate_artifact, file_artifact("output.handoff_manifest", handoff_path),
-                            *cli._stage_component_artifacts("reader", cfg)))
+                            *orch._stage_component_artifacts("reader", cfg)))
 
     executor_artifacts = [dir_artifact("input.candidates", root / "src", cand_glob),
-                          *cli._stage_component_artifacts("executor", cfg)]
+                          *orch._stage_component_artifacts("executor", cfg)]
     if executor_status == StageStatus.SUCCEEDED:
         summary = root / "executor-summary.json"
         summary.write_text(json.dumps({"processed": n_cands, "sandbox_backend": "local"}),
@@ -316,12 +317,12 @@ def test_changed_spec_invalidates_and_reruns_all_stages():
                     {"attempted": 1, "inserted": 1, "already_present": 0, "updated_selected": 0})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=fake_gen), \
-             patch.object(cli, "stage_core", side_effect=fake_core), \
-             patch.object(cli, "stage_reader", side_effect=fake_reader), \
-             patch.object(cli, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=fake_gen), \
+             patch.object(orch, "stage_core", side_effect=fake_core), \
+             patch.object(orch, "stage_reader", side_effect=fake_reader), \
+             patch.object(orch, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["gen", "core", "reader", "executor"]
@@ -356,13 +357,13 @@ def test_resume_propagates_one_optional_contract_through_core_and_reader():
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (optional_spec, spec_path)), \
              patch.object(cli.fg, "estimate_core_combos", lambda spec: 12), \
-             patch.object(cli, "_optional_tables", lambda *_a, **_k: ["fw_opt1"]), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", lambda *_a, **_k: layout.root / "wb" / "demo.xlsx"), \
-             patch.object(cli, "stage_core", side_effect=fake_core), \
-             patch.object(cli, "stage_reader", side_effect=fake_reader), \
-             patch.object(cli, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "_optional_tables", lambda *_a, **_k: ["fw_opt1"]), \
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", lambda *_a, **_k: layout.root / "wb" / "demo.xlsx"), \
+             patch.object(orch, "stage_core", side_effect=fake_core), \
+             patch.object(orch, "stage_reader", side_effect=fake_reader), \
+             patch.object(orch, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert seen["core"] is seen["reader"]
@@ -446,7 +447,7 @@ def test_resume_rechecks_the_backend_of_a_reused_executor_summary():
         # _build_run recorded this exact summary as an artifact. For a secure
         # authorization, its local backend is proof of the forbidden downgrade.
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql):
+             patch.object(orch, "psql", _resume_psql):
             with pytest.raises(StageError, match="refusing a secure run"):
                 cli.cmd_resume(_BLANK_ARGS(layout.root))
 
@@ -461,8 +462,8 @@ def test_rerun_executor_must_emit_a_summary_on_resume():
                      "updated_selected": 0})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor_without_summary):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor_without_summary):
             with pytest.raises(StageError, match="executor summary missing"):
                 cli.cmd_resume(_BLANK_ARGS(layout.root))
 
@@ -497,11 +498,11 @@ def test_resume_reuses_valid_stages_and_only_reruns_the_failed_executor():
                     {"attempted": 3, "inserted": 3, "already_present": 0, "updated_selected": 0})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
-             patch.object(cli, "stage_reader", side_effect=AssertionError("'reader' must be reused, not rerun")), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
+             patch.object(orch, "stage_reader", side_effect=AssertionError("'reader' must be reused, not rerun")), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["executor"], f"expected only the executor to rerun, got {ran}"
@@ -541,15 +542,15 @@ def test_resume_reuses_reader_when_recorded_manifest_hash_matches_policy_stamped
                                  _inv("handoff.run_id_matches"), _inv("handoff.candidate_count_matches")),
                      artifacts=(dir_artifact("output.candidates", layout.root / "src", "*.py"),
                                 file_artifact("output.handoff_manifest", handoff_path),
-                                *cli._stage_component_artifacts("reader", cfg)))
+                                *orch._stage_component_artifacts("reader", cfg)))
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "_results_v2_latest_attempt_candidates", lambda *a, **k: 3), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("'gen' must be reused")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("'core' must be reused")), \
-             patch.object(cli, "stage_reader", side_effect=AssertionError("'reader' must be reused, not rerun")), \
-             patch.object(cli, "stage_executor", side_effect=AssertionError("'executor' must be reused, not rerun")):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "_results_v2_latest_attempt_candidates", lambda *a, **k: 3), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("'gen' must be reused")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("'core' must be reused")), \
+             patch.object(orch, "stage_reader", side_effect=AssertionError("'reader' must be reused, not rerun")), \
+             patch.object(orch, "stage_executor", side_effect=AssertionError("'executor' must be reused, not rerun")):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         state = read_json(layout.state_path)
@@ -578,12 +579,12 @@ def test_resume_reruns_reader_and_downstream_when_a_candidate_is_missing():
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
              patch.object(cli.fg, "estimate_core_combos", lambda spec: 1), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
-             patch.object(cli, "stage_reader", side_effect=fake_reader), \
-             patch.object(cli, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
+             patch.object(orch, "stage_reader", side_effect=fake_reader), \
+             patch.object(orch, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["reader", "executor"], f"expected reader+executor to rerun, got {ran}"
@@ -613,12 +614,12 @@ def test_resume_reruns_reader_when_candidate_content_changes_without_count_chang
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
              patch.object(cli.fg, "estimate_core_combos", lambda spec: 1), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("gen must be reused")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("core must be reused")), \
-             patch.object(cli, "stage_reader", side_effect=fake_reader), \
-             patch.object(cli, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("gen must be reused")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("core must be reused")), \
+             patch.object(orch, "stage_reader", side_effect=fake_reader), \
+             patch.object(orch, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["reader", "executor"]
@@ -665,12 +666,12 @@ def test_resume_skips_valid_finalized_shards():
                     {"attempted": 10, "inserted": 10, "already_present": 0, "updated_selected": 0})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
-             patch.object(cli, "stage_reader",
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("'gen' must be reused, not rerun")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("'core' must be reused, not rerun")), \
+             patch.object(orch, "stage_reader",
                           side_effect=AssertionError("'reader' must be reused -- valid finalized shards!")), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["executor"], f"expected only executor to rerun (shards reused), got {ran}"
@@ -706,12 +707,12 @@ def test_resume_reruns_reader_when_a_shard_is_corrupted():
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
              patch.object(cli.fg, "estimate_core_combos", lambda spec: 1), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("gen must be reused")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("core must be reused")), \
-             patch.object(cli, "stage_reader", side_effect=fake_reader), \
-             patch.object(cli, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("gen must be reused")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("core must be reused")), \
+             patch.object(orch, "stage_reader", side_effect=fake_reader), \
+             patch.object(orch, "_record_handoff_manifest", lambda rec, *_a, **_k: object()), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["reader", "executor"], f"a corrupt shard must rerun reader+executor, got {ran}"
@@ -746,11 +747,11 @@ def test_resume_reruns_executor_when_results_v2_rows_are_missing():
                     {"attempted": 3, "inserted": 3, "already_present": 0, "updated_selected": 0})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", fake_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("gen must be reused")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("core must be reused")), \
-             patch.object(cli, "stage_reader", side_effect=AssertionError("reader must be reused")), \
-             patch.object(cli, "stage_executor", side_effect=fake_executor):
+             patch.object(orch, "psql", fake_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("gen must be reused")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("core must be reused")), \
+             patch.object(orch, "stage_reader", side_effect=AssertionError("reader must be reused")), \
+             patch.object(orch, "stage_executor", side_effect=fake_executor):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
         assert ran == ["executor"]
@@ -766,11 +767,11 @@ def test_resume_of_an_already_succeeded_run_reuses_everything_and_stays_idempote
         write_json_atomic(layout.state_path, {**read_json(layout.state_path), "status": "SUCCEEDED"})
 
         with patch.object(cli, "_load_one_spec", lambda spec_dir: (_FAKE_SPEC, spec_path)), \
-             patch.object(cli, "psql", _resume_psql), \
-             patch.object(cli, "stage_gen", side_effect=AssertionError("nothing should rerun")), \
-             patch.object(cli, "stage_core", side_effect=AssertionError("nothing should rerun")), \
-             patch.object(cli, "stage_reader", side_effect=AssertionError("nothing should rerun")), \
-             patch.object(cli, "stage_executor", side_effect=AssertionError("nothing should rerun")):
+             patch.object(orch, "psql", _resume_psql), \
+             patch.object(orch, "stage_gen", side_effect=AssertionError("nothing should rerun")), \
+             patch.object(orch, "stage_core", side_effect=AssertionError("nothing should rerun")), \
+             patch.object(orch, "stage_reader", side_effect=AssertionError("nothing should rerun")), \
+             patch.object(orch, "stage_executor", side_effect=AssertionError("nothing should rerun")):
             cli.cmd_resume(_BLANK_ARGS(layout.root))
             cli.cmd_resume(_BLANK_ARGS(layout.root))
 
