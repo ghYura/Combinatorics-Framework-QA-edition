@@ -1,0 +1,42 @@
+"""`bundle architecture` — implementation and argparse front end.
+"""
+from __future__ import annotations
+import argparse
+from pathlib import Path
+from ..errors import BundleError, PreflightError, ok, report_and_exit
+from ..jsonio import write_json_atomic
+
+
+def cmd_architecture(a) -> None:
+    """Engine-first architecture gate: print the declared layer model and fail
+    when a module imports across a forbidden boundary. Side-effect-free."""
+    from .. import architecture as arch
+    report = arch.architecture_report()
+    print(arch.format_architecture_report(report))
+    if a.json:
+        write_json_atomic(Path(a.json), report)
+        ok(f"architecture report -> {a.json}")
+    if report["unclassified_paths"]:
+        raise PreflightError(
+            f"{len(report['unclassified_paths'])} repository tree(s) declare no architectural "
+            f"layer: {', '.join(report['unclassified_paths'])}")
+    if report["violations"]:
+        raise PreflightError(
+            f"{len(report['violations'])} dependency-direction violation(s) across the audited "
+            f"non-test product layers; see the report above")
+
+
+def _main_architecture(argv):
+    ap = argparse.ArgumentParser(
+        prog="bundle_run architecture",
+        description="Print and enforce the engine-first architecture boundary: which layer each "
+                    "tree belongs to, which imports are allowed, and which reference applications "
+                    "are registered. Exits non-zero on a violation or an unclassified tree.")
+    ap.add_argument("--json", default="", metavar="PATH", help="write the report JSON to PATH")
+    ap.add_argument("--debug", action="store_true",
+                    help="show full traceback on failure instead of a concise '✗ <message>' line")
+    a = ap.parse_args(argv)
+    try:
+        cmd_architecture(a)
+    except BundleError as exc:
+        report_and_exit(exc, debug=a.debug)
