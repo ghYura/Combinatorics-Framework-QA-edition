@@ -23,14 +23,19 @@ import intake.serve_face1 as sf
 
 HERE = Path(__file__).resolve().parent
 CLI = HERE / "bundle" / "cli.py"
+# The reusable argparse group builders moved out of cli.py into their own module
+# (2026-08-05). This test is about flag coverage, not file layout, so it follows
+# them rather than pinning the old location.
+CLIARGS = HERE / "bundle" / "cliargs.py"
 FACE1 = HERE / "intake" / "face1.html"
 
 
 def _func_src(src: str, name: str) -> str:
-    """Source of a top-level ``def name(...)`` up to the next top-level def."""
+    """Source of a top-level ``def name(...)`` up to the next top-level def
+    (or end of file, for the last function in a module)."""
     i = src.index(f"def {name}(")
-    j = src.index("\ndef ", i + 1)
-    return src[i:j]
+    j = src.find("\ndef ", i + 1)
+    return src[i:] if j == -1 else src[i:j]
 
 
 def _argparse_flags(text: str) -> set:
@@ -50,10 +55,10 @@ INLINE_RUN_FLAGS = {
 
 
 def _cli_run_flags() -> set:
-    src = CLI.read_text(encoding="utf-8")
+    args_src = CLIARGS.read_text(encoding="utf-8")
     flags = set(INLINE_RUN_FLAGS)
     for fn in ("_add_bundle_config_args", "_add_budget_ceiling_args", "_add_repeat_args"):
-        flags |= _argparse_flags(_func_src(src, fn))
+        flags |= _argparse_flags(_func_src(args_src, fn))
     return flags
 
 
@@ -74,7 +79,7 @@ def test_no_run_flag_is_missing_from_face1():
     }
     # every env-inherited secret is a real cli flag and is NOT double-exposed
     assert sf.ENV_INHERITED_FLAGS.issubset(
-        _argparse_flags(_func_src(CLI.read_text(encoding="utf-8"), "_add_bundle_config_args"))
+        _argparse_flags(_func_src(CLIARGS.read_text(encoding="utf-8"), "_add_bundle_config_args"))
     )
     assert not (set(sf.SUPPORTED_RUN_FLAGS) & set(sf.ENV_INHERITED_FLAGS))
 
