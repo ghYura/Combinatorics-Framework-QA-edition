@@ -300,11 +300,11 @@ def test_repeat_k_gt_1_capability_gate(monkeypatch):
     repeat = {"local_metrics": True, "local_all": True, "raw_sample_identity": True,
               "runtime_accounting": True, "max_k": 100}
     monkeypatch.setattr(
-        "bundle.cli.probe_python_executor_repeat_capability",
+        "bundle.orchestrator.probe_python_executor_repeat_capability",
         lambda cfg: {"schema": "py_executor.capabilities/v1", "repeat": dict(repeat)},
     )
     monkeypatch.setattr(
-        "bundle.cli.probe_java_executor_repeat_capability",
+        "bundle.orchestrator.probe_java_executor_repeat_capability",
         lambda cfg: {"schema": "java_executor.capabilities/v1", "repeat": dict(repeat)},
     )
     spec = fg.parse_spec(SMALL_SPEC, "repeat-gate")            # final = 18 (SMOKE)

@@ -21,7 +21,7 @@ from face1_new.runtime_model import (
     supported_control_fields,
     validate_runtime,
 )
-from face1_new.workbook_runner import install_exact_workbook_stage, parse_args
+from face1_new.workbook_runner import exact_workbook_stage_table, parse_args
 
 
 def test_blank_project_has_exact_honest_plan():
@@ -176,15 +176,17 @@ def test_worker_argument_parser_and_exact_stage_copy(monkeypatch, tmp_path):
     assert rest == ["spec", "--db", "demo"]
 
     import bundle.cli as bundle_cli
-    original = bundle_cli.stage_gen
-    try:
-        install_exact_workbook_stage(workbook)
-        scratch = tmp_path / "scratch"
-        scratch.mkdir()
-        copied = bundle_cli.stage_gen(tmp_path / "spec", scratch)
-        assert copied.read_bytes() == workbook.read_bytes()
-    finally:
-        bundle_cli.stage_gen = original
+
+    # The Generator is substituted through an explicit StageTable, so nothing on
+    # the cli module is mutated and there is no global state to restore.
+    stages = exact_workbook_stage_table(workbook)
+    assert stages.gen is not bundle_cli.stage_gen
+    assert stages.core is bundle_cli.stage_core, "only the Generator may be substituted"
+
+    scratch = tmp_path / "scratch"
+    scratch.mkdir()
+    copied = stages.gen(tmp_path / "spec", scratch)
+    assert copied.read_bytes() == workbook.read_bytes()
 
 
 def _count(name, value):

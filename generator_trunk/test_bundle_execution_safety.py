@@ -287,15 +287,24 @@ def test_every_executor_summary_check_passes_the_resolved_policy() -> None:
     both resume sites silently omitted it. The signature now takes the policy, so
     a bare call is the bug this test catches."""
     import ast
-    source = (REPO_ROOT / "generator_trunk/bundle/cli.py").read_text(encoding="utf-8")
-    tree = ast.parse(source)
-    calls = [n for n in ast.walk(tree)
-             if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
-             and n.func.id == "_require_executor_summary"]
-    assert calls, "expected the launcher to verify the executor summary"
-    for call in calls:
+
+    # The orchestrator moved out of cli.py (2026-08-05); both modules are scanned
+    # so the guard holds wherever the launcher's call sites live, and keeps
+    # holding if one ever moves back.
+    modules = ("generator_trunk/bundle/orchestrator.py", "generator_trunk/bundle/cli.py")
+    calls = []
+    for name in modules:
+        path = REPO_ROOT / name
+        if not path.is_file():
+            continue
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        calls += [(name, n) for n in ast.walk(tree)
+                  if isinstance(n, ast.Call) and isinstance(n.func, ast.Name)
+                  and n.func.id == "_require_executor_summary"]
+    assert calls, f"expected the launcher to verify the executor summary (scanned: {modules})"
+    for name, call in calls:
         assert len(call.args) >= 2 or call.keywords, (
-            f"_require_executor_summary at line {call.lineno} does not pass the resolved policy, "
+            f"_require_executor_summary at {name}:{call.lineno} does not pass the resolved policy, "
             f"so a secure run there would never be verified against its sandbox backend")
 
 
