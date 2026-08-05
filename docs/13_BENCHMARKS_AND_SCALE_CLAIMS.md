@@ -27,6 +27,45 @@ Stages: `generator`, `sieve` (infra-free, always run for real); `core`, `reader_
 their backend is available, else recorded **SKIPPED** with a reason — the report never overstates
 what was measured).
 
+## Dated measured results (2026-08-05 host)
+
+A different machine from the 2026-06-11 gate below, so the two tables are **not** comparable
+row-for-row — this one is recorded because it is the first run to measure `analyzer` and
+`reader_shard` at 10K alongside everything else, and the first to carry the generation stages to 1M
+on current code.
+
+Host: 8 CPU, 32 GiB RAM, Linux 7.0.0-28, Python 3.12.3, **Java 25.0.3**, PostgreSQL 18.4.
+
+| stage | 10K wall_s | 10K peak MB | 10K rows/s | 1M wall_s | 1M peak MB | 1M rows/s |
+|---|---:|---:|---:|---:|---:|---:|
+| generator | 0.149 | 0.9 | 67,233 | 12.476 | 92.8 | **80,157** |
+| sieve | 3.361 | 0.5 | 2,975 | 338.168 | 44.8 | 2,957 |
+| core | 9.779 | 273.5 | 1,023 | — | — | — |
+| reader_loose | 14.908 | 318.5 | 671 | — | — | — |
+| reader_shard | 14.620 | 368.3 | 684 | — | — | — |
+| analyzer | 1.587 | 254.8 | 6,302 | — | — | — |
+
+Two observations, both consistent with the 2026-06-11 conclusions rather than new claims:
+
+- **The sieve remains the scale bottleneck** — throughput is flat from 10K to 1M (2,975 → 2,957
+  rows/s), so at 1M it is 96% of the two stages' combined wall time. Still the right optimisation
+  target (batch the per-row predicate / push into SQL).
+- **The generator gets faster with size** (67K → 80K rows/s) as fixed costs amortise.
+
+`executor_*` is again out of scope at these sizes; the executor evidence is the bounded 288-candidate
+secure flagship, re-executed the same day and reproducing `288 / pass 150 / fail 138` exactly
+(doc 15). Commands:
+
+```bash
+python3 bundle_run.py bench --profile 10K --stages generator,sieve,core,reader_loose,reader_shard,analyzer
+python3 bundle_run.py bench --profile 1M  --stages generator,sieve
+```
+
+> The `analyzer` stage needs a compiled AnalyzeKv driver. It resolves the persisted build in
+> `Analyzer_trunk/target/analyzekv` first and the run path's `/tmp` self-build second, so any prior
+> `--analyzer` pipeline makes it measurable. Before 2026-08-05 only the persisted location was
+> checked, which silently skipped this stage on an ordinary checkout.
+
 ## Dated measured results (Gate 2.8, 2026-06-11 host)
 
 Profile **10K**, host: 8 CPU (AMD FX-8320), 31 GiB RAM, Linux 6.17, Python 3.12.3, Java 21,

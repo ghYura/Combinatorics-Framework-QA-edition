@@ -214,8 +214,26 @@ python generator_trunk/bundle_run.py \
   generator_trunk/usecases/event_order \
   --db event_order_demo \
   --lang py \
+  --execution-policy-profile trusted-local \
+  --candidate-origin reviewed-checked-in \
+  --acknowledge-trusted-local 'reviewed checked-in event_order fixture' \
+  --run-id event-order-001 \
   --analyzer 'charges:min'
 ```
+
+There is no default execution profile, so the three policy flags are not optional: `event_order` is a
+reviewed, checked-in fixture, which is what `trusted-local` is for. For generated or otherwise
+untrusted candidates use `--execution-policy-profile generated-default` instead — it is sandboxed and
+needs no acknowledgement. `--run-id` is optional (one is minted automatically) but makes the run easy
+to name afterwards:
+
+```bash
+python generator_trunk/bundle_run.py report event-order-001
+```
+
+That renders the run as a single self-contained HTML page — verdicts, stage timeline, the Analyzer's
+non-dominated front and provenance — reading only what the run already recorded, so it also works on
+a run that failed.
 
 The main database role must have `CREATEDB`. Stop the local stack while preserving its data with
 `python generator_trunk/bundle_run.py deploy down`. If a legacy `.env` no longer matches its

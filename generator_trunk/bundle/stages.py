@@ -1445,6 +1445,32 @@ def _stage_java_executor_pool(src, hs, cfg: BundleConfig, manifest_path, run_id,
     return tuple(totals)
 
 
+#: Where the run path self-builds the AnalyzeKv driver when the Analyzer
+#: directory carries no persisted `analyzer_cp.txt`.
+ANALYZER_SELFBUILD_CLASSES = Path("/tmp/analyzekv")
+ANALYZER_SELFBUILD_CLASSPATH = Path("/tmp/analyzer_cp_full.txt")
+
+
+def resolve_analyzer_driver(az: "Path | None" = None) -> "tuple[Path, Path] | None":
+    """Locate an already-built AnalyzeKv driver as ``(classes_dir, classpath_file)``.
+
+    Mirrors the run path's preference order — the persisted real build in the
+    Analyzer directory first, then the one-time self-build under ``/tmp`` — and
+    is shared so read-only callers cannot drift from what a run actually uses.
+
+    This only *finds* an existing build; it never triggers one, which is what
+    makes it safe for measurement paths (`bundle bench`) that must not do work
+    on behalf of the thing they are timing. Returns None when neither location
+    holds a compiled driver.
+    """
+    az = az or (SRC / "Analyzer_trunk")
+    for clsdir, cpfile in ((az / "target/analyzekv", az / "analyzer_cp.txt"),
+                           (ANALYZER_SELFBUILD_CLASSES, ANALYZER_SELFBUILD_CLASSPATH)):
+        if (clsdir / "AnalyzeKv.class").is_file() and cpfile.is_file():
+            return clsdir, cpfile
+    return None
+
+
 def _analyzekv_class_is_stale(class_file: Path, az: Path) -> bool:
     """True if the compiled AnalyzeKv class is missing OR older than ``AnalyzeKv.java`` or any
     Analyzer source it links against (``Analyzer_trunk/src/main/java/**/*.java``). The bundle must

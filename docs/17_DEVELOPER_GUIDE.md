@@ -5,10 +5,16 @@
 ```
 Combinatorics-Framework/
   generator_trunk/         # CONTROL PLANE + Generator
-    bundle/                # cli, config, planning(budgets,resources), models, runs, journal,
+    bundle/                # config, planning(budgets,resources), models, runs, journal,
                            #   stages, process, database, invariants, handoff, policy, jsonio,
                            #   resume, cancel, cleanup, doctor, deploy, benchmark, inventory,
-                           #   hygiene, shards, counts, controlplane, seedbias
+                           #   hygiene, shards, counts, controlplane, seedbias, report
+      cli.py               #   argv dispatch + the verb registry; re-exports everything below
+      orchestrator.py      #   _run / _resume_run: the five-stage pipeline and its reuse cascade
+      stagetable.py        #   StageTable: the orchestrator's injected collaborators (see below)
+      cliutil.py           #   layered-config resolution, spec loading
+      cliargs.py           #   reusable argparse group builders
+      commands/            #   one module per verb: plan, doctor, iterate, report, ...
     bundle_run.py          # thin shim -> bundle.cli.main
     fwgen.py / fwgen_cli.py / fwseq_graph.py / code_decompose.py
     bundle-spec-v1.schema.json, bundle-handoff-v2.schema.json
@@ -84,7 +90,17 @@ Verify artifact identity any time:
   `CandidateSinkRegistry`; mirror the handoff/schema/Executor side. Existing transports are loose,
   sharded, and live gRPC; gRPC also needs launcher start-before-Reader/adoption semantics.
 - **an Executor backend** → implement `SandboxBackend` (`Executor_trunk/sandbox.py`:
-  `build_argv`/`is_available`/`run`/`describe`/`close`), and a profile in `bundle/policy.py`.
+  `build_argv`/`is_available`/`run`/`describe`/`close`), and a profile in `bundle/policy.py`. Add it
+  to `bundle/doctor.py`'s `IMPLEMENTED_SANDBOX_BACKENDS` too, or `doctor` will not know it exists —
+  `test_bundle_doctor.py` asserts the two agree, so this cannot be forgotten silently.
+- **a subcommand** → a new module in `bundle/commands/` exposing `cmd_<verb>(args)` and
+  `_main_<verb>(argv)`, plus a `_VERBS` entry, a dispatch line and a re-export in `cli.py`. Adding it
+  to `docs/04` is enforced by `test_bundle_cli_docs.py`, so a verb cannot ship undocumented.
+- **a substituted stage** (run the pipeline with your own Generator, Executor, ...) → build a
+  `StageTable` and pass it: `cli.default_stage_table().with_(gen=my_stage)` handed to
+  `cli.main(stages=…)` / `_run(a, stages=…)`. Do **not** rebind `bundle.cli.stage_gen`: a module
+  global is resolved in the module that defines the caller, so that override silently stops working
+  the moment the orchestrator moves. `face1_new/workbook_runner.py` is the worked example.
 - **an Analyzer metric/goal** → goals are data (`key:dir`); for new discovery/normalization logic see
   `Analyzer_trunk/.../optimization/` (`AnalysisMode`, `AutoAnalysisPlanner`).
 
