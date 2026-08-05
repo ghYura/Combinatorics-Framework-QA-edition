@@ -457,9 +457,17 @@ def _bench_executor(variant: str, n: int, scratch: Path, ctx: PipelineContext) -
 def bench_analyzer(n: int, scratch: Path, ctx: PipelineContext) -> StageResult:
     cfg = ctx.cfg
     az = SRC / "Analyzer_trunk"
-    clsdir, cp = az / "target/analyzekv", az / "analyzer_cp.txt"
-    if not (_java_ok(cfg) and (clsdir / "AnalyzeKv.class").exists() and cp.exists()):
-        return _skipped("analyzer", n, "Analyzer (java + target/analyzekv/AnalyzeKv.class + analyzer_cp.txt) unavailable")
+    # Resolve the driver exactly as the run path does. Checking only the
+    # persisted build made this stage permanently unmeasurable on a normal
+    # checkout, because the runtime self-builds under /tmp instead -- a skip
+    # nobody reads is indistinguishable from a stage that has no cost.
+    driver = stages.resolve_analyzer_driver(az)
+    if not (_java_ok(cfg) and driver):
+        return _skipped("analyzer", n,
+                        "Analyzer driver unavailable (no compiled AnalyzeKv in "
+                        "Analyzer_trunk/target/analyzekv or the /tmp self-build; "
+                        "run any '--analyzer' pipeline once to produce it)")
+    clsdir, cp = driver
     corpus = scratch / "analyzer_corpus.kv"
     lines = [f"candidate_id=c{i} run_id=bench app=svc mode=m{i % 5} "
              f"latency_ms={1.0 + (i % 17)} severity={i % 4} FW_VAR={i % 2}" for i in range(n)]

@@ -4,8 +4,14 @@ The entry point is `generator_trunk/bundle_run.py` (a shim for `python3 -m bundl
 Two shapes:
 
 - **A run** — the default parser: `bundle_run.py <spec-dir> [options]`.
-- **A subcommand** — `bundle_run.py <verb> ...` for `plan | iterate | doctor | resume | cancel |
-  cleanup | constraints | bench | deploy | inventory | hygiene`.
+- **A subcommand** — `bundle_run.py <verb> ...` for `plan | doctor | resume | cancel | cleanup |
+  constraints | iterate | bench | deploy | inventory | hygiene | architecture | coverage |
+  capabilities | sut-manifests | release | provenance | report`.
+
+> The verb list above is asserted against `bundle.cli._VERBS` by
+> `test_bundle_cli_docs.py`, so a new subcommand cannot ship undocumented and this
+> paragraph cannot quietly fall behind the CLI. `bundle_run.py --help` prints the
+> same set as its epilog.
 
 All commands resolve config with precedence **CLI > environment > config file > defaults**, render
 secrets-free artifacts, and exit non-zero on a typed error (stack trace only with `--debug`).
@@ -179,6 +185,51 @@ Profiles `10K/1M/10M`; 100M/1B require `--allow-huge` (never auto-run).
 python3 bundle_run.py inventory --out /tmp/inv.json [--baseline FILE --policy {warn,block}] [--sbom]
 python3 bundle_run.py hygiene --json /tmp/hygiene.json
 ```
+
+## `architecture` / `coverage` / `capabilities` / `sut-manifests` / `release` — self-audit gates
+
+All five are **side-effect-free source/registry analyses**: no database, no JAR, no run directory.
+They are the project's own evidence generators, and each exits non-zero when its invariant is broken,
+so they work as CI gates as well as reports.
+
+```bash
+python3 bundle_run.py architecture  [--json PATH]                  # layer model + import-direction gate
+python3 bundle_run.py coverage      [--json PATH] [--measurements PATH]
+python3 bundle_run.py capabilities  [--json PATH] [--markdown PATH] [--ci-cases PATH] [--check PATH]
+python3 bundle_run.py sut-manifests [--json PATH]                  # validate the SUT adapter registry
+python3 bundle_run.py release       [--out PATH] [--sbom PATH] [--pytest-output PATH]
+```
+
+- **`architecture`** — which layer each tree belongs to and which imports are allowed; fails on any
+  dependency-direction violation (doc 30).
+- **`coverage`** — the engine's composition vocabulary versus the subset each registered application
+  actually exercises, with its role and maximum composition order (doc 31).
+- **`capabilities`** — the one generated support matrix; `--check` verifies a stored copy still
+  matches, which is how the matrix stays a release artifact rather than a snapshot (doc 33).
+- **`sut-manifests`** — schema, capability rows, controls and oracle independence for the canonical
+  SUT adapters, including that every referenced test exists.
+- **`release`** — release manifest, optional SBOM, and skip classification from a pytest log; an
+  unclassified skip is `BLOCKING_UNEXPECTED` unless `--allow-blocking-skips` (doc 34).
+
+## `report <run-dir|run-id>` — read a finished run (Face 3, doc 26)
+
+```bash
+python3 bundle_run.py report sp-demo-001 [--out PATH] [--json PATH] [--runs-root DIR]
+```
+
+Renders a run as a **single self-contained HTML file** (no external CSS/JS/fonts, so it opens from a
+`file://` path or travels as one attachment) and prints a terse summary to stdout. Default output is
+`<run-dir>/reports/report.html`; `--json` additionally writes the collected data.
+
+Reads only what the run already recorded — `run.json`, `state.json`, `stages/*.json`,
+`executor-summary.json`, `provenance.json` — and **re-executes nothing**: no database, no JAR, no
+stage. That is what makes it safe to point at a failed, cancelled or interrupted run, which is
+usually when a results view is most wanted.
+
+The page reports **absence as prominently as presence**: an unset `sandbox_backend` renders as
+"candidates ran unsandboxed on this host", a missing Analyzer front says the Analyzer did not run,
+a declared-vs-actual candidate mismatch is flagged, and an interrupted stage keeps its status. A
+results surface that only renders the happy path would let a reader read "not recorded" as "fine".
 
 ## Exit behavior
 

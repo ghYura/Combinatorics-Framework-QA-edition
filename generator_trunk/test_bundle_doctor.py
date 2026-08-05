@@ -94,6 +94,57 @@ def test_usable_backends_are_only_ones_the_executor_implements():
         assert any(shutil.which(e) for e in exes), f"{backend} reported usable with no host exe"
 
 
+def _executor_sandbox_or_skip():
+    """The Executor's sandbox module, or an EXPECTED_OPTIONAL skip."""
+    import pytest
+
+    from bundle.doctor import _executor_sandbox_module
+
+    module = _executor_sandbox_module()
+    if module is None:
+        pytest.skip("EXPECTED_OPTIONAL: Executor_trunk/sandbox.py not present in this checkout")
+    return module
+
+
+def test_doctor_never_reports_a_backend_the_executor_would_refuse():
+    """Anti-rot: doctor's answer must agree with the production selection path.
+
+    A host executable being installed is not the same as the backend working --
+    `bwrap` on PATH with user namespaces unavailable is precisely the case where
+    a PATH probe says yes and the run says no. Doctor exists to predict the run,
+    so it must never be the more optimistic of the two.
+    """
+    import sys
+
+    from bundle.doctor import usable_sandbox_backends
+
+    sandbox = _executor_sandbox_or_skip()
+    for backend in usable_sandbox_backends():
+        probe = {"profile": "doctor-probe", "backend": backend, "trusted": False}
+        built = sandbox.build_sandbox(probe, runner="py", host_python=sys.executable)
+        assert built is not None, (
+            f"doctor reports {backend!r} usable, but build_sandbox returned no backend")
+
+
+def test_every_advertised_backend_is_one_the_executor_implements():
+    """Anti-rot: `IMPLEMENTED_SANDBOX_BACKENDS` must not name a backend the
+    Executor does not dispatch on. This is the check that would have caught
+    `unshare`/`nsjail` being advertised when no profile could ever select them."""
+    import sys
+
+    from bundle.doctor import IMPLEMENTED_SANDBOX_BACKENDS
+
+    sandbox = _executor_sandbox_or_skip()
+    for backend in IMPLEMENTED_SANDBOX_BACKENDS:
+        probe = {"profile": "doctor-probe", "backend": backend, "trusted": False}
+        try:
+            sandbox.build_sandbox(probe, runner="py", host_python=sys.executable)
+        except Exception as exc:
+            # "not usable on this host" is fine; "does not implement" is the bug
+            assert "does not implement" not in str(exc), (
+                f"doctor advertises backend {backend!r}, which the Executor does not implement")
+
+
 def test_sandbox_check_does_not_claim_backends_are_unwired(monkeypatch):
     """Regression: the check reported "none is wired up as an active backend yet"
     long after `build_sandbox` was driving container/bubblewrap for real."""

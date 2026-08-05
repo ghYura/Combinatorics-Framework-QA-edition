@@ -3,7 +3,8 @@
 **Status (2026-07-21):** roadmap with partial implementation, not a wholly future plan. Face 1 and
 its local run/trace surface are implemented in `generator_trunk/intake` (see
 [document 29](29_FACE1_INTAKE_AND_REAL_RUN.md)); Face 2 has the constraint editor and exact-impact
-mode; Face 3 remains less complete than the roadmap. **Author seed:** Yuri Baranov.
+mode; Face 3 has its run-report surface since 2026-08-05 (`bundle report`, M3 below) and remains the
+least complete of the three. **Author seed:** Yuri Baranov.
 **Scope:** the *presentation* layer — how a non-expert meets the Bundle, drives it, and reads its
 verdict. Not the Core/Reader/Executor mechanics (those are proven); this is the **first-impression
 usability surface**: three "faces" a stranger touches, in order.
@@ -139,7 +140,13 @@ which failed and why, how the goals traded off — without reading raw tables or
   **Results DB** holds per-candidate verdicts (`FW_VAR`, `results_v2`); the **run journal**
   (`run.json`/`state.json`, STEP 5) records every stage's counts/invariants; `09_READER_EXECUTOR_*`
   documents the verdict surface; `bundle_bred_winners_*` shows the "winners" idea exists.
-- Today this is mostly machine-readable / CLI text — strong substance, weak presentation.
+- ~~Today this is mostly machine-readable / CLI text — strong substance, weak presentation.~~
+  **Since 2026-08-05:** `bundle report <run-dir|run-id>` renders that substance as a single
+  self-contained HTML page — verdict distribution, stage timeline, the non-dominated front with each
+  candidate's `reason_non_dominated`, provenance, and artifact hashes. The substance was always
+  there; what was missing was a surface that did not require reading `results_v2` by hand.
+  It also reports what a run did *not* record (unsandboxed execution, an absent Analyzer front, an
+  interrupted stage) rather than rendering only the happy path.
 
 **Gaps → TODO.**
 1. **A run report page** (same zero-dep, single-file posture as the editor): headline verdict
@@ -186,7 +193,13 @@ how their drawn rules shaped the space, and what to change next.
    exact-DB impact, retire demos).
 2. **M2 — Face 1 intake** (XLSX template + linter, AI-guide→spec confirmation screen, cardinality
    preview).
-3. **M3 — Face 3 report** (single-file run report: winners, Pareto, why-failed, sieve provenance).
+3. **M3 — Face 3 report** — ✅ **shipped 2026-08-05** as `bundle report <run-dir|run-id>`
+   (`bundle/report.py`, doc 04). Single self-contained HTML file per run: identity and execution
+   policy, verdict distribution, stage timeline, the Analyzer's non-dominated front with its
+   `reason_non_dominated`, provenance, and per-stage artifacts with sha256. Reads only recorded
+   artifacts and re-executes nothing, so it works on a failed or interrupted run.
+   *Not yet covered by M3:* the sieve's own removal provenance is summarised in the run log but is
+   not yet a section of the report, and there is no cross-run comparison view.
 4. **M4 — Unify** the three under one design system + shared shell; cross-links (report → edit rules
    → re-run).
 
@@ -194,5 +207,10 @@ how their drawn rules shaped the space, and what to change next.
 
 - Face 1: how far should the AI-guide auto-commit vs always require a confirm-and-edit step?
 - Face 2: exact live-DB impact (after Core) vs the offline estimate — make it a toggle, or pick one?
-- Face 3: ship as static HTML artifacts per run, or a small local viewer server (like `serve.py`)?
+- ~~Face 3: ship as static HTML artifacts per run, or a small local viewer server (like `serve.py`)?~~
+  **Answered 2026-08-05: static, self-contained HTML per run.** A run directory already holds every
+  input the report needs, so a server would add a process and a port to read data that is already on
+  disk. One file with no external CSS/JS/font references also travels — it opens from `file://`,
+  copies to another host, and attaches to a ticket intact. A viewer server remains the right answer
+  only if cross-run comparison lands, which is the one thing a per-run file cannot do.
 - Packaging: one `bundle ui` command that can open any face standalone, decoupled from a full run?

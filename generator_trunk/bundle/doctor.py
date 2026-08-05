@@ -295,10 +295,50 @@ def available_sandbox_backends() -> "tuple[str, ...]":
     return tuple(exe for exe in _SANDBOX_BACKEND_EXES if shutil.which(exe))
 
 
+def _executor_sandbox_module():
+    """The Python Executor's `sandbox` module, or None if it cannot be imported.
+
+    It lives in a sibling trunk rather than this package, so a partial checkout
+    (or a docs-only clone) legitimately has no copy of it.
+    """
+    path = SRC / "Executor_trunk"
+    if not (path / "sandbox.py").is_file():
+        return None
+    try:
+        if str(path) not in sys.path:
+            sys.path.insert(0, str(path))
+        import sandbox                                    # noqa: PLC0415
+        return sandbox
+    except Exception:                                     # pragma: no cover - defensive
+        return None
+
+
 def usable_sandbox_backends() -> "tuple[str, ...]":
-    """Implemented backends whose host dependency is present, in policy order."""
-    return tuple(backend for backend, exes in IMPLEMENTED_SANDBOX_BACKENDS.items()
-                 if any(shutil.which(exe) for exe in exes))
+    """Backends a secure run could actually select on this host, in policy order.
+
+    Asks the Executor through the *production* selection path (`build_sandbox`),
+    so the answer is the one a real run would get, including each backend's
+    functional self-test. A host executable being installed is not the same as
+    the backend working: `bwrap` on PATH with user namespaces unavailable is
+    exactly the case where a PATH probe says yes and the run says no. Doctor
+    exists to predict the run, so it must not be the more optimistic of the two.
+
+    Falls back to the PATH heuristic only when the Executor cannot be imported,
+    and that fallback is reported as such by `_check_sandbox`.
+    """
+    sandbox = _executor_sandbox_module()
+    if sandbox is None:
+        return tuple(backend for backend, exes in IMPLEMENTED_SANDBOX_BACKENDS.items()
+                     if any(shutil.which(exe) for exe in exes))
+    usable = []
+    for backend in IMPLEMENTED_SANDBOX_BACKENDS:
+        probe = {"profile": "doctor-probe", "backend": backend, "trusted": False}
+        try:
+            if sandbox.build_sandbox(probe, runner="py", host_python=sys.executable) is not None:
+                usable.append(backend)
+        except Exception:
+            continue                                      # unusable, or not implemented
+    return tuple(usable)
 
 
 def _check_sandbox(cfg: BundleConfig) -> DoctorCheck:
@@ -339,15 +379,21 @@ def _check_sandbox(cfg: BundleConfig) -> DoctorCheck:
 
 
 def _check_container_runtime(cfg: BundleConfig) -> DoctorCheck:
+    """A container runtime is what the `container` sandbox backend drives, so it
+    is a live dependency of every sandboxed profile — not a future one."""
     name = "container_runtime"
     for exe in ("docker", "podman"):
         path = shutil.which(exe)
         if path:
             r = run([exe, "--version"])
             ver = (r.stdout or r.stderr).strip().splitlines()[0] if r.ok else exe
-            return _check(name, Severity.OK, f"{ver}", f"path={path}")
+            return _check(name, Severity.OK, f"{ver}", f"path={path}",
+                          "drives the 'container' sandbox backend used by "
+                          "'generated-default' and 'networked-api-probe'")
     return _check(name, Severity.WARNING, "no container runtime found (docker/podman)",
-                  "optional — only needed if a future sandbox backend requires one")
+                  "required by the 'container' sandbox backend: without it "
+                  "'generated-default' and 'networked-api-probe' refuse to start",
+                  "not blocking on its own — 'trusted-local' still runs, unsandboxed by design")
 
 
 # Order matters for the human table; it is also the canonical check-name list.
