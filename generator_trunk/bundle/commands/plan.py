@@ -80,6 +80,14 @@ def cmd_plan(a) -> None:
         msg = "; ".join(f"[{e.code}] {e.message}" for e in graph_errors)
         raise PreflightError(f"FW_Seq dependency graph has {len(graph_errors)} error(s) — "
                              f"refusing to write plan.json: {msg}")
+    # CLI overrides the spec: the flag is how an operator re-plans the same spec
+    # against a different budget without editing it.
+    if getattr(a, "coverage_strength", 0):
+        spec.coverage_strength = int(a.coverage_strength)
+    if getattr(a, "coverage_optimal", False):
+        spec.coverage_optimal = True
+    if getattr(a, "coverage_budget", 0):
+        spec.coverage_budget = int(a.coverage_budget)
     plan = fg.spec_cardinality_plan(spec)
     try:
         plan_contract = contract_from_spec(spec)
@@ -224,6 +232,19 @@ def _main_plan(argv):
                          "(single worker; drives the execution-duration estimate)")
     ap.add_argument("--cost-per-candidate", type=float, default=None,
                     help="optional flat monetary cost per candidate; enables the monetary-cost estimate")
+    ap.add_argument("--coverage-strength", type=int, default=0, metavar="T",
+                    help="opt into t-wise covering-array reduction before Core (0 = off): "
+                         "keep the smallest suite that still covers every T-tuple of "
+                         "(slot, value). Overrides the spec's coverage_strength.")
+    ap.add_argument("--coverage-optimal", action="store_true",
+                    help="use minimum set-cover instead of streaming greedy — a markedly "
+                         "smaller suite (measured 18 vs 144 rows at t=2) at the cost of "
+                         "holding the tuple universe in RAM. Do NOT combine with "
+                         "--coverage-budget on a wide spec: that search starts at the "
+                         "highest strength, where set-cover does not finish in useful time")
+    ap.add_argument("--coverage-budget", type=int, default=0, metavar="N",
+                    help="ignore --coverage-strength and pick the most thorough strength "
+                         "whose suite fits N candidates")
     ap.add_argument("--debug", action="store_true",
                     help="show full traceback on failure instead of a concise '✗ <message>' line")
     a = ap.parse_args(argv)
