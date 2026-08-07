@@ -821,3 +821,114 @@ if __name__ == "__main__":
         fn()
         print(f"  ok  {fn.__name__}")
     print(f"\nALL {len(fns)} TESTS PASSED")
+
+
+# --------------------------------------------------------------------------
+# pick_n_for_budget: search order
+#
+# The original implementation walked strengths from k-1 downwards, so it
+# computed the most expensive reduction first and discarded it. For a small
+# budget -- the case that matters against a metered target -- the answer is a
+# low strength, so every costly high-t reduction ran before reaching it. With
+# `optimal=True` that did not merely run slowly, it did not finish: >20 min on a
+# 10,368-row product where a single t=2 call takes 1.0 s.
+#
+# The fix walks upwards and stops at the first overrun, which is exact rather
+# than heuristic: suite size is monotone non-decreasing in t, because a
+# t-covering array is also a (t-1)-covering array and the greedy reducer keeps a
+# combo iff it introduces a new t-tuple.
+# --------------------------------------------------------------------------
+_BUDGET_SPEC = {
+    "title": "budget search",
+    "slots": [{"sheet": f"S{i}", "verb": "FW_Combi(1)", "values": ["a", "b", "c"]}
+              for i in range(6)],
+}
+
+
+def _reference_high_to_low(spec, allc, budget, optimal):
+    """The original search order, kept as the correctness oracle."""
+    for n in range(len(spec.slots) - 1, 0, -1):
+        red = fg.reduce_combos(allc, n, optimal)
+        if len(red) <= budget:
+            return n, len(red)
+    return 1, len(fg.reduce_combos(allc, 1, optimal))
+
+
+def _covers_all_tuples(reduced, full, t):
+    import itertools
+
+    def tuples(combos):
+        seen = set()
+        for combo in combos:
+            for idx in itertools.combinations(range(len(combo)), t):
+                seen.add(tuple((i, combo[i]) for i in idx))
+        return seen
+
+    return tuples(reduced) == tuples(full)
+
+
+def test_budget_search_matches_the_original_order_exactly():
+    """Optimising the search must not change which strength is chosen."""
+    spec = fg.parse_spec(_BUDGET_SPEC, "budget")
+    allc = list(fg.cartesian(spec))
+    for budget in (5, 12, 30, 80, 250, 700):
+        n_new, reduced = fg.pick_n_for_budget(spec, budget)
+        n_ref, size_ref = _reference_high_to_low(spec, allc, budget, False)
+        assert (n_new, len(reduced)) == (n_ref, size_ref), (
+            f"budget={budget}: walking up gave t={n_new}/{len(reduced)}, "
+            f"walking down gave t={n_ref}/{size_ref}")
+
+
+def test_budget_search_result_fits_the_budget_and_still_covers():
+    spec = fg.parse_spec(_BUDGET_SPEC, "budget")
+    allc = list(fg.cartesian(spec))
+    for budget in (12, 80, 250):
+        n, reduced = fg.pick_n_for_budget(spec, budget)
+        assert len(reduced) <= budget or n == 1     # t=1 is the floor, may overrun
+        assert _covers_all_tuples(reduced, allc, n)
+
+
+def test_full_product_is_returned_untouched_when_it_already_fits():
+    spec = fg.parse_spec(_BUDGET_SPEC, "budget")
+    n, reduced = fg.pick_n_for_budget(spec, budget=10_000)
+    assert n == 0 and len(reduced) == spec.combos
+
+
+def test_budget_search_never_computes_a_strength_above_the_answer():
+    """The actual regression guard, and the reason the fix matters.
+
+    A timing bound would be vacuous here: on a spec small enough for a unit test
+    the old order is merely slower, not pathological, so a 60-second assertion
+    passes either way. What distinguishes the two orders is *which* reductions
+    they compute — the old one starts at t=k-1 and works down, so on a small
+    budget it builds every expensive high-strength covering array and throws it
+    away. That is exactly what did not finish on a wide grid.
+
+    So assert the shape of the search, not its duration: nothing above
+    answer+1 may ever be computed.
+    """
+    spec = fg.parse_spec(_BUDGET_SPEC, "budget")
+    requested: list[int] = []
+    original = fg.reduce_combos
+
+    def spy(combos, n, optimal=False):
+        requested.append(n)
+        return original(combos, n, optimal)
+
+    fg.reduce_combos = spy
+    try:
+        n, reduced = fg.pick_n_for_budget(spec, budget=40, optimal=True)
+    finally:
+        fg.reduce_combos = original
+
+    assert requested, "the search computed nothing"
+    assert max(requested) <= n + 1, (
+        f"chose t={n} but computed strengths up to t={max(requested)} "
+        f"({sorted(set(requested))}) — the search is walking down from k-1 again")
+    assert len(reduced) <= 40
+
+
+def test_max_strength_caps_the_search():
+    spec = fg.parse_spec(_BUDGET_SPEC, "budget")
+    n, _reduced = fg.pick_n_for_budget(spec, budget=10_000 - 1, max_strength=2)
+    assert n <= 2

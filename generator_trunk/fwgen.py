@@ -454,6 +454,12 @@ class SpecCardinalityPlan:
     post_sieve: CardinalityEstimate
     optional_multiplier: CardinalityEstimate
     final: CardinalityEstimate
+    #: Present only when the spec opts into t-wise reduction. `mandatory` stays
+    #: the FULL product: the reduced figure is a different claim ("this many rows,
+    #: covering every t-tuple"), not a smaller measurement of the same thing, and
+    #: collapsing the two would be exactly the confidence-laundering this module
+    #: refuses everywhere else.
+    coverage: "CardinalityEstimate | None" = None
 
 
 def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
@@ -513,8 +519,52 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
         formula="post_sieve × optional_multiplier",
         reasons=("each FW_Optional slot independently multiplies the post-sieve candidate space",))
 
+    coverage = coverage_cardinality(spec, mandatory)
     return SpecCardinalityPlan(raw_values=raw_values, per_slot=per_slot, mandatory=mandatory,
-                               post_sieve=post_sieve, optional_multiplier=optional_multiplier, final=final)
+                               post_sieve=post_sieve, optional_multiplier=optional_multiplier,
+                               final=final, coverage=coverage)
+
+
+def coverage_cardinality(spec: "Spec", mandatory: CardinalityEstimate) -> "CardinalityEstimate | None":
+    """EXACT size of the t-wise reduced suite, or None when the spec opts out.
+
+    The reducer is run for real rather than estimated, because a covering array's
+    size has no closed form -- so the only honest way to report it before Core is
+    to build it. That costs materialising the full product, which is bounded by
+    `pick_n_for_budget`'s `hard_cap`; past that the answer is UNKNOWN rather than
+    a guess.
+    """
+    strength, budget = int(spec.coverage_strength or 0), int(spec.coverage_budget or 0)
+    if strength <= 0 and budget <= 0:
+        return None
+    if mandatory.mode is not CardinalityMode.EXACT:
+        return CardinalityEstimate(
+            mode=CardinalityMode.UNKNOWN,
+            formula=f"t-wise(t={strength or 'budget'}) over a non-EXACT mandatory product",
+            reasons=("the reducer needs the materialised product; the mandatory count is "
+                     f"{mandatory.mode.value}, so the reduced size cannot be stated before Core",))
+    full = int(mandatory.value or 0)
+    if full <= 0:
+        return None
+    try:
+        allc = list(cartesian(spec))
+    except Exception as exc:                                  # pragma: no cover - defensive
+        return CardinalityEstimate(mode=CardinalityMode.UNKNOWN,
+                                   formula="t-wise reduction", reasons=(f"{type(exc).__name__}: {exc}",))
+    if budget > 0:
+        chosen, reduced = pick_n_for_budget(spec, budget, spec.coverage_optimal)
+        formula = (f"pick_n_for_budget(budget={budget:,}) -> t={chosen or 'full'}"
+                   if chosen else f"pick_n_for_budget(budget={budget:,}) -> full product fits")
+    else:
+        chosen, reduced = strength, reduce_combos(allc, strength, spec.coverage_optimal)
+        formula = f"{'nwise_optimal' if spec.coverage_optimal else 'nwise_greedy'}(t={strength})"
+    kept = len(reduced)
+    return CardinalityEstimate(
+        mode=CardinalityMode.EXACT, value=kept, lower=kept, upper=kept, formula=formula,
+        assumptions=(f"covers every {chosen}-tuple of (slot, value) present in the full product",
+                     f"reduction {full:,} -> {kept:,} rows "
+                     f"({(full / kept) if kept else 0:.1f}x fewer candidates)",
+                     "the full product is NOT the claim here; this is a covering array"))
 
 
 def cardinality_estimate_to_dict(est: CardinalityEstimate) -> dict:
@@ -534,6 +584,7 @@ def cardinality_plan_to_dict(plan: SpecCardinalityPlan) -> dict:
         "post_sieve": cardinality_estimate_to_dict(plan.post_sieve),
         "optional_multiplier": cardinality_estimate_to_dict(plan.optional_multiplier),
         "final": cardinality_estimate_to_dict(plan.final),
+        "coverage": (cardinality_estimate_to_dict(plan.coverage) if plan.coverage else None),
     }
 
 
@@ -561,6 +612,11 @@ def format_cardinality_plan(plan: SpecCardinalityPlan) -> str:
     for sheet, est in plan.per_slot.items():
         lines.append("  " + _format_estimate(sheet, est).replace("\n", "\n  "))
     lines.append(_format_estimate("mandatory Core product", plan.mandatory))
+    if plan.coverage is not None:
+        # Printed directly under the full product so the two are read together:
+        # the reduced figure replaces the full product as the number of rows that
+        # will run, and never as a restatement of the space's size.
+        lines.append(_format_estimate("t-wise reduced suite", plan.coverage))
     lines.append(_format_estimate("estimated post-sieve", plan.post_sieve))
     lines.append(_format_estimate("optional multiplier", plan.optional_multiplier))
     lines.append(_format_estimate("final candidate count", plan.final))
@@ -674,6 +730,17 @@ class Spec:
     # Ordinal `orders` for the sieve's ordinal leaves (ge/le/…, geSheet/…): {sheet: [v0,v1,…] |
     # "numeric" | "date"}. Flows verbatim into the sidecar; see constraints/sidecar_schema.md.
     orders: dict = field(default_factory=dict)
+    # OPT-IN t-wise covering-array reduction, applied PRE-CORE so `fw_final` is
+    # already reduced and the whole downstream chain is unchanged. 0 = off (full
+    # cartesian). This exposes the reducers that have existed in this module all
+    # along (`nwise_greedy`/`nwise_optimal`/`pick_n_for_budget`) but had no spec
+    # or CLI key, so no spec could ever ask for them.
+    coverage_strength: int = 0
+    #: minimum set-cover instead of streaming greedy — smaller suite, more RAM.
+    coverage_optimal: bool = False
+    #: when > 0, ignore `coverage_strength` and let `pick_n_for_budget` choose the
+    #: most thorough strength that fits this many candidates.
+    coverage_budget: int = 0
     # STEP 8: explicit authoring-contract version. Specs predating this field
     # carry no `spec_version` key and are interpreted as "legacy" (today's
     # format, unchanged); `"1"` is the same internal model with the contract
@@ -703,7 +770,7 @@ class Spec:
 SPEC_V1_KNOWN_KEYS = frozenset({
     "spec_version", "title", "note", "args", "runme", "slots",
     "goals", "custom_vars", "params", "constraints", "seq_extra", "orders",
-})
+    "coverage_strength", "coverage_optimal", "coverage_budget"})
 
 # Per-slot keys recognized inside `slots[]` entries — same typo-detection role as
 # SPEC_V1_KNOWN_KEYS, one level down (e.g. catches `flgas` instead of `flags`).
@@ -1048,6 +1115,9 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
                 note=raw.get("note", ""),
                 runme=raw.get("runme") or _default_runme(name),
                 seq_extra=seq_extra, params=params, constraints=constraints, orders=orders,
+                coverage_strength=int(raw.get("coverage_strength", 0) or 0),
+                coverage_optimal=bool(raw.get("coverage_optimal", False)),
+                coverage_budget=int(raw.get("coverage_budget", 0) or 0),
                 spec_version=spec_version)
 
 
@@ -1310,7 +1380,8 @@ def reduce_combos(combos: list[tuple[str, ...]], n: int, optimal: bool = False):
 
 
 def pick_n_for_budget(spec: Spec, budget: int, optimal: bool = False,
-                      hard_cap: int = 2_000_000) -> tuple[int, list[tuple[str, ...]]]:
+                      hard_cap: int = 2_000_000,
+                      max_strength: "int | None" = None) -> tuple[int, list[tuple[str, ...]]]:
     """'Self-limit with the exponential wall in mind': choose the MOST thorough
     coverage that fits `budget`. Returns (n, combos) where n=0 means full.
     Refuses to materialise beyond hard_cap (raises) — the unreachable zone."""
@@ -1322,11 +1393,29 @@ def pick_n_for_budget(spec: Spec, budget: int, optimal: bool = False,
                          f"give an explicit --n for N-wise reduction")
     allc = list(cartesian(spec))
     k = len(spec.slots)
-    for n in range(k - 1, 0, -1):           # most-thorough that fits, high->low
+    ceiling = k - 1 if max_strength is None else max(1, min(int(max_strength), k - 1))
+
+    # Search LOW -> HIGH and stop at the first strength that overruns.
+    #
+    # Suite size is monotone non-decreasing in t: a t-covering array is also a
+    # (t-1)-covering array, and the greedy reducer keeps a combo iff it
+    # introduces a new t-tuple, so raising t can only keep more rows. Once a
+    # strength overruns the budget, no higher one can fit -- the break is exact,
+    # not a heuristic.
+    #
+    # The previous order (k-1 down to 1) computed the MOST expensive reduction
+    # first and discarded it, which is backwards for the common case of a small
+    # budget: the answer is a low strength, but every costly high-t reduction ran
+    # before reaching it. With `optimal=True` that is not merely slow, it does
+    # not finish -- `nwise_optimal` builds the universe of all t-tuples, and at
+    # t=8 over a 9-slot grid that ran >20 min where a single t=2 call takes 1.0 s.
+    best_n, best_red = 1, reduce_combos(allc, 1, optimal)
+    for n in range(2, ceiling + 1):
         red = reduce_combos(allc, n, optimal)
-        if len(red) <= budget:
-            return n, red
-    return 1, reduce_combos(allc, 1, optimal)
+        if len(red) > budget:
+            break
+        best_n, best_red = n, red
+    return best_n, best_red
 
 
 # ===========================================================================
