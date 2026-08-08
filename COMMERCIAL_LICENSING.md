@@ -27,8 +27,12 @@ A separate agreement is required to:
 
 ## Contact
 
-Yurii Baranov — mail4yur@gmail.com
+Yurii Baranov — mail4yur@gmail.com or yurii.baranov.22@gmail.com
 Kyiv, Ukraine
+
+Either address reaches the author. Two are listed deliberately: a licensing
+enquiry, or a custodian trying to reach him, should not fail because one
+mailbox has become unreachable.
 
 Please describe your intended use, the number of people involved and the
 systems you intend to test. Terms are agreed individually.

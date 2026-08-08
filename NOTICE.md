@@ -82,7 +82,12 @@ See [SUCCESSION.md](SUCCESSION.md) for why that guarantee exists.
 The following directories contain third-party code that is **not** covered by
 the licence above and retains its own terms and copyright:
 
-- `Combinatoricslib3parallel/` — third-party combinatorics library.
+- `Combinatoricslib3parallel/` — a **modified derivative** of
+  [combinatoricslib3](https://github.com/dpaukov/combinatoricslib3) by Dmytro
+  Paukov, distributed upstream under the Apache License 2.0. Copyright in the
+  original work remains with its author and contributors. The changes made in
+  this fork, and the attribution required by Apache-2.0 §4, are recorded in
+  [`Combinatoricslib3parallel/NOTICE.md`](Combinatoricslib3parallel/NOTICE.md).
 
 Files under those paths carry no copyright header from this project. Their
 original licence text and attribution must be preserved. Dependencies declared

@@ -8,10 +8,22 @@
     <artifactId>combinatoricslib3parallel</artifactId>
     <version>3.4.2-SNAPSHOT</version>
     <name>combinatoricslib3parallel</name>
-    <description>Combinatorial objects parallel streams generators for Java.</description>
+    <description>Combinatorial objects parallel streams generators for Java.
+        A modified derivative of combinatoricslib3 by Dmytro Paukov
+        (https://github.com/dpaukov/combinatoricslib3, Apache-2.0), adding
+        index-addressable parallel generation, rank-based unranking and fast
+        paths, under a renamed package. See NOTICE.md in this directory for
+        the attribution and the list of changes.</description>
 
     <url>https://github.com/ghYura/combinatoricslib3parallel</url>
     <inceptionYear>2026</inceptionYear>
+
+    <!-- Upstream work this library is derived from. Recorded here as well as in
+         NOTICE.md so the provenance travels with the built artefact's POM. -->
+    <organization>
+        <name>Derived from combinatoricslib3 by Dmytro Paukov</name>
+        <url>https://github.com/dpaukov/combinatoricslib3</url>
+    </organization>
 
     <licenses>
         <license>
