@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Plan-1 Phase 2 acceptance tests for bundle.counts + BundleConfig.validate_repeat
 (design contract docs/24 §3; Automation required tests #1-#4). Pure — materializes nothing.
 Run: `python3 -m pytest test_bundle_counts.py -q` or `python3 test_bundle_counts.py`."""

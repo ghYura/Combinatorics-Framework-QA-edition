@@ -1,8 +1,13 @@
-# QA edition — scope and draft use direction
+# QA edition — scope and use direction
 
-> **DRAFT — NON-OPERATIVE. No rights are granted by this directory.** This private repository has
-> no root licence. The two linked documents record owner intent for later qualified drafting and
-> are not legal advice.
+> **SUPERSEDED — historical record of intent.** As of 2026-08-08 the project has an operative root
+> licence: the [Business Source License 1.1](../../LICENSE). The intent recorded here — one personal
+> installation for an individual QA engineer or student, AS IS and free of charge — is now carried
+> by that licence's **Additional Use Grant**.
+>
+> These documents are kept because they explain *why* the terms are shaped as they are. They grant
+> no rights themselves, and where they differ from `LICENSE`, **`LICENSE` governs**. Neither is
+> legal advice.
 
 ## Purpose
 

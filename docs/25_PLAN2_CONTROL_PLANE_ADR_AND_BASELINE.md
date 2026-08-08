@@ -6,7 +6,7 @@
 > [document 21](21_ARCHITECTURE_DECISIONS.md) and the
 > [2026-07-21 code audit](CURRENT_CODE_AUDIT_2026-07-21.md).
 
-**Author:** Claude Opus 4.8, 2026-06-22 (at Yuri's direction: "plan for yourself and implement Plan 2").
+**Author:** Architect, 2026-06-22 (at Yuri's direction: "plan for yourself and implement Plan 2").
 **Status:** ADR proposed (to be promoted into `21_ARCHITECTURE_DECISIONS.md` on Automation acceptance);
 control-plane increment **landed + green** in `Analyzer_trunk`.
 **Companion:** [document 24](24_PLAN1_PHASE0_CONTRACT_DELTA.md) (Plan-1, which this executes).

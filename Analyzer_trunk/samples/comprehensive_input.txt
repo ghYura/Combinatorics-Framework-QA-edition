@@ -86,7 +86,7 @@ runtime: jvm21
 trace_mode: distributed
 auth_provider: oidc
 storage_backend: postgres
-cache_layer: redis
+cache_layer: in_memory_cache
 message_bus: nats
 
 # ── SECTION 05 ─ numeric: ≥3 numbers, ≤10 tokens → line_type='numeric' ──────

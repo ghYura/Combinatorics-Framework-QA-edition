@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "fintech_oot — identity_accounts (current finance_stack simulator, 2 live instances + in-process)"
 note  = "small focused batch; LIVE HMAC cluster + in-process param/factor combinatorics; FW_Optional external sudden-actions"
 goals = ["violations", "score", "settled", "on_hold", "blocked"]

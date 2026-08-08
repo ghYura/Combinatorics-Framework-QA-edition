@@ -1,7 +1,25 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Combinatorial-principles tests for complex 3D bodies vs 2D sieve.
 
-These are brand-new Bundle-driven tests: they do not reuse Claude's unittest
+These are brand-new Bundle-driven tests: they do not reuse the Architect's unittest
 campaigns. The point is to test the claim in the handoff directly: when the
 oracle is a metamorphic law, combinatorics over entities and action orders is
 useful and catches state-machine defects independent of hand-picked geometry

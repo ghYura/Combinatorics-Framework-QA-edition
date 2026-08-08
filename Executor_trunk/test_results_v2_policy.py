@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """STEP 27 propagation tests: the execution policy (id + sha256) the launcher
 writes -- into the Handoff v2 manifest's ``execution_policy_ref`` and the sibling
 ``execution_policy.json`` -- flows through the Executor into every ``results_v2``
@@ -142,7 +160,15 @@ def results_db():
         c.autocommit = True
         return c
 
-    admin = _admin()
+    # A set password says the operator INTENDED a DB run; it does not prove the
+    # server is up. Without this guard an unreachable endpoint raises inside the
+    # fixture and pytest reports ERROR, contradicting this module's docstring and
+    # diverging from the sibling results_v2 harnesses, which skip. Absent
+    # infrastructure is a skip; only a reachable-but-wrong server is a failure.
+    try:
+        admin = _admin()
+    except Exception as exc:
+        pytest.skip(f"results PostgreSQL unavailable at {host}:{port}: {exc}")
     try:
         cur = admin.cursor(); cur.execute(f'CREATE DATABASE "{name}"'); cur.close()
     finally:

@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "LLM-Transformer scenario join — full brace FW_(START,,CFG,REL,SHP,,END,SEP,M:N) + FW_Separator glue"
 note  = """Second-order test design: a named test SCENARIO = (a config-pair) JOINED with (an input-shape).
 CFG = FW_Combi(2) over 3 config tweaks (its RESULT table = 3 pairs) with separator=GLUE woven between the

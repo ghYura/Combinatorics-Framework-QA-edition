@@ -17,9 +17,12 @@
 **/.github/
 **/.idea/
 **/.vscode/
-**/.claude/
+**/.ai-assist/
 **/.agents/
 **/.automation/
+# Catch-all for any other vendor's local assistant/tool workspace. The build
+# context needs no hidden directory, so excluding them all is safe here.
+**/.*/
 **/.DS_Store
 **/.directory
 **/*.iml

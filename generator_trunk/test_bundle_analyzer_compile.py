@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Regression for the AnalyzeKv freshness/atomic compile path (Automation 2026-06-20T13:27Z):
 `_analyzekv_class_is_stale` recompiles when the source (or any Analyzer source) is newer than the
 class — not only when the class is missing — and `_compile_java_atomic` never leaves a partial /

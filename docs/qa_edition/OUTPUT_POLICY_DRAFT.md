@@ -1,8 +1,16 @@
-# Output policy — DRAFT, NON-OPERATIVE
+# Output policy — DRAFT, pending
 
-> **DRAFT — NON-OPERATIVE.** Nothing in this document is in force. No licence is selected, no
-> repository visibility changes, no CLA is adopted, no release is published. Requires owner
-> approval and, where noted, qualified-counsel review. **Not legal advice.**
+> **PARTIALLY SUPERSEDED.** A root licence *is* now selected — the
+> [Business Source License 1.1](../../LICENSE), adopted 2026-08-08 — so the "no licence is selected"
+> premise below no longer holds. The rest of this document still stands as a draft: **BUSL says
+> nothing about ownership of the artefacts a run produces**, and that question remains open.
+>
+> The owner's position is recorded in [NOTICE.md](../../NOTICE.md): a user's scenarios and results
+> are the user's, so far as the law allows, and Bundle claims no rights in them merely because it
+> produced or processed them. That statement is intent, not an operative licence term.
+>
+> Still not adopted: a CLA, any repository visibility change, and any published release. Requires
+> owner approval and qualified-counsel review. **Not legal advice.**
 
 ## The question
 

@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "Full brace demo — FW_(START,,A,REL,B,,END,SEP,1:N): beginning, relation, separator, ending"
 note  = "The brace is more than E1/E2/mult: FW_(start,_,E1,rel,E2,_,end,sep,mult). A=FW_Combi(2) over 3 (pairs) joined 1:N with B=FW_Combi(1) over 2, weaving REL between an A-element and B, SEP between the per-element groups, and wrapping each row with START..END. Proves all four formatting fields. START/REL/SEP/END are non-excluded 1-value helper sheets (declared last) whose FIRST value the brace reads; A,B are FW_Exclude'd operands."
 args = ["mode=brace_full_demo"]

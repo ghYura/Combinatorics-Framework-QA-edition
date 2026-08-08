@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Shared verified-scenario catalog and immutable launch profiles for both Face 1 UIs."""
 
 from __future__ import annotations
@@ -6,7 +24,14 @@ from datetime import datetime, timezone
 import json
 import os
 from pathlib import Path
+import re
 from typing import Any, Mapping
+
+#: Credential variables are recognised by name shape rather than by a fixed list
+#: of vendor names, so an unlisted provider cannot leak into a subprocess.
+_CREDENTIAL_NAME = re.compile(
+    r"(API_KEY|ACCESS_TOKEN|AUTH_TOKEN|SESSION_TOKEN|BEARER|SECRET|CREDENTIALS?|PASSWORD)$"
+)
 
 
 DEFAULT_SUITE_ID = "verified_examples"
@@ -368,11 +393,11 @@ def scenario_environment(
             "AI_COMBI_ALLOW_EXTERNAL",
             "AI_COMBI_CONFIG",
             "AI_COMBI_EXPORT_PROMPT",
-            "ANTHROPIC_API_KEY",
-            "GEMINI_API_KEY",
-            "GOOGLE_API_KEY",
-            "OPENAI_API_KEY",
         ):
+            env.pop(key, None)
+        # Provider credentials go by pattern, not by a list of vendor variable
+        # names: an unlisted provider must not leak into a scenario subprocess.
+        for key in [k for k in env if _CREDENTIAL_NAME.search(k.upper())]:
             env.pop(key, None)
         env["PYTHONDONTWRITEBYTECODE"] = "1"
         env["AI_COMBI_ENVIRONMENT_ID"] = (

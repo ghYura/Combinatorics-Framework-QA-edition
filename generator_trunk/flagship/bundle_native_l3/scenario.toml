@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 spec_version = "1"
 title = "Flagship L3 — wider factor space, two sudden actions, constraint sieve"
 note = "L2's construction, widened: a third module stage, an ordered motif over THREE stages, a clamp whose bounds are their own axes, and a SECOND FW_Optional sudden action. The sieve removes the clamp pairs whose low exceeds its high — candidates the engine can generate but the domain cannot execute. 864 mandatory rows - 216 sieved = 648, x4 optional = 2592 candidates. Same five-link brace chain, same oracle, same corpus as L2."

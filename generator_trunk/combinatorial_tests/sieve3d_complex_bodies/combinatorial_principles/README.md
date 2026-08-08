@@ -1,6 +1,6 @@
 # sieve3d combinatorial principles
 
-This sub-suite is a direct answer to the Claude handoff claim that the useful
+This sub-suite is a direct answer to the Architect handoff claim that the useful
 work is hand-picked geometry, not Bundle combinatorics. It does not try to find
 a new geometric passage. Instead it uses combinatorial generation where the
 oracle is cheap and strong: action algebra over the SUT experiment state.

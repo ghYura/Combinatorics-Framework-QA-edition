@@ -50,7 +50,9 @@ invariants.
 | Understanding Executor multi-threading, multi-source watches, and precompiled Docker dispatch | [29_EXECUTOR_CONCURRENCY_AND_PRECOMPILED_DISPATCH_2026-07-02.md](29_EXECUTOR_CONCURRENCY_AND_PRECOMPILED_DISPATCH_2026-07-02.md) |
 | Running untrusted/generated code safely | [10_SECURITY_AND_SANDBOXING.md](10_SECURITY_AND_SANDBOXING.md) |
 | Open execution-safety findings and the contract audit | [32_EXECUTION_SAFETY_AUDIT.md](32_EXECUTION_SAFETY_AUDIT.md) |
-| **QA-edition scope and non-operative personal-use intent** | [qa_edition/README.md](qa_edition/README.md) |
+| **Licence — who may use Bundle free, and what needs a commercial one** | [LICENSE](../LICENSE), [NOTICE.md](../NOTICE.md), [COMMERCIAL_LICENSING.md](../COMMERCIAL_LICENSING.md) |
+| **Continuity of the project if its author cannot act** | [SUCCESSION.md](../SUCCESSION.md) |
+| QA-edition scope, and the superseded record of personal-use intent | [qa_edition/README.md](qa_edition/README.md) |
 | **Which combinations are supported** (generated) | [33_CAPABILITY_MATRIX.md](33_CAPABILITY_MATRIX.md) |
 | Dependency locking, CI tiers, skip classification, SBOM | [34_RELEASE_REPRODUCIBILITY.md](34_RELEASE_REPRODUCIBILITY.md) |
 | **Does advanced construction find defects the alternatives miss?** (flagship SUT, mutants, baselines, executed ladder, full-chain reconciliation) | [35_FLAGSHIP_DECISION_AND_BASELINES.md](35_FLAGSHIP_DECISION_AND_BASELINES.md) (§6a: does it reproduce on a second, dissimilar SUT?) |

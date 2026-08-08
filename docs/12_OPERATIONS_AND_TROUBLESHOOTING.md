@@ -13,6 +13,10 @@ Then `bundle plan <spec>` to quantify before running.
 |---|---|---|
 | Preflight: "main/results DB password not configured" | env var unset | `export BUNDLE_{MAIN,RESULTS}_DB_PASSWORD=…` |
 | Preflight: "PostgreSQL not accepting on host:port" | cluster down / wrong port | start cluster; check `--main-port/--results-port` |
+| Many tests SKIPPED with "Postgres … not reachable" | one or both instances not running | start both; verify with `pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432` |
+| `test_results_v2_policy.py` ERRORS while sibling schema tests only skip | results DB `:5432` down; this file has no skip guard | start the results instance — an error here means "database absent", not a defect |
+| Deploy acceptance tests skip: "cannot prove ownership of `fwbundle-*-db`" | containers left over from an earlier run | `python generator_trunk/bundle_run.py deploy down`, then re-run |
+| Run succeeds but counts match an earlier session | instances were not clean; stale rows reused | drop the Bundle databases or `deploy down`; start from clean instances |
 | Preflight: "expected exactly one .toml in <dir>" | 0 or >1 specs in the dir | keep one `.toml` per spec dir |
 | Build/start: unsupported class-file version or Reader/Executor compilation failure | running the current full reactor with JDK 21 | use JDK 25 for Reader/Executor/full reactor; Core/Analyzer libraries still target 21 |
 | gen: `KeyError 'values'` parsing a `.json` | a stray spec-shaped `.json` in the dir | (fixed) Bundle artifact JSONs are skipped; remove other stray `.json` |

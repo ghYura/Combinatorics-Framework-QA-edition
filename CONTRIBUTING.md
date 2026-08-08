@@ -5,10 +5,14 @@
 This repository is currently a private technical preview. Contributions are accepted only from
 collaborators explicitly authorized by the repository owner.
 
-No operative root project licence has been selected. Repository access and submission of a patch do
-not grant use or redistribution rights. Do not solicit or merge outside code until the owner has
-selected governing licence and contribution terms. See the non-operative QA-edition intent in
-[`docs/qa_edition/README.md`](docs/qa_edition/README.md).
+The project is licensed under the [Business Source License 1.1](LICENSE) — see the Licence section
+of the root [README](README.md#licence). Repository access alone still grants no special standing:
+your rights are exactly those the `LICENSE` gives any holder of a copy.
+
+**Contribution terms have not been settled.** No CLA or DCO is in force yet, so do not solicit or
+merge outside code until the owner has chosen one. This matters more than usual here: BUSL names a
+single Licensor, and accepting third-party copyright without an agreement would remove the owner's
+ability to set the Change Date or issue commercial licences for the whole work.
 
 ## Before changing code
 
@@ -73,6 +77,27 @@ bash Analyzer_trunk/run-tests.sh
 
 Run additional focused tests for every component changed. Database, Docker, browser, ML, gateway,
 and external-SUT tests must be clearly identified because they require extra services or isolation.
+
+### Running the full suite
+
+The complete suite requires **two clean PostgreSQL instances up and running** — main on
+`127.0.0.1:5433` and results on `127.0.0.1:5432` — as described in the root
+[README](README.md#the-two-postgresql-instances). Without them roughly thirty tests skip and
+`Executor_trunk/test_results_v2_policy.py` errors, so a green summary line proves much less than it
+appears to:
+
+| Databases | Result on this revision |
+|---|---|
+| Both down | 1331 passed, 34 skipped, 2 errors |
+| Both up (clean) | 1363 passed, 4 skipped, 0 errors |
+
+```bash
+pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432
+python -m pytest -q
+```
+
+When reporting verification results, state whether the databases were running. "All tests passed"
+without that detail is ambiguous.
 
 ## Pull request handoff
 

@@ -11,9 +11,52 @@
 | `pg8000` (pure-Python driver) | present | control plane / Executor DB access |
 | Java | **25** — JDK 25 is required to build the reactor at all | Core/Analyzer/shared libraries target release 21, Reader/Executor target release 25, so a JDK 21 host builds the first half and fails the second. The dated evidence host ran 21 against a tree whose Reader/Executor still targeted 21. |
 | Maven | 3.9.15 | offline component builds |
-| PostgreSQL | 18.4 host (16.9 deploy containers) | main + results DBs |
+| PostgreSQL | 18.4 host (16.9 deploy containers) | **two clean instances required** — main `:5433` + results `:5432`, see below |
 | Docker | 29.5.3 (rootless) | secure sandbox + deploy stack |
 | bubblewrap (`bwrap`) | present | alternative daemonless sandbox |
+
+### Required: two clean PostgreSQL instances
+
+This is a hard prerequisite for any full chain run and for the complete test suite. The two
+endpoints are separate instances, not two databases in one cluster:
+
+| Role | Endpoint | Written by |
+|---|---|---|
+| **main** | `127.0.0.1:5433` | Core materializes the combinatorial space into `fw_final`; the sieve deletes invalid rows here |
+| **results** | `127.0.0.1:5432` | Executor writes candidate results, which the Analyzer then reads |
+
+The connecting role needs `CREATEDB`; `bundle doctor` reports this as BLOCKING when it is missing.
+Create them with Option A or Option B below, then verify:
+
+```bash
+pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432
+```
+
+**Why "clean" matters.** Leftover Bundle databases, tables or `fwbundle-main-db` /
+`fwbundle-results-db` deploy containers rarely cause a visible failure. Instead they cause tests to
+*skip*, or a run to reuse rows from an earlier session — both of which look like success in a
+summary line. Before a verification run, clear any prior deploy stack:
+
+```bash
+python generator_trunk/bundle_run.py deploy down
+```
+
+**What the two instances change in the test suite.** Measured on a clean checkout of this revision:
+
+| Databases | Result |
+|---|---|
+| Both down | 1331 passed, 34 skipped, **2 errors** |
+| Both up (clean) | **1363 passed, 4 skipped**, 0 errors |
+
+The 30 additional tests exercise the constraints/sieve paths, GUI end-to-end flows, the telemetry
+catalog, the evaluation gateway, benchmarks, and the `results_v2` schema and policy columns — the
+parts of the chain that cannot be verified without a real database. The 4 remaining skips are
+environmental by design (ML extra not installed, `FACE1_E2E_LIVE` unset, and two deploy acceptance
+tests that decline to run when they cannot prove ownership of pre-existing containers).
+
+Note that `Executor_trunk/test_results_v2_policy.py` *errors* rather than skipping when the results
+DB is absent, unlike its sibling schema tests. Treat an error there as "database not running", not
+as a defect.
 
 The dated verification host used system Python packages directly. For a fresh checkout, use the
 repository-local virtual environment and extras shown in the root `README.md`; this avoids changing

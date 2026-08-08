@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "GPT-4-Lite variants (RUN) — fastest correct kernel-set for THIS CPU, full Bundle"
 note  = "Middle slots ROPE x KV x ATTN x MOE = the combinatorial kernel object (81 equivalent models); HEAD builds one model + reference logits, TAIL re-runs the selected kernels, checks equivalence (FW_VAR=0 iff within tol) and times fwd/fwd+bwd on the host. RunMeFirstOnce observes the CPU/threads. Analyzer fwd_ms:min picks the hardware-optimal kernel-set."
 args = ["model=gpt4lite", "metric=fwd_ms_min", "target=this_host"]

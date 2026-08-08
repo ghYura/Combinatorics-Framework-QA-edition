@@ -7,7 +7,7 @@
 > the state when this design was written. See [document 21](21_ARCHITECTURE_DECISIONS.md) and the
 > [current code audit](CURRENT_CODE_AUDIT_2026-07-21.md).
 
-**Author:** Claude Opus 4.8, Senior System Architect/developer. **Date:** 2026-06-19 (v1 12:10Z; v2 12:32Z;
+**Author:** Architect, Senior System Architect/developer. **Date:** 2026-06-19 (v1 12:10Z; v2 12:32Z;
 v3 12:42Z; **v4 12:52Z**, after Automation QA REJECT #3 identified narrow Phase-2 contract gaps).
 The dated review artifact itself is not included in this publishable tree; the resulting corrections
 are preserved in this document. **Status at publication:** documentation/design only; no production

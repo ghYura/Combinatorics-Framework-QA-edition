@@ -41,7 +41,7 @@ Execution strictly iterates sequentially via atomic steps requiring explicit man
 
 * **Targeted Validation:** Perform minimal `py_compile`, syntax lints, and narrow checks per step.
 * **Milestone Testing:** Full 288-candidate E2E workflows only trigger at designated milestone gates; multi-million bounds require explicit bypass.
-* **Immutability:** No destructive git rollbacks, `claude`-path traversal, or deletion of historical files without exact authorization.
+* **Immutability:** No destructive git rollbacks, `ai-assist`-path traversal, or deletion of historical files without exact authorization.
 
 ---
 

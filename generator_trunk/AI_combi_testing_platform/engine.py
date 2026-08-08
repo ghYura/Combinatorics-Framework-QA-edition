@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Shared candidate engine for router, prompt-CI, and dataset modes."""
 
 from __future__ import annotations
@@ -8,6 +26,7 @@ from pathlib import Path
 from typing import Any
 
 from .adapters import Completion, CompletionRequest, load_adapter
+from .invariance import answer_digest, applicable_relations, orbit_key
 from .metrics import MetricRecord, sanitize_token
 from .oracles import OracleResult, solve_exact, verify_response
 from .oracles.exact import ExactAnswer
@@ -42,6 +61,8 @@ class CandidatePlan:
     instruction_order: str = "task_first"
     long_range: int = 0
     prompt_version: str = "v1"
+    injection: str = "none"
+    defense: str = "none"
     environment_id: str = "local"
     generation_revision: str = "v1"
     product_mode: str = "router"
@@ -58,13 +79,15 @@ class CandidatePlan:
             instruction_order=self.instruction_order,
             long_range=self.long_range,
             prompt_version=self.prompt_version,
+            injection=self.injection,
+            defense=self.defense,
         )
         plan.validate()
         return plan
 
     def validate(self) -> None:
-        if self.task_family not in {"ordering", "cancellation"}:
-            raise ValueError("task_family must be ordering or cancellation")
+        if self.task_family not in {"ordering", "cancellation", "dispatch"}:
+            raise ValueError("task_family must be ordering, cancellation, or dispatch")
         if not 1 <= int(self.complexity) <= 8:
             raise ValueError("complexity must be in 1..8")
         if self.semantic_mode not in {"neutral", "loaded"}:
@@ -120,8 +143,39 @@ def _record(
     correct = int(bool(oracle and oracle.correct))
     format_ok = int(bool(oracle and oracle.format_ok))
     all_constraints = int(bool(oracle and oracle.all_constraints_pass))
+    # Metamorphic bookkeeping: the digest is the canonical parsed answer, and
+    # each orbit_* dimension names an equivalence class this candidate belongs
+    # to. The verdict for those classes is a group property, so it is decided in
+    # reporting once every member has run -- exactly how repeat_consistency
+    # already works. See invariance.py.
+    task_hash = task.structural_hash if task else "none"
+    digest = answer_digest(oracle.parsed if oracle else None)
+    orbit_dimensions = {
+        f"orbit_{relation}": orbit_key(plan, task_hash, relation)
+        for relation in applicable_relations(plan)
+    }
+    # The individual presentation axes, not only the composite renderer_id.
+    # renderer_id is a hash, so without these a report can tell that two
+    # candidates were rendered differently but never which axis differed --
+    # which makes per-axis fragility and any interaction map impossible to
+    # compute from the results DB.
+    presentation_dimensions = {
+        "px_schema": plan.schema,
+        "px_costume": plan.costume,
+        "px_tone": plan.tone,
+        "px_constraint_order": plan.constraint_order,
+        "px_distractor": plan.distractor,
+        "px_paraphrase": plan.paraphrase,
+        "px_instruction_order": plan.instruction_order,
+        "px_long_range": str(plan.long_range),
+        "px_injection": plan.injection,
+        "px_defense": plan.defense,
+    }
     return MetricRecord(
         dimensions={
+            **orbit_dimensions,
+            **presentation_dimensions,
+            "answer_digest": digest,
             "family": task.family if task else plan.task_family,
             "task_id": task.task_id if task else "construction-failure",
             "task_hash": task.structural_hash if task else "none",

@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """STEP 43 — repository hygiene WITHOUT deleting history.
 
 Separates production sources from historical backups. This module INVENTORIES
@@ -6,7 +24,7 @@ component's production COMPILE source set, and VERIFIES the compile source set
 does not capture any backup. It PROPOSES an archival move (to a dir outside the
 compiler source roots) but never moves or deletes anything on its own —
 `apply_archival` runs only with an explicit ``approved=True`` (an operator's
-reasoned, traceable approval). Forbidden paths (anything containing 'claude')
+reasoned, traceable approval). Forbidden paths (anything containing 'ai-assist')
 and build output (`target/`, `.git/`, `__pycache__`) are never scanned.
 """
 from __future__ import annotations
@@ -21,8 +39,8 @@ from .runs import file_sha256
 HERE = Path(__file__).resolve().parent.parent          # generator_trunk/
 SRC = HERE.parent                                       # repo root
 
-# the PRODUCTION trunks (the historical *RC* / Opus* sibling dirs are themselves
-# directory-level historical copies — out of scope for the production build).
+# the PRODUCTION trunks (the historical *RC* / assistant-named sibling dirs are
+# themselves directory-level historical copies — out of scope for the production build).
 PRODUCTION_TRUNKS = ("Core_trunk", "Reader_trunk", "Executor_trunk", "Analyzer_trunk", "generator_trunk")
 
 # backup/obsolete file markers (extension- or suffix-based; conservative).
@@ -35,7 +53,7 @@ _SKIP_DIRS = ("/target/", "/.git/", "/__pycache__/", "/node_modules/", "/.m2/")
 
 def _forbidden(path: str) -> bool:
     low = str(path).lower()
-    return "claude" in low or any(s in str(path) for s in _SKIP_DIRS)
+    return "ai-assist" in low or any(s in str(path) for s in _SKIP_DIRS)
 
 
 def is_backup(path: Path) -> bool:

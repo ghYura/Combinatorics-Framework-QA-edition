@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Exact, deterministic solvers and parsers that do not call a model."""
 
 from __future__ import annotations
@@ -8,7 +26,13 @@ import itertools
 import json
 from typing import TypeAlias
 
-from ..task_ir import CancellationTask, OrderingTask, Task
+from ..task_ir import (
+    DISPATCH_ACTIONS,
+    CancellationTask,
+    DispatchTask,
+    OrderingTask,
+    Task,
+)
 
 
 ExactAnswer: TypeAlias = tuple[str, ...] | Fraction
@@ -48,7 +72,39 @@ def _ordering_valid(task: OrderingTask, order: tuple[str, ...]) -> bool:
     )
 
 
+def simulate_dispatch(task: "DispatchTask") -> tuple[str, ...]:
+    """The actions that actually take effect, in effect order.
+
+    The rules are the companion tutor SUT's, stated once here so the oracle and
+    the rendered instructions cannot drift apart:
+
+    * an action takes effect only if every action before it in the canonical
+      order has already taken effect (precedence);
+    * a delivered step that is marked failed never takes effect;
+    * an action already in effect is never applied twice (no double charge).
+
+    Deterministic and total: every delivered sequence has exactly one outcome,
+    which is what keeps this family exactly scorable while still being a
+    question about state over time.
+    """
+    canonical = list(DISPATCH_ACTIONS)
+    in_effect: list[str] = []
+    for index, action in enumerate(task.delivered):
+        if index in task.failed_steps:
+            continue
+        if action in in_effect:
+            continue
+        position = canonical.index(action)
+        prerequisites = [a for a in canonical[:position] if a in task.delivered]
+        if any(p not in in_effect for p in prerequisites):
+            continue
+        in_effect.append(action)
+    return tuple(in_effect)
+
+
 def solve_exact(task: Task) -> ExactAnswer:
+    if isinstance(task, DispatchTask):
+        return simulate_dispatch(task)
     if isinstance(task, OrderingTask):
         for order in itertools.permutations(sorted(task.entities)):
             if _ordering_valid(task, order):
@@ -100,12 +156,19 @@ def _parse_ordering(response: str, schema: str) -> tuple[str, ...] | None:
         if schema == "plain":
             if not response.startswith("answer="):
                 return None
-            return tuple(response.removeprefix("answer=").split(">"))
+            payload = response.removeprefix("answer=")
+            # An empty payload is the empty sequence, not a sequence containing
+            # one empty name. Without this, `answer=` parsed to `('',)` while
+            # the json form parsed to `()`, so any empty answer disagreed with
+            # itself across schemas -- a parser artifact that would register as
+            # a metamorphic violation and convict a target of nothing.
+            return () if payload == "" else tuple(payload.split(">"))
         if schema == "csv":
             parts = response.split(",")
             if not parts or parts[0] != "answer":
                 return None
-            return tuple(parts[1:])
+            rest = parts[1:]
+            return () if rest == [""] else tuple(rest)
     except (KeyError, TypeError, ValueError, json.JSONDecodeError):
         return None
     return None
@@ -142,6 +205,26 @@ def verify_response(
     if schema not in OUTPUT_SCHEMAS:
         raise ValueError(f"unsupported output schema: {schema!r}")
     exact = solve_exact(task) if expected is None else expected
+    if isinstance(task, DispatchTask):
+        parsed = _parse_ordering(response.strip(), schema)
+        if parsed is None:
+            return OracleResult(False, False, 0, 3, None, "format")
+        # Three independently checkable properties, so a near-miss is
+        # distinguishable from nonsense: only delivered actions may appear, no
+        # failed step may appear, and precedence must hold in what is reported.
+        delivered_ok = set(parsed) <= set(task.delivered)
+        failed_actions = {task.delivered[i] for i in task.failed_steps}
+        no_failed = not (set(parsed) & failed_actions)
+        canonical = list(DISPATCH_ACTIONS)
+        precedence_ok = parsed == tuple(
+            sorted(parsed, key=canonical.index)
+        ) and len(set(parsed)) == len(parsed)
+        met = int(delivered_ok) + int(no_failed) + int(precedence_ok)
+        correct = parsed == exact
+        return OracleResult(
+            True, correct, met, 3, parsed,
+            "ok" if correct and met == 3 else "dispatch",
+        )
     if isinstance(task, OrderingTask):
         parsed = _parse_ordering(response.strip(), schema)
         if parsed is None:

@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -249,7 +267,9 @@ def test_face1_old_launches_fresh_release_gate_profile(monkeypatch) -> None:
         return {"token": "test", "run_id": config["runId"], "db": config["db"]}
 
     monkeypatch.setattr(task_factory, "new_release_holdout_seed", lambda: b"o" * 32)
-    monkeypatch.setenv("GEMINI_API_KEY", "fixture-value")
+    # Any credential-shaped name must be stripped, including one no denylist
+    # could have known about in advance.
+    monkeypatch.setenv("SOME_UNLISTED_PROVIDER_API_KEY", "fixture-value")
     monkeypatch.setenv("AI_COMBI_EXPORT_PROMPT", "1")
     monkeypatch.setattr(serve_face1, "_spawn_run_direct", fake_spawn)
     result = serve_face1._example_run(RELEASE_GATE_ID)
@@ -259,7 +279,7 @@ def test_face1_old_launches_fresh_release_gate_profile(monkeypatch) -> None:
     assert captured["config"]["budgetFinalCandidates"] == 2_560
     assert captured["config"]["costPerCandidate"] == 0
     assert captured["launch_cwd"] == serve_face1.GEN_DIR.parent
-    assert "GEMINI_API_KEY" not in captured["environment"]
+    assert "SOME_UNLISTED_PROVIDER_API_KEY" not in captured["environment"]
     assert "AI_COMBI_EXPORT_PROMPT" not in captured["environment"]
     assert "2/4/8/16/32 leaves" in captured["toml"]
     assert (b"o" * 32).hex() not in captured["toml"]

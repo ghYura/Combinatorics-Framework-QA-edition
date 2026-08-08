@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Provenance and third-party license inventory (Prompt 04 Part A).
 
 **Non-operative.** This module gathers evidence for a publication decision. It
@@ -77,7 +95,7 @@ UNKNOWN = "unknown-requires-resolution"
 
 #: Legacy branch-name markers retained as a classification hint. A clean QA
 #: edition history is not expected to contain these source-development merges.
-_AI_BRANCH_MARKERS = ("codex/",)
+_AI_BRANCH_MARKERS = ("ai-assist/",)
 
 #: Paths whose provenance is decided by location rather than by commit history.
 _PATH_CATEGORIES: "tuple[tuple[str, str, str], ...]" = (
@@ -101,7 +119,7 @@ _PATH_CATEGORIES: "tuple[tuple[str, str, str], ...]" = (
     ("generator_trunk/generated_tests_fintech", GENERATED_CORPUS,
      "generated candidate corpus committed as source; same review"),
     ("generator_trunk/AI_combi_testing_platform", AI_ASSISTED,
-     "introduced by codex/* pull requests #1 and #2 under owner direction"),
+     "introduced by ai-assist/* pull requests #1 and #2 under owner direction"),
 )
 
 _BINARY_SUFFIXES = (".png", ".jpg", ".jpeg", ".gif", ".pdf", ".xlsx", ".jar", ".class",

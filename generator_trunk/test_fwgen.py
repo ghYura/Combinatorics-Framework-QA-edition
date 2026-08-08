@@ -1,4 +1,22 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Self-contained tests for fwgen (run: `python3 test_fwgen.py`; pytest also works).
 Uses an in-memory spec — no external files — to exercise the engine, plus a
 round-trip through build/validate/json on a temp workbook."""
@@ -417,7 +435,7 @@ def test_preview_is_domain_facing():
 def test_authoring_toml_roundtrip():
     import tomllib
     data = fg.build_spec_dict("auth",
-        [("MODEL", "model", ["gpt-4o", "claude"]), ("STYLE", None, ["terse", "verbose"])],
+        [("MODEL", "model", ["gpt-4o", "assistant"]), ("STYLE", None, ["terse", "verbose"])],
         title="Authoring", goals=["accuracy", "cost"])
     sp = fg.parse_spec(tomllib.loads(fg.dump_spec_toml(data)), "auth")
     assert [s.sheet for s in sp.slots] == ["MODEL", "STYLE"]

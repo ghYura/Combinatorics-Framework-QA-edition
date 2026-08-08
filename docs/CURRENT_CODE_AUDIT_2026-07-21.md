@@ -144,6 +144,9 @@ to it, and the later Executor stage adopts and drains that process.
 - No root project licence has been selected. The broad historical legal-option kit is deliberately
   omitted from this QA edition; its non-operative personal-use direction is recorded under
   [`docs/qa_edition/`](qa_edition/README.md).
+  > **Addendum 2026-08-08 — resolved.** A root [LICENSE](../LICENSE) now exists: Business Source
+  > License 1.1, Change Date 2030-08-08, Change Licence AGPL-3.0-only. The finding above is
+  > preserved as the state on the audit date and is no longer current.
 
 ## Companion SUT integration map
 

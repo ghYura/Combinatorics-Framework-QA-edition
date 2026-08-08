@@ -22,12 +22,11 @@ result came from is reviewable. Re-running such a generator therefore rewrites a
 leaves the checkout dirty — `git diff` will show it, and `git checkout --` discards it. That is
 expected, not a sign that something broke.
 
-The owner's draft intent is one complete personal installation for a natural person's lawful
-non-commercial testing, learning, and research, supplied **“AS IS”**. Inference-only AI may help
-that user understand Bundle or author their scenarios; training a machine to reproduce Bundle's
-Core → Reader → Executor capabilities is outside the intended grant. These statements are
-non-operative until approved terms exist; see
-[docs/qa_edition/README.md](docs/qa_edition/README.md).
+An individual QA engineer or student may use one complete personal installation, **AS IS** and free
+of charge, for their own learning, exploration, research and professional practice. Inference-only
+AI may help that user understand Bundle or author their scenarios; training a machine to reproduce
+Bundle's Core → Reader → Executor capabilities is outside the grant. These terms are now operative
+under the root [LICENSE](LICENSE); see [Licence](#licence) below.
 
 Its distinguishing property is that a *result table*, not a value, is the unit of composition. A
 brace `FW_(…)` joins two prior result tables and `FW_Group` re-combines one, so first-, second-,
@@ -120,12 +119,35 @@ from checked-in manifests; the optional npm editors additionally use checked-in 
 - Linux or another POSIX-like environment
 - JDK 25 and Maven (some modules target Java 21; Reader and Executor target Java 25)
 - Python 3.11 or newer
-- PostgreSQL client tools (`psql` and `pg_isready`) plus two reachable PostgreSQL endpoints for full runs
+- PostgreSQL client tools (`psql` and `pg_isready`)
+- **Two clean PostgreSQL instances, up and running**, for full runs and the full test suite — see below
 - Node.js 18 or newer and npm only for the optional React/Blockly editors
 - Docker with Compose only for the optional local database stack
 - A usable rootless Docker or Podman runtime for generated-code sandbox profiles
 
 The first Maven, pip, or npm build may download dependencies.
+
+### The two PostgreSQL instances
+
+| Role | Endpoint | Written by |
+|---|---|---|
+| **main** | `127.0.0.1:5433` | Core materializes the combinatorial space into `fw_final` |
+| **results** | `127.0.0.1:5432` | Executor writes candidate results |
+
+The connecting role needs `CREATEDB` (`bundle doctor` verifies this). Confirm both endpoints before
+a full run:
+
+```bash
+pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432
+```
+
+**Start from clean instances.** No Bundle databases or tables from an earlier session, and no
+pre-existing `fwbundle-main-db` / `fwbundle-results-db` deploy containers. Leftover state seldom
+raises an error — it makes tests skip or reuse stale data, which is easily mistaken for success.
+Clear deploy containers with `python generator_trunk/bundle_run.py deploy down`.
+
+Setup instructions for both instances, including a route that needs no `sudo`, are in
+[`docs/03_INSTALLATION_AND_LOCAL_DEPLOYMENT.md`](docs/03_INSTALLATION_AND_LOCAL_DEPLOYMENT.md).
 
 ## Start with the invitation wizard
 
@@ -334,10 +356,32 @@ python -m pytest
 
 `test-full` installs UI, browser, container, and ML integrations. When those services are available, the comprehensive suite may exercise them; use an isolated test host.
 
-## Licence status
+## Licence
 
-This private QA-edition snapshot has **no operative root licence**. Repository access alone does not
-grant permission to copy, modify, redistribute, host, train an AI on Bundle capabilities, or use it
-for an employer/client/organization. The owner's detailed personal-use and output intentions are
-non-operative drafts in [docs/qa_edition/](docs/qa_edition/README.md); approved written terms are
-required before relying on any grant.
+This edition is licensed under the **[Business Source License 1.1](LICENSE)**.
+
+| | |
+|---|---|
+| Licensor | Yurii Baranov, Kyiv, Ukraine |
+| Change Date | **2030-08-08** |
+| Change Licence | **GNU AGPL v3.0-only** |
+
+**Free for an individual.** A QA engineer, tester or student may run one concurrently active
+installation, AS IS and free of charge, for their own learning, exploration, research and
+professional practice — including work in the course of their own employment or studies. Copying,
+modification, redistribution and any non-production use are permitted to anyone holding a copy.
+
+**A separate licence is required** to deploy Bundle as shared infrastructure of a company or
+institution, embed it in a product or service, use it to serve third parties, or operate it by an
+AI system without a real human QA engineer directing it. See
+[COMMERCIAL_LICENSING.md](COMMERCIAL_LICENSING.md).
+
+**On the Change Date** — or the fourth anniversary of a version's first public distribution,
+whichever comes first — that version becomes available under the AGPL-3.0-only and these
+restrictions cease to apply to it. [SUCCESSION.md](SUCCESSION.md) explains why that guarantee
+exists.
+
+The author's statement of intent, the third-party scope and the trademark position are in
+[NOTICE.md](NOTICE.md). The earlier personal-use and output drafts in
+[docs/qa_edition/](docs/qa_edition/README.md) are retained as a record of intent; where they differ
+from `LICENSE`, `LICENSE` governs. The licence text has not yet had qualified legal review.

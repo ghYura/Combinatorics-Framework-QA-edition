@@ -592,7 +592,7 @@ Then implementations can be:
 
 - `PrecompiledDockerJavaRunner`
 - `GrpcJavaExecutionDispatcher`
-- future Kubernetes/job-queue dispatcher
+- future container-orchestration/job-queue dispatcher
 
 ### Host Precompile Trust Boundary
 

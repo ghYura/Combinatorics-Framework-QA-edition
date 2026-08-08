@@ -63,7 +63,7 @@ regression was introduced.  Investigate immediately.
 
 HISTORICAL NOTE — Why "34,368,597" appears in older logs
 ────────────────────────────────────────────────────────
-The legacy pre-Iter2 codebase (Opus 4.6 baseline) reported
+The legacy pre-Iter2 codebase (Architect 4.6 baseline) reported
 fw_opt4 = 34,368,597 on this fixture.  That number was a faithful
 measurement of THAT code's behavior on PG with HashAggregate ordering.
 It was reproducible on a given PG version but would silently shift if
@@ -71,7 +71,7 @@ the planner picked a different distinct strategy.  The legacy code did
 not write canonical-truth invariants — it just emitted whatever its
 implementation produced.
 
-Opus 4.6's measurement was NOT wrong.  The new number (33,674,483) does
+Architect 4.6's measurement was NOT wrong.  The new number (33,674,483) does
 not invalidate it.  They are two correct measurements of the same
 algorithm under two different (unspecified) orderings.  Read on.
 

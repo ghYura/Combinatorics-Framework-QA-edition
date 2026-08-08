@@ -15,7 +15,35 @@ access to both before cloning.
 - GitHub CLI (`gh`) and Git
 - Python 3.11 or newer
 - JDK 25 and Maven
-- Docker plus PostgreSQL client tools (`psql` and `pg_isready`) for the optional local database run
+- Docker plus PostgreSQL client tools (`psql` and `pg_isready`)
+- **Two clean PostgreSQL instances, installed and running before you begin** — see below
+
+### Two clean PostgreSQL instances
+
+The Bundle uses two separate local endpoints. Both must be up before §6's database run or the full
+test suite:
+
+| Role | Endpoint | Written by |
+|---|---|---|
+| **main** | `127.0.0.1:5433` | Core materializes the combinatorial space into `fw_final` |
+| **results** | `127.0.0.1:5432` | Executor writes candidate results |
+
+The role you connect as needs `CREATEDB` (`bundle doctor` checks this).
+
+Confirm both are accepting connections before continuing:
+
+```bash
+pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432
+```
+
+**"Clean" means no leftover state from an earlier run** — no Bundle databases or tables from a
+previous session, and no pre-existing `fwbundle-main-db` / `fwbundle-results-db` deploy containers.
+Stale state rarely produces an error; it makes tests *skip* or silently reuse old data, which reads
+like success. If deploy containers already exist, run
+`python generator_trunk/bundle_run.py deploy down` first.
+
+See [`docs/03_INSTALLATION_AND_LOCAL_DEPLOYMENT.md`](docs/03_INSTALLATION_AND_LOCAL_DEPLOYMENT.md)
+for how to create the two instances, including the route that needs no `sudo`.
 
 The optional UI and editor prerequisites are documented in the root [README](README.md).
 

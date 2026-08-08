@@ -1,6 +1,6 @@
 # llm_arch_search — combinatorial LLM-Transformer architecture search on the Bundle
 
-*Initial implementation: Claude (Opus 4.8). Independent audit and verification
+*Initial implementation: Architect. Independent audit and verification
 extensions: Automation (GPT-5), 2026-06-13. The dated results below are a
 historical campaign record; its generated report files are not checked into the
 current tree. This suite uses the Bundle
@@ -11,7 +11,7 @@ Transformer constructor" reviewed in `…/llm_transformer_testme/`.*
 ## The idea in one line
 
 The LLM-transformer conversations wanted an engine that combinatorially swaps architectural
-components and finds good ones. Both reviewing AIs (Opus, Automation) concluded the missing safe
+components and finds good ones. Both reviewing AIs (Architect, Automation) concluded the missing safe
 substrate is a **typed catalog → compatibility compiler → search → evaluator** loop. **The
 Bundle already is that loop.** This suite plugs Transformer components into it:
 

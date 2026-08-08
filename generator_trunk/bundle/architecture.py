@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 """Engine-first architecture model — the machine-readable product boundary.
 
 The Bundle is an executable combinatorial design-space and evidence engine. AI
@@ -486,10 +504,10 @@ def unclassified_paths() -> "list[str]":
     claims. Keeping this empty is what stops a new tree from quietly acquiring
     an undeclared position in the architecture."""
     # Not part of the architecture: documentation, legal/deploy/config assets,
-    # build output, and the `generator_trunk` container itself (its children are
-    # classified one level down).
+    # repository maintenance tooling, build output, and the `generator_trunk`
+    # container itself (its children are classified one level down).
     skip_names = {"__pycache__", "target", "build", "dist", "node_modules", "docs",
-                  "LEGAL_LICENSE_KIT", "deploy", "config", "generator_trunk"}
+                  "LEGAL_LICENSE_KIT", "deploy", "config", "tools", "generator_trunk"}
     missing: "list[str]" = []
     for parent in (REPO_ROOT, REPO_ROOT / "generator_trunk"):
         if not parent.is_dir():

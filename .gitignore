@@ -77,9 +77,20 @@ hs_err_pid*
 *~
 .DS_Store
 .directory
-.claude/
+.ai-assist/
 .agents/
 .automation/
+
+# Captured responses from the AI-testing experiments. These are evidence from
+# one account on one day, not source, and the platform's own documentation says
+# they must never be read as reproducible measurements.
+generator_trunk/AI_combi_testing_platform/experiments/*.json
+
+# Local AI-assistant and tool workspaces, whatever the vendor names its folder.
+# Catch-all so a new tool cannot leak a working directory into the repository;
+# add an explicit negation below for any hidden directory that must be tracked.
+.*/
+!.github/
 
 # Maven-derived classpath for the persisted AnalyzeKv driver build. Machine
 # generated and made of absolute ~/.m2 paths, so it is never portable between

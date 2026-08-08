@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "Prompt optimization #1 — Model's exact modular decomposition (system role x few-shot x constraints x CoT x decoding)"
 note  = "Materialises Model #1 (Discrete/Automated Prompt Engineering) with the precise pieces it lists: system role, persona, few-shot examples, output constraints, chain-of-thought, decoding. Already executed end-to-end in llm_loop/ (offline StubProvider or a LOCAL Ollama, no off-PC egress); this spec is the ready-to-run search space. FW_Combi(1) breeds the cartesian of prompt modules; the Analyzer optimises the quality/cost trade-off."
 

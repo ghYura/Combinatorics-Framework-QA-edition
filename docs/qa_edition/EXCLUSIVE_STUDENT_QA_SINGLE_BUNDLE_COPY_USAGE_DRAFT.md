@@ -1,9 +1,22 @@
-# Exclusive personal-use lane — Student / QA Engineer single Bundle copy — DRAFT, NON-OPERATIVE
+# Exclusive personal-use lane — Student / QA Engineer single Bundle copy — SUPERSEDED
 
-> **DRAFT — NON-OPERATIVE. No rights are granted by this document.** No root `LICENSE` exists,
-> no licence has been selected, and no repository visibility, contribution, release, or commercial
-> decision is activated here. This records the owner's intended outcome for qualified legal
-> drafting. **It is not legal advice.**
+> **SUPERSEDED by the root [LICENSE](../../LICENSE) on 2026-08-08.** The outcome this document
+> asked for is now operative as the **Additional Use Grant** of the Business Source License 1.1:
+> an individual QA engineer or student may make production use of one concurrently active
+> installation, AS IS and free of charge, for their own learning, exploration, research and
+> professional practice.
+>
+> Two differences from the draft below are deliberate and are what `LICENSE` actually says:
+>
+> 1. **Redistribution and non-production use are permitted to anyone holding a copy** — BUSL
+>    restricts *production* use, not all use. This is intentional: it is what allows the work to
+>    survive its author (see [SUCCESSION.md](../../SUCCESSION.md)).
+> 2. **The AI-training restriction is a statement of intent, not an enforceable licence term.**
+>    See [NOTICE.md](../../NOTICE.md).
+>
+> This document is retained as the record of owner direction. Where it differs from `LICENSE`,
+> **`LICENSE` governs.** It is not legal advice, and the licence text has not yet had qualified
+> legal review.
 
 ## 1. Owner direction
 

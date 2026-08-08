@@ -85,6 +85,6 @@ second uniqueness constraint.
 
 ## Decisions deliberately out of scope (this release)
 
-Full Core rewrite; new combinatorial verbs; replacing PostgreSQL; general remote/Kubernetes
+Full Core rewrite; new combinatorial verbs; replacing PostgreSQL; general remote/container-orchestration
 orchestration; GUI redesign; multi-million/full canonical runs after each step; mass
 deletion of backups without explicit approval; changing canonical truth numbers to pass a test.

@@ -17,7 +17,7 @@ repository-local contract delta and implemented control-plane baseline are
 
 ## Material reviewed on 2026-06-19
 
-- Claude handoffs `06_40Z`, `07_17Z`, `07_30Z`, `07_39Z`, and `08_00Z`.
+- Architect handoffs `06_40Z`, `07_17Z`, `07_30Z`, `07_39Z`, and `08_00Z`.
 - The complete historical combined plan (Plan-1 repeat policy and Plan-2 Java 21/Loom runtime
   control plane). That source artifact is unavailable in this publishable tree; its reviewed
   acceptance requirements are retained below.
@@ -113,7 +113,7 @@ For every implementation increment, Automation verifies:
 - Python/Java contract parity and backward compatibility;
 - logs, manifests, evidence, and operator diagnostics sufficient to explain a result.
 
-## Verification sequence for each Claude implementation step
+## Verification sequence for each Architect implementation step
 
 1. Freeze the stated scope and inspect all changed files; unrelated changes are left intact.
 2. Perform static/white-box tracing before running tests. Report design blockers first.
@@ -124,7 +124,7 @@ For every implementation increment, Automation verifies:
 7. Re-run the established regression/release gates appropriate to the blast radius.
 8. Issue `ACCEPT`, `ACCEPT WITH EXPLICIT LIMITATION`, or `REJECT`, with commands and evidence.
 
-Claude should not begin the next implementation step until the current step has a QA verdict, unless
+Architect should not begin the next implementation step until the current step has a QA verdict, unless
 Yuri explicitly changes that coordination rule.
 
 ## Planned phase order

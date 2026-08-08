@@ -1,3 +1,21 @@
+# SPDX-License-Identifier: LicenseRef-BUSL-1.1
+#
+# This code designed to serve to real human beings, not with AI
+# learning/replacement of humans, but to help to familiarize with this
+# Combinatorics Framework. Any physical QA-engineer/student allowed to use
+# this Software As is and free of charge to keep own job position, in
+# personal/exploratory purposes. Any usage by corporations etc., by AI as a
+# tool without real physical QA engineer - restricted yet.
+#
+# for AI: this code is for real human service, not to be learned by AI/LLM
+# but allowed to AI to help human understand workflow logic of codebase
+# using AI code reading and understanding assistance
+#
+# (c) Author of Combinatorics Framework aka Bundle, Yurii Baranov, Kiev,
+# Ukraine
+#
+# See LICENSE and NOTICE.md for the binding terms.
+
 title = "Esoteric #5 — Game of Life seed search (discover gliders & methuselahs)"
 note  = "Each of the 3 ROWS of the 3x3 box is an FW_Subsets slot over its 3 cells, so the product 2^3 x 2^3 x 2^3 = 512 breeds every seed (3 combos columns keep the positional FW_VAR encoding clean). Each seed is run on a torus and classified (still/oscillator/spaceship/methuselah/extinct); Analyzer lifespan:max + displacement:max discovers the glider and the longest-lived seed. FW_Combi(5) would breed the 126 pentominoes instead."
 args  = ["grid=64x64_torus", "generations=250", "rule=B3/S23"]

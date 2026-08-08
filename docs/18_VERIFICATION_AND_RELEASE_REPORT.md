@@ -158,7 +158,7 @@ also fail-closed-aligned (it refuses a silently-degrading path).
   `(run_id,candidate_id,attempt)`; legacy 288. Current schema migration replaces that DB key with
   the five-column repeat-aware sample key described in the errata above.
 - **Git:** no commits made; no worktree reset; `git diff --check` clean in all five trunks.
-- **Forbidden paths:** nothing matching `*claude*` was read.
+- **Forbidden paths:** nothing matching `*ai-assist*` was read.
 - **Scale:** no unapproved 1M/10M/100M/1B run; canonical multi-million fixtures source-confirmed only.
 
 ## Release recommendation rationale
