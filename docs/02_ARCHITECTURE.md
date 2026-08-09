@@ -164,8 +164,11 @@ skipped), legacy `fw.properties` still rendered, legacy results table + boolean 
 - No standalone `bundle status` subcommand for runs (status lives in `state.json`/stage JSON; the
   `status` subcommand belongs to `bundle deploy`).
 - The Java Executor is launcher-wired (`--lang java`). Dated 2026-06-11 evidence covers both
-  trusted-local and its **container/secure** variant (`SandboxedJavaRunner`); Java + `--analyzer`
-  is still refused (no in-sandbox metrics harvest yet).
+  trusted-local and its **container/secure** variant (`SandboxedJavaRunner`). Java + `--analyzer`
+  **is supported**: the in-sandbox metrics-harvest transport (`MainWatch -metricsFile`) shipped, so
+  there is no fail-closed check for that pair in `preflight()`. See the generated
+  [capability matrix](33_CAPABILITY_MATRIX.md), which is derived from the registry rather than
+  hand-written.
 - Handoff v2 now has three transports: loose files, shards, and live gRPC. gRPC is currently
   Java/verdict/v2/trusted-local only and plaintext/unauthenticated; the launcher starts the Executor
   before the Reader and adopts it after the stream drains.

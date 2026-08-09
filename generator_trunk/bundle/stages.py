@@ -33,7 +33,7 @@ from .cancel import forget_process, record_process
 from .config import BundleConfig
 from . import capabilities
 from .optional_contract import contract_for_sheet_count
-from .database import psql
+from .database import psql, sql_identifier
 from .errors import ok, PreflightError, StageError
 from .handoff import handoff_from_dict, HandoffError
 from .process import CommandResult, run
@@ -339,7 +339,31 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
     return spec, tomls[0], scratch
 
 
+def _check_prop_value(key: str, value) -> str:
+    """Reject a properties value that would not stay a single value.
+
+    ``.properties`` is line-oriented, so a value containing a line break
+    silently becomes a second, independent property — an arbitrary key nobody
+    asked to set. A leading ``#`` or ``!`` is comment syntax and would make the
+    setting vanish instead. Today's only password source is
+    ``secrets.token_hex``, which can produce neither, so this closes a latent
+    path rather than a live one: it matters the moment a config file, an env
+    var or another credential source supplies a raw value.
+    """
+    text = str(value)
+    if "\n" in text or "\r" in text:
+        raise StageError(
+            f"properties value for '{key}' contains a line break; it would be "
+            f"written as a separate property line")
+    if text[:1] in ("#", "!"):
+        raise StageError(
+            f"properties value for '{key}' starts with '{text[:1]}', which "
+            f".properties reads as a comment marker")
+    return text
+
+
 def _props(template: Path, edits: dict, out: Path):
+    edits = {k: _check_prop_value(k, v) for k, v in edits.items()}
     text = template.read_text(encoding="utf-8")
     lines = []
     seen = set()
@@ -1323,9 +1347,15 @@ def _finish_executor_stage(processed, passed, failed, broken, inserted, timeout,
     if processed == 0:
         db_total = 0
     else:
+        # Route the table name through sql_identifier() like
+        # orchestrator._reset_owned_legacy_results does. `db` is operator- or
+        # spec-supplied, so plain interpolation here was an inconsistency
+        # rather than a live hole -- but the codebase already owns the right
+        # tool for this exact job, and one call site not using it is how the
+        # next one gets written wrong too.
         cnt, rc = psql(results_port, db,
                        f'select count(*)||\' / pass \'||count(*) filter(where status)||\' / fail \' '
-                       f'||count(*) filter(where not status) from "{db}";',
+                       f'||count(*) filter(where not status) from {sql_identifier(db)};',
                        host=cfg.results_db_host, user=cfg.results_db_user, password=cfg.results_db_password)
         if rc != 0:
             raise StageError(f"could not read Results DB :{results_port}/{db}")

@@ -99,9 +99,13 @@ invariants stay language-independent). Verified end-to-end via two combinable sp
   and the adversarial seam audit holds (write-outside-scratch → BROKEN, egress blocked,
   cpu-limit → TIMEOUT, corrupt policy → REFUSE). See
   `Executor_trunk/JANINO_ECJ_JAR_NOTICE.md` and [10](10_SECURITY_AND_SANDBOXING.md).
-- **Limitation**: Java + `--analyzer` is **refused at preflight** — the Java Executor has no
-  in-sandbox metrics-harvest transport yet, and re-running candidates to collect metrics would
-  bypass isolation (the BUG-1 anti-pattern). Omit `--analyzer` for Java, or use `--lang py`.
+- Java + `--analyzer` **is supported**, on the same terms as Python. The candidate's TAIL emits its
+  `app=` line to the injected `fw.metrics.out` path (in-process) or to captured stdout (sandbox), and
+  `MainWatch -metricsFile` writes the corpus in the same `_write_metrics_corpus` format the Analyzer
+  parses. Metrics are therefore harvested *inside* the sandbox — candidates are never re-run to
+  collect them, which is the isolation-bypass this design exists to avoid. A usecase whose candidates
+  emit no metric line is not silently accepted: it fails closed at the Analyzer's metrics-count
+  invariant. The generated [capability matrix](33_CAPABILITY_MATRIX.md) is authoritative.
 
 Both executors persist full stdout/stderr to **`executor.log`** in the run dir (like
 `core.log`/`reader.log`).

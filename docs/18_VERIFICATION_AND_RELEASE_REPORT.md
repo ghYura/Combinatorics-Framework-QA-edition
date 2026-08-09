@@ -142,6 +142,11 @@ also fail-closed-aligned (it refuses a silently-degrading path).
   candidates identical to trusted-local; adversarial seam audit green). Remaining: Java + `--analyzer`
   is refused (no in-sandbox metrics harvest yet — BUG-6), and the secure path should be validated
   against a multi-tenant threat model (microVM/SEV-SNP) before shared-SaaS use.
+  > **Addendum 2026-08-09 — BUG-6 resolved.** The in-sandbox metrics-harvest transport
+  > (`MainWatch -metricsFile`) shipped, so Java + `--analyzer` is supported and no fail-closed
+  > check for that pair remains in `preflight()`. Verified by classifying `language=java` with
+  > `analyzer=formal`: `SUPPORTED`, no codes, no advisories. The multi-tenant threat-model item
+  > above still stands. The line is kept as the state on its own date.
 - **Build identity:** maven jars are not byte-reproducible (timestamps), so `--baseline --policy
   block` flags every rebuild.
 

@@ -111,7 +111,11 @@ offline builds with artifact hashes; a one-command local DB deploy profile.
 - Brace / `FW_Group` cardinality is **not** exact ahead of a run (planner marks them UNKNOWN).
 - Both the **Python** and **Java** Executor chains are launcher-wired (`--lang py`/`--lang java`).
   Dated 2026-06-11 evidence covers both trusted-local and the container/secure Java variant
-  (`SandboxedJavaRunner`); Java + `--analyzer` remains refused (no in-sandbox metrics harvest yet).
+  (`SandboxedJavaRunner`). Java + `--analyzer` **is supported**, exactly like Python: `MainWatch
+  -metricsFile` harvests metrics in-sandbox and writes the corpus in the format the Analyzer parses.
+  A usecase whose candidates emit no metric line is not waved through — it fails closed later at the
+  Analyzer's metrics-count invariant. The generated [capability matrix](33_CAPABILITY_MATRIX.md) is
+  authoritative on what is supported.
 - Candidate transport is loose files, shards, or live gRPC. gRPC is currently Java/verdict/v2/
   trusted-local only and is plaintext/unauthenticated; it is not a remote-security boundary.
 - `--repeat K` is live for Python and Java with local `metrics`/`all` scope. The launcher still
