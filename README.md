@@ -10,7 +10,7 @@ domain-neutral: it knows nothing about LLMs, control systems, or any other subje
 
 ## QA-edition scope
 
-This private edition is a clean, history-free source snapshot focused on human-led QA engineering:
+This edition is a clean, history-free source snapshot focused on human-led QA engineering:
 the engine, Control Plane, Analyzer, GUIs, QA/LLM test applications, exact oracles, scenarios, and
 operational documentation remain. Historical handoffs, legal-option collections, provenance media,
 and generated candidate corpora are deliberately omitted. Generators remain source; their bulk
@@ -79,7 +79,7 @@ record pipeline; an exact differential oracle judges it. See
 
 ## Quick start
 
-One command, from nothing to a verified installation — clones both private repositories side by
+One command, from nothing to a verified installation — clones both repositories side by
 side, builds the Python and Java components, provisions the per-SUT environments, runs the
 self-audits, and checks the documented smoke-test counts rather than merely exit status:
 
@@ -93,7 +93,7 @@ It is idempotent, installs nothing system-wide, and picks free database ports so
 with another checkout's stack.
 
 To do the same steps by hand, or to understand what each one proves, follow
-[QUICKSTART.md](QUICKSTART.md): an authenticated clean clone of both private repositories, the
+[QUICKSTART.md](QUICKSTART.md): a clean clone of both repositories, the
 24-case no-database smoke, deterministic companion-SUT verification, and the optional local
 database run.
 

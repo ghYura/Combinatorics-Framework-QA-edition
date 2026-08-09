@@ -82,14 +82,11 @@ and external-SUT tests must be clearly identified because they require extra ser
 
 The complete suite requires **two clean PostgreSQL instances up and running** — main on
 `127.0.0.1:5433` and results on `127.0.0.1:5432` — as described in the root
-[README](README.md#the-two-postgresql-instances). Without them roughly thirty tests skip and
-`Executor_trunk/test_results_v2_policy.py` errors, so a green summary line proves much less than it
-appears to:
+[README](README.md#the-two-postgresql-instances). Without them roughly thirty tests skip rather than
+run, so a green summary line from such a run proves much less than it appears to.
 
-| Databases | Result on this revision |
-|---|---|
-| Both down | 1331 passed, 34 skipped, 2 errors |
-| Both up (clean) | 1363 passed, 4 skipped, 0 errors |
+With both databases up and no leftover deploy containers, the suite reports **1375 passed,
+2 skipped** — and those two skips are opt-in (ML extra absent, `FACE1_E2E_LIVE` unset).
 
 ```bash
 pg_isready -h 127.0.0.1 -p 5433 && pg_isready -h 127.0.0.1 -p 5432

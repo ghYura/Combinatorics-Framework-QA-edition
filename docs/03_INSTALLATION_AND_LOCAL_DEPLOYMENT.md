@@ -41,22 +41,28 @@ summary line. Before a verification run, clear any prior deploy stack:
 python generator_trunk/bundle_run.py deploy down
 ```
 
-**What the two instances change in the test suite.** Measured on a clean checkout of this revision:
+**What the two instances change in the test suite.** With both databases running and no leftover
+deploy containers, the full suite reports:
 
-| Databases | Result |
-|---|---|
-| Both down | 1331 passed, 34 skipped, **2 errors** |
-| Both up (clean) | **1363 passed, 4 skipped**, 0 errors |
+```
+1375 passed, 2 skipped, 12 subtests passed
+```
 
-The 30 additional tests exercise the constraints/sieve paths, GUI end-to-end flows, the telemetry
-catalog, the evaluation gateway, benchmarks, and the `results_v2` schema and policy columns — the
-parts of the chain that cannot be verified without a real database. The 4 remaining skips are
-environmental by design (ML extra not installed, `FACE1_E2E_LIVE` unset, and two deploy acceptance
-tests that decline to run when they cannot prove ownership of pre-existing containers).
+Only two skips remain, and both are opt-in by design: the ML extra is not installed
+(`pip install -e '.[ml]'`), and `FACE1_E2E_LIVE` is unset.
 
-Note that `Executor_trunk/test_results_v2_policy.py` *errors* rather than skipping when the results
-DB is absent, unlike its sibling schema tests. Treat an error there as "database not running", not
-as a defect.
+Without the databases, roughly thirty tests skip instead of running — the constraints/sieve paths,
+the GUI end-to-end flows, the telemetry catalog, the evaluation gateway, the benchmarks, and the
+`results_v2` schema and policy columns. Those are precisely the parts of the chain that cannot be
+verified without a real database, so a green summary from a run without them proves considerably
+less than the same line with them.
+
+Two further skips appear when a previous deploy stack is still up: the deploy acceptance tests
+decline to run rather than act on containers whose ownership they cannot prove. Run
+`python generator_trunk/bundle_run.py deploy down` first if you want them to execute.
+
+Absent infrastructure is reported as a **skip**, never as an error or a failure — a reachable but
+misbehaving server is what counts as a failure.
 
 The dated verification host used system Python packages directly. For a fresh checkout, use the
 repository-local virtual environment and extras shown in the root `README.md`; this avoids changing

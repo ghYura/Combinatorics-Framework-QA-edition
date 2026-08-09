@@ -1,8 +1,12 @@
 # 40 — The sibling-SUT credential for CI
 
 Tier 2 and Tier 3 check out the companion repository `ghYura/SUT` at a pinned revision, because the
-canonical SUT gates test the two repositories *together*. Both repositories are private, and they
-stay private: this page is about private-to-private read access, never about publishing anything.
+canonical SUT gates test the two repositories *together*.
+
+**This page applies while `ghYura/SUT` is private.** It is about giving CI read access across two
+private repositories; it neither publishes anything nor grants write anywhere. If SUT is ever made
+public, the credential stops being necessary — see [When SUT is public](#when-sut-is-public) at the
+end. Nothing here forces either repository to stay private.
 
 ## Why a credential is needed at all
 
@@ -96,7 +100,23 @@ Deploy key: generate a new pair, register it, overwrite the secret, then delete 
 `ghYura/SUT`. PAT: re-mint and overwrite the secret. In both cases the secret is replaced in place
 and no workflow change is needed.
 
+## When SUT is public
+
+If `ghYura/SUT` becomes public, this whole mechanism becomes unnecessary: an anonymous clone can read
+a public repository, and the automatic `github.token` is sufficient. At that point:
+
+- **Delete the credential rather than leaving it.** Remove the deploy key from `ghYura/SUT`
+  (`gh api -X DELETE repos/ghYura/SUT/keys/<id>`) and delete the secret from this repository
+  (`gh secret delete SUT_DEPLOY_KEY`). A credential nobody needs is a credential nobody rotates.
+- **The pre-flight still earns its place.** Its most valuable failure — *"the pinned canonical
+  revision does not exist"* — is not about credentials at all, and a public SUT can still move its
+  history out from under the gate.
+- **One asymmetry to keep in mind.** Workflows triggered by a pull request *from a fork* do not
+  receive secrets. While SUT is private, the SUT-dependent tiers therefore cannot pass on an outside
+  contributor's PR, no matter how the credential is configured. Publishing SUT is what fixes that,
+  not a different secret.
+
 ## What this does not do
 
-It does not make either repository public, does not grant write access anywhere, and does not affect
-the SUT repository's own CI, which has no cross-repository dependency.
+It does not change any repository's visibility, does not grant write access anywhere, and does not
+affect the SUT repository's own CI, which has no cross-repository dependency.

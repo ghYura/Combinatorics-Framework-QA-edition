@@ -1,8 +1,14 @@
-# Private technical-preview quick start
+# Technical-preview quick start
 
 This is the authoritative clean-checkout path for the Framework Bundle and its companion SUT
-portfolio. Both repositories are private technical-preview material. Your GitHub account must have
-access to both before cloning.
+portfolio. **Both are needed**: the canonical gates test the two repositories together, and every
+path below assumes the SUT tree is present.
+
+> **Access.** While either repository is private, your GitHub account must have access to it before
+> cloning, and §2 covers authenticating. If both are public, skip the authentication step — a plain
+> `git clone` is enough. GitHub reports a private repository you cannot see as
+> `404 Repository not found`, which reads like a wrong URL rather than a permission problem; if you
+> hit that, check access before checking the address.
 
 > **In a hurry?** [`QUICK_INSTALL_ALL.sh`](QUICK_INSTALL_ALL.sh) performs every step on this page —
 > clone, build, per-SUT environments, self-audits and smoke tests — in one command, asserting the
@@ -47,7 +53,11 @@ for how to create the two instances, including the route that needs no `sudo`.
 
 The optional UI and editor prerequisites are documented in the root [README](README.md).
 
-## 2. Authenticate and clone both private repositories
+## 2. Authenticate and clone both repositories
+
+**If both repositories are public, authentication is unnecessary** — jump straight to the clone
+commands below, substituting `git clone https://github.com/ghYura/<repo>.git <dir>` for the
+`gh repo clone` lines. The rest of this section applies while either repository is private.
 
 Check the active GitHub identity:
 

@@ -2,12 +2,16 @@
 
 ## Status and supported scope
 
-Framework Bundle is a private technical preview, not a hardened multi-tenant service. Security fixes
-are maintained only on the current default branch. There is no public release line or guaranteed
-response-time SLA.
+Framework Bundle is a technical preview, not a hardened multi-tenant service. Security fixes are
+maintained only on the current default branch. There is no guaranteed response-time SLA.
 
-No project license has been selected. Access to the private repository permits evaluation and
-authorized collaboration only; it does not grant permission to redistribute the source.
+The project is licensed under the [Business Source License 1.1](LICENSE); what you may do with the
+source is set out there and in the Licence section of the [README](README.md#licence). Repository
+access grants no rights beyond it.
+
+Read [10_SECURITY_AND_SANDBOXING.md](docs/10_SECURITY_AND_SANDBOXING.md) before running generated
+candidates: this project executes code it constructs, so the execution profile you choose is a
+security decision, not a performance one.
 
 ## Reporting a vulnerability
 
