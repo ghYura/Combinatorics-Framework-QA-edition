@@ -55,6 +55,21 @@ def target_url() -> str:
     return B._target_url()
 
 
+def target_host() -> str:
+    """Hostname of the configured target, for filtering a cookie jar."""
+    return B.target_host()
+
+
+def looks_like_signin(url: str) -> bool:
+    """Whether a URL is an authentication page rather than the target.
+
+    Shared with the adapter for the same reason as ``target_url``: a probe that
+    recognised only one provider's sign-in host would report a healthy session
+    for any other target that had quietly logged out.
+    """
+    return B.looks_like_signin(url)
+
+
 def launch(headless: bool = True, width: int = 1440, height: int = 1000):
     """Return (driver, profile_dir) using the adapter's own profile logic.
 

@@ -49,7 +49,7 @@ import tempfile
 import time
 from pathlib import Path
 
-from _common import B
+from _common import B, target_host
 
 BASE = Path(os.path.expanduser("~/.mozilla/firefox"))
 
@@ -89,19 +89,31 @@ def main() -> int:
 
     tmp = tempfile.mktemp(suffix=".sqlite")
     shutil.copy(cookies, tmp)
+    # Filter by the CONFIGURED target's host, and report only cookie NAMES and
+    # expiry — never a value. A probe that printed values would turn a
+    # diagnostic into a credential dump in whatever terminal or CI log ran it.
+    host = target_host()
+    if not host:
+        print("  !! no target host configured; set AI_COMBI_TARGET_CHAT_URL")
+        os.unlink(tmp)
+        return 3
+    like = f"%{host.split(':')[0]}%"
+
     try:
         connection = sqlite3.connect(tmp)
         total = connection.execute(
-            "select count(*) from moz_cookies where host like '%google%'").fetchone()[0]
+            "select count(*) from moz_cookies where host like ?", (like,)).fetchone()[0]
         now = int(time.time())
+        # Session cookies are recognised by shape rather than by one provider's
+        # names: long-lived, host-scoped, and marked secure.
         rows = connection.execute(
-            "select name, expiry from moz_cookies where host like '%google%' "
-            "and name in ('SID','__Secure-1PSID','SSID','HSID')").fetchall()
-        print(f"\ngoogle cookies in chosen profile: {total}")
+            "select name, expiry from moz_cookies where host like ? and isSecure = 1 "
+            "order by expiry desc limit 8", (like,)).fetchall()
+        print(f"\ncookies for {host} in chosen profile: {total}")
         for name, expiry in rows:
             status = "never" if not expiry else ("VALID" if expiry > now else "EXPIRED")
             print(f"  {name:18} {status}")
-        ok = total > 0 and all(e > now for _n, e in rows if e)
+        ok = total > 0 and any(e > now for _n, e in rows if e)
         print(f"\nRESULT: {'session looks usable' if ok else 'session missing or expired'}")
         return 0 if ok else 4
     finally:

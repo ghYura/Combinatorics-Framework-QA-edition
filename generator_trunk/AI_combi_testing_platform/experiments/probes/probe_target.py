@@ -41,7 +41,7 @@ from __future__ import annotations
 import sys
 import time
 
-from _common import cleanup, launch, target_url
+from _common import cleanup, launch, looks_like_signin, target_url
 
 
 def main() -> int:
@@ -57,7 +57,7 @@ def main() -> int:
         print("url  :", driver.current_url[:110])
         print("title:", driver.title[:90])
 
-        if "accounts.google.com" in driver.current_url or "signin" in driver.current_url:
+        if looks_like_signin(driver.current_url):
             print("RESULT: NOT LOGGED IN — the derived profile did not carry the session")
             return 2
 

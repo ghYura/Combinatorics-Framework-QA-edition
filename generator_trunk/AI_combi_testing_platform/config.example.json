@@ -3,7 +3,7 @@
   "default_adapter": "oracle-control",
   "external_adapters": [
     {
-      "id": "example-openai-compatible",
+      "id": "example-chat-api-compatible",
       "enabled": false,
       "endpoint": "https://provider.example/v1/chat/completions",
       "model": "replace-with-reviewed-model-id",

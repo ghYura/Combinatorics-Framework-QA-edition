@@ -22,8 +22,11 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
-"""Opt-in OpenAI-compatible HTTPS adapter with fail-closed budget guards."""
+"""Opt-in chat-API-compatible HTTPS adapter with fail-closed budget guards."""
 
 from __future__ import annotations
 

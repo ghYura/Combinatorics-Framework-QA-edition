@@ -22,12 +22,15 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 # ============================================================================
 # USE-CASE #8b — ML/LLM eval against TWO REAL LOCAL surrogates (differential).
 #
 # Uses the author's actual offline surrogate services (advanced_surrogate /
-# advanced_surrogate2 -- sklearn-backed, OpenAI-compatible FastAPI), run LOCALLY
+# advanced_surrogate2 -- sklearn-backed, chat-API-compatible FastAPI), run LOCALLY
 # on 127.0.0.1 (NO external egress, policy-compliant). The discrete outer
 # structure the Bundle excels at: MODEL (A vs B) x prompt STYLE x TEMP. The
 # MODEL dimension makes this a DIFFERENTIAL eval -- the same prompt against two
@@ -46,7 +49,7 @@
 #     --acknowledge-trusted-local 'reviewed checked-in local-surrogate fixture; NO SANDBOX'
 # ============================================================================
 title = "ML/LLM differential eval — two real local sklearn surrogates, model A vs B"
-note  = "FW_Combi(1) MODEL/STYLE/TEMP; queries local OpenAI-compatible surrogates; cost-aware Pareto."
+note  = "FW_Combi(1) MODEL/STYLE/TEMP; queries local chat-API-compatible surrogates; cost-aware Pareto."
 args  = ["mode=ml_eval_surrogate"]
 
 [[goals]]

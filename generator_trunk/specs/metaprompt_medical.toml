@@ -30,6 +30,7 @@ args  = ["validation_set=100_transcripts", "temperature=0.1"]
 [[slots]]
 sheet = "ENGINE"
 key   = "engine"
+# a name-holder: neutral stand-in for a vendor name (NOTICE.md)
 values = ["gpt-4o", "assistant-3-5-small", "opensrc-3.1-8b-instruct"]
 
 [[slots]]

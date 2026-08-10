@@ -23,6 +23,9 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 """Self-contained tests for fwgen (run: `python3 test_fwgen.py`; pytest also works).
 Uses an in-memory spec — no external files — to exercise the engine, plus a

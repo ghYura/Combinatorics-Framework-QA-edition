@@ -23,10 +23,13 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 r"""llm_executor2 — cross-version LLM regression red-team against TWO live local servers.
 
-Launches app2.py (:8002) and app3.py (:8003) — the user's CPU-only OpenAI-compatible
+Launches app2.py (:8002) and app3.py (:8003) — the user's CPU-only chat-API-compatible
 assistants — and runs every engine-bred attack against BOTH, then compares them. This is
 the continuous-regression red-team product: re-run the attack matrix on each version and
 report what each one breaks.

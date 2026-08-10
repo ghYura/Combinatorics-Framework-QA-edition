@@ -97,3 +97,18 @@ generator_trunk/AI_combi_testing_platform/experiments/*.json
 # hosts; regenerate with:
 #   mvn -q -pl Analyzer_trunk dependency:build-classpath -Dmdep.outputFile=analyzer_cp.txt
 Analyzer_trunk/analyzer_cp.txt
+
+# Browser session material. The AI-testing adapter derives a throwaway Firefox
+# profile from the operator's real one; nothing here should ever reach a commit.
+# *.sqlite already covers cookies.sqlite/places.sqlite — these are the rest.
+cert9.db
+key3.db
+key4.db
+logins.json
+signons.sqlite
+sessionstore.jsonlz4
+sessionstore-backups/
+profiles.ini
+*.har
+geckodriver.log
+fx-aicombi-*/

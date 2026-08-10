@@ -26,7 +26,7 @@
 
 r"""matrix_spec2 — attack matrix for the CROSS-VERSION LLM regression red-team.
 
-Same engine, new target: two REAL local servers (app2.py, app3.py — CPU-only OpenAI-
+Same engine, new target: two REAL local servers (app2.py, app3.py — CPU-only the chat API-
 compatible assistants with a RAG memory + a 'SafeArithmetic' evaluator). The engine
 breeds the attack space; llm_executor2 runs every bred attack against BOTH versions and
 compares them (a continuous-regression red-team: did the refactor change the security

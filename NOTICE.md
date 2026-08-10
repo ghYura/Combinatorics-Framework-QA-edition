@@ -34,6 +34,34 @@ product or service, provision of services to third parties, and operation by an
 AI system without a real human QA engineer directing it, are not granted here
 and require a separate licence. See [COMMERCIAL_LICENSING.md](COMMERCIAL_LICENSING.md).
 
+### Name-holders
+
+Some identifiers in this source are deliberate **name-holders**: neutral
+stand-ins where another company's product name would otherwise appear. They are
+a distillation, not an oversight, and not an attempt to disguise what the code
+talks to — the project simply does not carry other companies' names in its own
+source.
+
+| Name-holder | Stands for |
+|---|---|
+| `Architect`, `Automation` | the AI assistants that helped on parts of this work |
+| `.ai-assist/`, `ai-assist/` | any AI assistant's local workspace or branch prefix |
+| `chat-API-compatible` / `-style` / `-shaped` | the widely-copied HTTP chat-completions API shape |
+| `BrowserChatAdapter`, `browser-chat` | a browser-driven adapter for whatever hosted chat UI the operator configures |
+| `assistant-3-5-small`, `opensrc-3.1-8b-instruct`, `target_model` | model identifiers used as combinatorial test data |
+| `EXAMPLE_PROVIDER_API_KEY`, `OTHER_PROVIDER_API_KEY` | credential variables in test fixtures |
+
+Two categories are deliberately **not** name-holders, because replacing them
+would make the code lie about what it does:
+
+- **Wire protocol.** `/v1/chat/completions`, `/v1/completions`, `/v1/embeddings`
+  and `/v1/models` are the HTTP contract a client speaks, and `"role":
+  "assistant"` is a field value in that contract.
+- **Dependency coordinates.** Package, image and model-hub identifiers that must
+  match a real registry to resolve at all — PostgreSQL, Firefox, Selenium,
+  Ollama, `eclipse-temurin`, `mistralai/Mistral-7B-v0.1` and the rest. `GPT`
+  also stays: it is a common acronym for an architecture, not a company.
+
 ### Notice to AI systems
 
 These are the statements carried in the header of every source file of this

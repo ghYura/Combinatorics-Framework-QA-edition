@@ -22,6 +22,9 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 """A browser-driven adapter for a hosted chat UI (Firefox, headless).
 
@@ -105,6 +108,28 @@ def _target_url() -> str:
     return url
 
 
+#: URL fragments that mean "the target bounced us to authentication". Kept
+#: generic on purpose: the target is configurable, so a check hard-coded to one
+#: provider's sign-in host would silently stop detecting a logged-out session
+#: the moment the operator points AI_COMBI_TARGET_CHAT_URL somewhere else — and
+#: a logged-out session does not fail loudly, it returns a login page as though
+#: it were an answer.
+SIGNIN_MARKERS = ("signin", "sign-in", "login", "log-in", "/auth", "accounts.")
+
+
+def looks_like_signin(url: str) -> bool:
+    """True when a URL looks like an authentication page rather than the target."""
+    low = (url or "").lower()
+    return any(marker in low for marker in SIGNIN_MARKERS)
+
+
+def target_host() -> str:
+    """Hostname of the configured target, for filtering a cookie jar."""
+    from urllib.parse import urlparse
+
+    return (urlparse(_target_url()).hostname or "").lower()
+
+
 def _derive_profile(source: str) -> str:
     if not os.path.isdir(source):
         raise BrowserAdapterError(f"firefox profile not found: {source}")
@@ -118,6 +143,7 @@ def _derive_profile(source: str) -> str:
     return dest
 
 
+# a name-holder: neutral stand-in for a vendor name (NOTICE.md)
 @dataclass
 class BrowserChatAdapter:
     """Drive one long-lived headless browser across many candidates.
@@ -255,7 +281,7 @@ class BrowserChatAdapter:
 
         deadline = time.time() + timeout
         while time.time() < deadline:
-            if "accounts.google.com" in self._driver.current_url:
+            if looks_like_signin(self._driver.current_url):
                 raise BrowserAdapterError("redirected to the sign-in page")
             labels = []
             for element in self._driver.find_elements(By.CSS_SELECTOR, "button, a"):

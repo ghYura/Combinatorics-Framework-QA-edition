@@ -525,7 +525,7 @@
   "id": "usecases_ml_eval_surrogate_ml_eval_surro",
   "spec": "usecases/ml_eval_surrogate/ml_eval_surrogate.toml",
   "title": "ML/LLM differential eval \u2014 two real local sklearn surrogates, model A vs B",
-  "blurb": "FW_Combi(1) MODEL/STYLE/TEMP; queries local OpenAI-compatible surrogates; cost-aware Pareto.",
+  "blurb": "FW_Combi(1) MODEL/STYLE/TEMP; queries local chat-API-compatible surrogates; cost-aware Pareto.",
   "candidates": "12",
   "pass": "0",
   "analyzer": "answered:max,latency_ms:min,cost_usd:min"

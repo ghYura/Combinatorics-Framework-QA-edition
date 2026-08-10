@@ -22,6 +22,9 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 from __future__ import annotations
 
@@ -121,7 +124,7 @@ def test_ai_profile_is_pinned_local_cost_free_and_clears_external_opt_in(
             "AI_COMBI_ALLOW_EXTERNAL": "1",
             "AI_COMBI_CONFIG": "/secret/config.json",
             "AI_COMBI_EXPORT_PROMPT": "1",
-            "ANTHROPIC_API_KEY": "fixture-value",
+            "OTHER_PROVIDER_API_KEY": "fixture-value",
             "PYTHONPATH": "/existing",
         },
     )
@@ -129,7 +132,7 @@ def test_ai_profile_is_pinned_local_cost_free_and_clears_external_opt_in(
     assert "AI_COMBI_CONFIG" not in env
     assert env["AI_COMBI_ENVIRONMENT_ID"] == "face1-local-control"
     assert "AI_COMBI_EXPORT_PROMPT" not in env
-    assert "ANTHROPIC_API_KEY" not in env
+    assert "OTHER_PROVIDER_API_KEY" not in env
     assert env["PYTHONDONTWRITEBYTECODE"] == "1"
     assert env["PYTHONPATH"].startswith(str(framework))
 
@@ -188,14 +191,14 @@ def test_release_gate_profile_materializes_fresh_bounded_local_apparatus(
         {
             "AI_COMBI_ALLOW_EXTERNAL": "1",
             "AI_COMBI_EXPORT_PROMPT": "1",
-            "OPENAI_API_KEY": "fixture-value",
+            "EXAMPLE_PROVIDER_API_KEY": "fixture-value",
         },
     )
     assert env["AI_COMBI_ENVIRONMENT_ID"] == "face1-release-gate-control"
     assert env["PYTHONDONTWRITEBYTECODE"] == "1"
     assert "AI_COMBI_ALLOW_EXTERNAL" not in env
     assert "AI_COMBI_EXPORT_PROMPT" not in env
-    assert "OPENAI_API_KEY" not in env
+    assert "EXAMPLE_PROVIDER_API_KEY" not in env
 
 
 def test_face1_old_launches_checked_in_ai_profile(monkeypatch) -> None:
@@ -311,7 +314,7 @@ def test_face1_new_launches_fresh_release_gate_profile(
         return captured
 
     monkeypatch.setattr(task_factory, "new_release_holdout_seed", lambda: b"n" * 32)
-    monkeypatch.setenv("OPENAI_API_KEY", "fixture-value")
+    monkeypatch.setenv("EXAMPLE_PROVIDER_API_KEY", "fixture-value")
     monkeypatch.setattr(runtime_model.tempfile, "mkdtemp", lambda prefix: str(root))
     monkeypatch.setattr(RunSession, "_spawn", classmethod(fake_spawn))
     RunSession.start_example(example, default_run_config("workbook"))
@@ -328,7 +331,7 @@ def test_face1_new_launches_fresh_release_gate_profile(
     assert "--allow-extreme" in command
     assert "--unleash-initial-productivity-power" not in command
     assert captured["launch_cwd"] == runtime_model.ROOT.parent
-    assert "OPENAI_API_KEY" not in captured["environment"]
+    assert "EXAMPLE_PROVIDER_API_KEY" not in captured["environment"]
     specs = list((root / "spec").glob("*.toml"))
     assert [path.name for path in specs] == ["release_gate_breakpoint.toml"]
     text = specs[0].read_text(encoding="utf-8")

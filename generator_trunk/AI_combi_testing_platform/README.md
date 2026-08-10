@@ -42,7 +42,7 @@ immutable canonical Task IR
 - `oracles/`: exhaustive ordering solver, exact `Fraction` arithmetic, strict
   parsers, membership/rule checks, and stable verdict codes.
 - `adapters/`: exact positive control, deterministic negative control, and a
-  fail-closed opt-in OpenAI-compatible HTTPS boundary.
+  fail-closed opt-in chat-API-compatible HTTPS boundary.
 - `metrics/`: whitespace-safe, finite K=V records with task, renderer, model,
   prompt, environment, seed, cost, latency, token, and program provenance.
 - `dataset.py`: exact-PASS-only, metadata-required, deduplicated JSONL export.

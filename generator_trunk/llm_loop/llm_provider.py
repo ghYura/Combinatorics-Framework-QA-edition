@@ -23,6 +23,9 @@
 # Ukraine
 #
 # See LICENSE and NOTICE.md for the binding terms.
+# Some names in this file are name-holders: neutral stand-ins where a
+# vendor's product name would otherwise appear. Deliberate, not an
+# oversight -- see 'Name-holders' in NOTICE.md.
 
 r"""Pluggable variant provider for the LLM-in-the-loop PoC.
 
@@ -36,7 +39,7 @@ Two implementations:
   * OllamaProvider — talks to a LOCAL Ollama (http://localhost:11434). localhost only,
                     nothing leaves the machine. Flip to it with `auto`/`ollama` when a
                     local model is running. Any other backend (vLLM, llama.cpp server,
-                    an OpenAI-compatible localhost endpoint) is a ~10-line subclass.
+                    a chat-API-compatible localhost endpoint) is a ~10-line subclass.
 
 The point of the loop is NOT to trust the LLM: every variant it proposes is combined
 combinatorially by the Core and EXECUTED by the Executor, so the FW_VAR verdict — not
