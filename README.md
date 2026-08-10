@@ -8,6 +8,21 @@ specification of a problem's degrees of freedom into executable candidates, runs
 explicit execution policy, and selects the non-dominated outcomes against declared objectives. It is
 domain-neutral: it knows nothing about LLMs, control systems, or any other subject matter.
 
+## Two notes from the author, before you start
+
+**The explosion is yours to govern.** Bundle will generate exactly the space you declare, and a
+space can grow faster than any machine on earth can execute it. Which units combine with which,
+under which rules, and where a constraint belongs — that judgement is the engineer's, never the
+tool's. The planner, the budgets and the sieve exist to make the size visible and to cut it *before*
+execution, but they cannot decide for you what is worth combining. Plan first, read the count, then
+run. A number you did not look at is not a number the Framework chose for you.
+
+**The creative freedom belongs to living people.** Designing a test — imagining the situation,
+deciding which interactions matter, judging what a result means — belongs to human QA engineers and
+students. AI may assist: it may read this codebase with you, explain a workflow, help draft a
+scenario and help run it. But the initiative and the final decisions are
+**by Humans only — or blocker Above**. A machine may hold the lamp; it does not choose the road.
+
 ## QA-edition scope
 
 This edition is a clean, history-free source snapshot focused on human-led QA engineering:
@@ -385,3 +400,7 @@ The author's statement of intent, the third-party scope and the trademark positi
 [NOTICE.md](NOTICE.md). The earlier personal-use and output drafts in
 [docs/qa_edition/](docs/qa_edition/README.md) are retained as a record of intent; where they differ
 from `LICENSE`, `LICENSE` governs. The licence text has not yet had qualified legal review.
+
+---
+
+P.S.: Quick workaround to use the Bundle freely: wear a role of QA-Engineer/student (or hire them for real - preferably) and Godspeed! =Ъ

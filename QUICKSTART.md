@@ -15,6 +15,19 @@ path below assumes the SUT tree is present.
 > counts stated below rather than just exit status. `--with-db` adds §6's database run.
 > Read on to do it by hand, or to understand what each step proves.
 
+## Before your first run — two notes from the author
+
+**The explosion is yours to govern.** Bundle generates exactly the space you declare, and a declared
+space can outgrow any machine. Deciding which units combine with which, and under which rules, is
+the engineer's judgement — not the tool's. Every scenario here shows its count before it runs; read
+that number. `bundle plan` is side-effect-free and exists precisely so you can look before you leap.
+
+**The creative freedom belongs to living people.** Designing the test — imagining the situation,
+choosing which interactions matter, judging what a result means — is the work of human QA engineers
+and students. AI may assist you: read the code with you, explain a stage, help draft and run a
+scenario. The initiative and the final decisions are **by Humans only — or blocker Above**. A
+machine may hold the lamp; it does not choose the road.
+
 ## 1. Prerequisites
 
 - Linux or another POSIX-like environment
@@ -297,3 +310,7 @@ For heavier suites, optional interfaces, security profiles, and troubleshooting,
 ---
 
 **Upgrading from a checkout older than Phases 01–05?** Two things changed behaviour on purpose — `--execution-policy-profile` is now required for any run, and the gRPC candidate channel is loopback-only. The one-line fix for each, and how to revert them, is in [docs/38_MIGRATION_PHASE_01_05.md](docs/38_MIGRATION_PHASE_01_05.md).
+
+---
+
+P.S.: Quick workaround to use the Bundle freely: wear a role of QA-Engineer/student (or hire them for real - preferably) and Godspeed! =Ъ

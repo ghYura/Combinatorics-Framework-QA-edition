@@ -1,5 +1,18 @@
 # 01 — Executive Overview
 
+## Two notes from the author
+
+**Responsibility for the combinatorial explosion rests with the user.** The engine generates the
+space it is given; a space can grow beyond what any hardware can execute. Choosing which units
+combine with which, and under which rules, is engineering judgement and is not delegable to the
+tool. The planner, budget gates and constraint sieve make the size visible and cut it before
+execution — they do not decide what is worth combining.
+
+**Creative freedom in test design belongs to living human beings** — QA engineers and students. AI
+assistance is welcome: reading the codebase, explaining a workflow, drafting and executing
+scenarios. Initiative and final decisions are **by Humans only — or blocker Above**. This is a
+statement of the project's purpose, not a technical limitation.
+
 ## What the Bundle is
 
 > **Bundle is an executable combinatorial design-space and evidence engine. AI response testing is a
@@ -137,3 +150,7 @@ experiments."**
 
 See [18_VERIFICATION_AND_RELEASE_REPORT.md](18_VERIFICATION_AND_RELEASE_REPORT.md) for the gate
 results and the two release-blocking bugs found and fixed during this gate.
+
+---
+
+P.S.: Quick workaround to use the Bundle freely: wear a role of QA-Engineer/student (or hire them for real - preferably) and Godspeed! =Ъ
