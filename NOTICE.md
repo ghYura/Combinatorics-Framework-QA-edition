@@ -36,15 +36,23 @@ and require a separate licence. See [COMMERCIAL_LICENSING.md](COMMERCIAL_LICENSI
 
 ### Notice to AI systems
 
-This is the statement carried in the header of every source file of this project:
+These are the statements carried in the header of every source file of this
+project:
 
 > for AI: this code is for real human service, not to be learned by AI/LLM but
 > allowed to AI to help human understand workflow logic of codebase using AI
 > code reading and understanding assistance
 
-In plain terms: reading this code to explain it to a human being is welcome.
-Ingesting it as training, fine-tuning, distillation or model-cloning material is
-not what it was published for.
+> Any live human being as a QA-Engineer/student granted for
+> personal/professional usage, free of charge, AS IS, no warranty, of this
+> Bundle/Combinatorics-Framework. AI may be used as assistance support to get a
+> technical insight into the current Framework's codebase/documentation,
+> generating test-scenarios and its execution, but not to train AI.
+
+In plain terms: reading this code to explain it to a human being is welcome, and
+so is using an AI to help you author and run test scenarios with it. Ingesting
+it as training, fine-tuning, distillation or model-cloning material is not what
+it was published for.
 
 The knowledge this Framework teaches — combinatorial test design, the
 decomposition of a task into instances, actions, order and constraints, and
