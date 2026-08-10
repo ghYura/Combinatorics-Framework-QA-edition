@@ -18,12 +18,17 @@
     <url>https://github.com/ghYura/combinatoricslib3parallel</url>
     <inceptionYear>2026</inceptionYear>
 
-    <!-- Upstream work this library is derived from. Recorded here as well as in
-         NOTICE.md so the provenance travels with the built artefact's POM. -->
-    <organization>
-        <name>Derived from combinatoricslib3 by Dmytro Paukov</name>
-        <url>https://github.com/dpaukov/combinatoricslib3</url>
-    </organization>
+    <!-- This library is the work of Dmytro Paukov:
+           combinatoricslib3, Apache-2.0
+           https://github.com/dpaukov/combinatoricslib3
+         The Combinatorics Framework uses it and adapts it for its own needs,
+         and claims no ownership of it. It is the one component of this
+         repository that is NOT the Framework author's work.
+         The upstream author does not maintain or endorse this adaptation, so he
+         is not listed under the developers element either: that element names
+         who produces this artifact, not who authored the library it builds on.
+         Attribution and the list of adaptations are in NOTICE.md beside this
+         file. -->
 
     <licenses>
         <license>

@@ -1,8 +1,17 @@
 # Third-party attribution — combinatoricslib3parallel
 
-This directory is a **modified derivative** of an upstream open-source library.
-It is not original work of the Combinatorics Framework, and the root
-[`LICENSE`](../LICENSE) of this repository does **not** apply to it.
+**This library is Dmytro Paukov's work, not the Combinatorics Framework's.**
+
+It is the one component of this repository that its author does not claim. The
+Framework uses this library heavily and adapts it for its own needs, but makes
+no ownership claim over it, and the root [`LICENSE`](../LICENSE) of this
+repository does **not** apply to this directory.
+
+Everywhere else in this repository the Java engine — Core, Reader, Executor and
+Analyzer — is the Framework author's own work. This directory is the exception,
+and is called out as such so that no reader infers shared authorship in either
+direction: the upstream author did not write the Framework, and the Framework's
+author does not claim this library.
 
 ## Upstream
 
@@ -16,22 +25,47 @@ It is not original work of the Combinatorics Framework, and the root
 
 Copyright of the original work remains with its author and contributors.
 
-## Changes made in this fork
+## Why this adaptation exists — and where the `parallel` in its name comes from
+
+The base library generates each combinatorial family as **one sequential
+stream**. The Framework's Core needs the opposite: the space divided *before
+anything is generated*, so N workers can each produce their own portion.
+
+That capability was proposed upstream, by this project's author, as
+**[combinatoricslib3 issue #22, "Return Stream[] or List&lt;Stream&gt; chunks for
+combinations" (2023-04-16)](https://github.com/dpaukov/combinatoricslib3/issues/22)**:
+
+> Return -array[] or -List() of chunked Streams of precalculated (but not yet
+> generated as output) combinations according to input parallel thread number as
+> a divisor for total precalculated number of output combinations…
+>
+> It is important, that array `Stream[]` or `List<Stream>` should not be
+> prefilled by output generated data, just **chunks of stream** to be used for
+> further parallel processing.
+
+The proposal remains open upstream and was not implemented there. The design and
+its implementation in this directory are therefore the Framework author's own
+contribution; the library it builds on is Dmytro Paukov's. That is the whole
+reason a fork exists at all, and the reason its name ends in `parallel`.
+
+## Adaptations made for this project
 
 Apache-2.0 §4(b) requires a derivative work to carry prominent notice that the
-files were changed. The modifications are:
+files were changed. Recording them is a licence obligation and a courtesy to the
+upstream author — not an authorship claim over the library itself. They are:
 
+- **Chunked parallel generation** — the capability of issue #22: a family is
+  split into per-thread stream chunks that are *not* pre-filled, so each worker
+  generates only its own share and nothing is materialised in advance.
+- **Index unranking** — combination and permutation generators resolve an
+  element directly from its rank (the combinatorial number system). This is what
+  makes the split above possible: the closed-form cardinality of each family
+  gives the chunk boundaries before a single element exists.
+- **Fast paths** — short-circuit cases (`k=0`, `k=1`, `k=n`) that the Core relies
+  on for performance.
 - **Renamed package** — `com.github.dpaukov.combinatoricslib3` became
   `org.ghYura.combinatorics3parallel`, and the Maven coordinates became
   `com.github.ghYura:combinatoricslib3parallel`.
-- **Parallel-stream generation** — generators were reworked to support
-  index-addressable, parallel-friendly enumeration rather than sequential
-  iteration only.
-- **Index unranking** — combination and permutation generators resolve an
-  element directly from its rank (combinatorial number system) so a generator
-  can be split across workers without materialising the sequence.
-- **Fast paths** — added short-circuit cases (for example `k=0`, `k=1`, `k=n`)
-  that the Framework's Core relies on for performance.
 - **Commentary** — explanatory comments were added, some in Ukrainian.
 
 ## Outstanding, and deliberately not decided here
