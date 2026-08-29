@@ -302,5 +302,8 @@ def test_direct_engine_smoke_plans_without_the_ai_platform(tmp_path: Path) -> No
     plan = json.loads((out / "plan.json").read_text(encoding="utf-8"))
     assert plan["seq_extra_rows"] == 3
     # The higher-order count is genuinely runtime-known; the plan must say so
-    # rather than inventing an exact number.
-    assert plan["cardinality"]["final"]["mode"] == "UNKNOWN"
+    # rather than inventing an exact number. BOUNDED satisfies that as long as
+    # the ceiling is provable -- measured end to end this spec produces
+    # fw_final = 8 against a stated ceiling of 512 -- so the invariant is
+    # "never EXACT", not "always UNKNOWN".
+    assert plan["cardinality"]["final"]["mode"] != "EXACT"

@@ -192,6 +192,30 @@ def _parse_sizes(raw, *, label: str) -> "tuple[int, ...]":
     return tuple(sorted(sizes))
 
 
+def _optional_slot_rows(slot) -> int:
+    """How many rows an optional slot's own verb produces.
+
+    Core materializes `fw_opt<size>` from each optional sheet's RESULT TABLE, not
+    from its declared value list, so a multi-select optional slot contributes one
+    branch per produced row. Using the value count instead under-counts every
+    verb that emits more than one row per sheet -- `FW_Subsets` over 2 values is
+    4 rows, so 5 Reader branches, not 3 -- and makes the reader's
+    `emitted_eq_expected` invariant fail the run outright.
+
+    Falls back to the declared value count when the verb cannot be sized, which
+    is the historical behaviour and is exact for the `FW_Combi(1)` slots every
+    single-select optional sheet uses.
+    """
+    values = getattr(slot, "values", ()) or ()
+    verb = getattr(slot, "verb", "") or ""
+    try:
+        import fwgen as _fg
+        n = int(_fg.verb_output_count(verb, len(values)))
+        return n if n > 0 else len(values)
+    except Exception:
+        return len(values)
+
+
 def contract_from_spec(spec, *, consumed_override=None,
                        source: str = "run contract") -> OptionalTableContract:
     """Build the contract from the specification's `FW_Optional` slots.
@@ -202,7 +226,7 @@ def contract_from_spec(spec, *, consumed_override=None,
     drifting property templates, because neither property is written by hand.
     """
     slots = [s for s in spec.slots if "FW_Optional" in (getattr(s, "flags", ()) or ())]
-    counts = tuple(len(s.values) for s in slots)
+    counts = tuple(_optional_slot_rows(s) for s in slots)
     n = len(slots)
     produced = tuple(range(1, n + 1))
     sources = {"optional_sheet_count": f"{source}: FW_Optional slots in the specification",

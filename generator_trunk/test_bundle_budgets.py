@@ -118,14 +118,22 @@ def test_evaluate_budgets_classifies_ok_warning_blocking_with_reasons():
 
 
 def test_unsizable_dimension_with_hard_limit_blocks_rather_than_passing_silently():
+    """An UNKNOWN dimension must BLOCK when a hard limit is configured, and be OK
+    when none is.
+
+    This used to be driven through a brace joiner, back when every brace was
+    unsizable. Braces now carry a closed-form row count, so the plan is built
+    directly with an UNKNOWN final: the subject here is `evaluate_budgets`'s
+    handling of UNKNOWN, and it should not depend on which estimator happens to
+    be unsizable this month."""
     M = fg.CardinalityMode
-    spec = fg.parse_spec({
-        "slots": [{"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
-                  {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
-                  {"sheet": "JOINED", "values": [" x"]}],
-        "seq_extra": [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]],
-    }, "brace-budget")
-    plan = fg.spec_cardinality_plan(spec)
+    unknown = fg.CardinalityEstimate.unknown(
+        formula="opaque dimension", reasons=("not statically sizable",))
+    exact_one = fg.CardinalityEstimate.exact(1, formula="1")
+    plan = fg.SpecCardinalityPlan(
+        raw_values={"A": 2}, per_slot={"A": unknown},
+        mandatory=unknown, post_sieve=unknown,
+        optional_multiplier=exact_one, final=unknown)
     assert plan.final.mode == M.UNKNOWN
     rp = estimate_resources(plan)
 
@@ -139,6 +147,27 @@ def test_unsizable_dimension_with_hard_limit_blocks_rather_than_passing_silently
     fc_open = next(c for c in open_checks if c.dimension == "final_candidates")
     assert fc_open.unsizable and fc_open.severity == BudgetSeverity.OK
 
+
+def test_a_sizable_brace_is_budgeted_like_any_other_dimension():
+    """The counterpart: a brace the planner CAN size must go through the normal
+    OK / WARNING / BLOCKING ladder instead of demanding an override."""
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "JOINED", "values": [" x"]}],
+        "seq_extra": [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]],
+    }, "brace-budget")
+    plan = fg.spec_cardinality_plan(spec)
+    assert plan.final.mode == fg.CardinalityMode.EXACT and plan.final.value == 4
+    rp = estimate_resources(plan)
+
+    fc = next(c for c in evaluate_budgets(plan, rp, BudgetLimits(final_candidates=1_000))
+              if c.dimension == "final_candidates")
+    assert not fc.unsizable and fc.severity == BudgetSeverity.OK
+
+    fc = next(c for c in evaluate_budgets(plan, rp, BudgetLimits(final_candidates=2))
+              if c.dimension == "final_candidates")
+    assert not fc.unsizable and fc.severity == BudgetSeverity.BLOCKING
 
 def test_synthetic_explosion_blocked_before_any_stage_starts():
     # 10! = 3,628,800 — over the default 2,000,000 hard ceilings (mandatory

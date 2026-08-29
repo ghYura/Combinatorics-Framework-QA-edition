@@ -253,3 +253,66 @@ def test_standalone_property_templates_satisfy_the_contract(relative, sheet_coun
     # duplicate is therefore another hidden contract and must not be allowed.
     assert len(_active_property_values(path, CORE_PROPERTY)) <= 1, relative
     assert len(_active_property_values(path, READER_PROPERTY)) <= 1, relative
+
+def test_optional_slot_is_sized_by_its_result_rows_not_its_values():
+    """Core builds fw_opt<size> from each optional sheet's RESULT TABLE.
+
+    A multi-select optional slot therefore contributes one branch per produced
+    row. Measured end to end: FW_Subsets over 2 values is 4 rows, so the Reader
+    emits 5 candidates per fw_final row -- not the 3 that counting declared
+    values predicts. Getting this wrong does not merely mis-estimate: it trips
+    the reader's `emitted_eq_expected` invariant and fails the run.
+    """
+    import fwgen as fg
+    from bundle import optional_contract as oc
+
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "HEAD", "values": ["h"]},
+                  {"sheet": "OPT", "verb": "FW_Subsets", "values": ["o1", "o2"],
+                   "flags": ["FW_Optional"]}],
+    }, "opt-rows")
+    contract = oc.contract_from_spec(spec)
+    assert contract.slot_value_counts == (4,), contract.slot_value_counts
+    assert contract.expected_multiplier() == 5
+    assert fg.optional_multiplier_cardinality(spec).value == 5
+
+
+def test_several_optional_slots_multiply_and_decompose_by_size():
+    """More than one optional slot multiplies, and the per-size breakdown is the
+    elementary symmetric polynomial of the slots' row counts -- which is what
+    makes 1 + Σ_size e_size equal Π(rows+1) when every size is consumed.
+
+    Measured end to end: FW_Subsets over 2 (4 rows) with FW_Combi(1) over 3
+    (3 rows) yields 20 candidates per fw_final row.
+    """
+    import fwgen as fg
+    from bundle import optional_contract as oc
+
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "HEAD", "values": ["h"]},
+                  {"sheet": "OPT1", "verb": "FW_Subsets", "values": ["a1", "a2"],
+                   "flags": ["FW_Optional"]},
+                  {"sheet": "OPT2", "values": ["b1", "b2", "b3"], "flags": ["FW_Optional"]}],
+    }, "opt-multi")
+    contract = oc.contract_from_spec(spec)
+    assert contract.slot_value_counts == (4, 3)
+    assert contract.combinations_of_size(1) == 7        # 4 + 3
+    assert contract.combinations_of_size(2) == 12       # 4 * 3
+    assert contract.expected_multiplier() == 20         # 1 + 7 + 12 == (4+1)(3+1)
+    assert fg.optional_multiplier_cardinality(spec).value == 20
+
+
+def test_single_select_optional_slots_are_unchanged():
+    """The fix must not move any existing spec: for FW_Combi(1) -- what every
+    single-select optional sheet uses -- result rows and declared values agree."""
+    import fwgen as fg
+    from bundle import optional_contract as oc
+
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "HEAD", "values": ["h"]},
+                  {"sheet": "O1", "values": ["x"], "flags": ["FW_Optional"]},
+                  {"sheet": "O2", "values": ["y"], "flags": ["FW_Optional"]},
+                  {"sheet": "O3", "values": ["z"], "flags": ["FW_Optional"]}],
+    }, "opt-legacy")
+    assert oc.contract_from_spec(spec).expected_multiplier() == 8      # 2^3, as before
+

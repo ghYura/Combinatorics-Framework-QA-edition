@@ -75,8 +75,13 @@ def test_optional_factor_and_brace_uncertainty_are_visible():
     right.directives = ["FW_Exclude", "FW_Reuse", "FW_Combi(1)", ""]
     joined.directives = ["FW_(,,LEFT,,RIGHT,,,,M:N)", "", "", ""]
     plan = plan_project(brace)
-    assert plan.final["mode"] == "UNKNOWN"
-    assert plan.run_class == "X"
+    # A brace joins two RESULT tables whose sizes are closed-form, so the join is
+    # too: FW_Combi(1) over 2 each, M:N -> 2x2 = 4. It used to be reported as
+    # UNKNOWN (and therefore run-class X, needing an explicit override) purely
+    # because nothing sized the operands.
+    assert plan.final["mode"] == "EXACT"
+    assert plan.final["value"] == 4
+    assert plan.run_class != "X"
 
 
 def test_runtime_metadata_round_trips_without_changing_workbook_contract(tmp_path):

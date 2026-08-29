@@ -161,7 +161,10 @@ def test_release_gate_profile_materializes_fresh_bounded_local_apparatus(
     assert len(spec.seq_extra) == 4
     assert "2/4/8/16/32 leaves" in spec.note
     assert release_gate_candidate_count(scenario) == 2_560
-    assert plan_verified_example(scenario).final.mode.value == "UNKNOWN"
+    # nested braces + FW_Group are runtime-known: the plan must never claim an
+    # exact number for them. A provable ceiling is allowed and preferred -- the
+    # invariant is "never EXACT", not "always UNKNOWN".
+    assert plan_verified_example(scenario).final.mode.value != "EXACT"
 
     config = scenario_run_config(
         scenario,

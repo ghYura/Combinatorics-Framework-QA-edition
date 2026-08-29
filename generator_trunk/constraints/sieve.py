@@ -689,9 +689,12 @@ def sieve_fw_final(conn, table: str, sidecar: dict,
     the rows => 162/243 non-empty.)  So you MUST pass `baseline` {sheet -> baseline value} or
     baseline-valued combinations are silently missed.
 
-    We decode each row -> ordered placements (sheet_order = FW_Seq slot order; an ordered
-    FW_Permut sheet's array order IS the sequence), reuse row_violates, and DELETE violators
-    by id. `dry_run=True` only counts (run it first). Main-DB fw_final id col = `combi_id`.
+    We decode each row -> placements ordered by MATERIALIZED AXIS (sheet_order = FW_Seq slot
+    order). `pos` counts axes, not values: every value a multi-select sheet contributes shares
+    that sheet's single position, and `row_violations` never pairs two placements at the same
+    position -- so a lone FW_Permut sheet's internal order is not addressable by a positional
+    gate. Encode a sequence as one slot per step to gate on its order. We then reuse
+    row_violates and DELETE violators by id. `dry_run=True` only counts (run it first). Main-DB fw_final id col = `combi_id`.
 
     code2val:   {sheet: {code:int -> value:str}}  (from NumberToValue1, split per sheet)
     combos_col: {sheet -> column name}            (case-sensitive, e.g. {"O1":"combos2_O1"})

@@ -145,7 +145,9 @@ def test_spec_uses_real_fourth_order_prompt_construction(tmp_path: Path) -> None
         "TASK_DATA",
         "TASK_LEVEL",
     ]
-    assert fwgen.spec_cardinality_plan(spec).final.mode.value == "UNKNOWN"
+    # nested braces + FW_Group are runtime-known: the plan must never claim an
+    # exact number for them (a provable ceiling is allowed and preferred)
+    assert fwgen.spec_cardinality_plan(spec).final.mode.value != "EXACT"
     assert len(tasks) * RELEASE_CANDIDATES_PER_TASK == 2560
 
 

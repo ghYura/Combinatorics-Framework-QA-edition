@@ -324,6 +324,88 @@ def verb_output_count(verb: str, n: int, other_n: int = 0) -> int:
     return max(1, n)                                        # unknown → assume row-preserving
 
 
+def verb_max_row_arity(verb: str, n: int) -> int:
+    """How many of a sheet's values can land in ONE produced row.
+
+    A row holding two or more values is written out with the sheet's
+    concatenator between them, and that concatenator is EMPTY unless the slot
+    carries ``FW_Concatenator=``. For a ``raw`` code slot that means fragments
+    fuse into a single line unless each one already ends with a newline — the
+    trap `check_raw_row_arity` reports.
+    """
+    v = verb.strip()
+
+    def _arg(default=1):
+        m = re.search(r"\((\d+)\)", v)
+        return int(m.group(1)) if m else default
+
+    if v.startswith(("FW_Group", "FW_Cartes")):
+        return max(2, n)
+    if v.startswith(("FW_CombiR", "FW_Combi", "FW_PermutR")):
+        if re.search(r"\((all|full)\)", v):
+            return n
+        return _arg()
+    if v.startswith("FW_Permut"):
+        if re.search(r"\(\d+\)", v):
+            return _arg()
+        return n                                  # bare FW_Permut / multiset: the whole sheet
+    if v.startswith("FW_Subsets_"):
+        sizes = [int(x) for x in re.findall(r"\d+", v)]
+        mode = re.search(r"FW_Subsets_(\w+)", v).group(1).upper()
+        if mode == "EXACT":
+            return sizes[0] if sizes else n
+        if mode == "RANGE":
+            return sizes[1] if len(sizes) >= 2 else n
+        if mode == "BEFORE":
+            return max(0, sizes[0] - 1) if sizes else n
+        if mode == "GIVEN":
+            return max(sizes) if sizes else n
+        return n                                  # AFTER, and anything unrecognised
+    if v.startswith("FW_Subsets"):
+        return n
+    return 1
+
+
+def check_raw_row_arity(sheet: str, verb: str, values, flags=(), *,
+                        name: str = "", strict: bool = False) -> str | None:
+    """Catch the concatenator trap at authoring time.
+
+    A multi-value verb (`FW_Permut`, `FW_PermutR(k)`, `FW_Combi(k>=2)`,
+    `FW_Subsets`, `FW_Cartes`, `FW_Group`, ...) puts several of the sheet's
+    values in one row. They are joined by the sheet's concatenator, which is
+    empty by default, so ``raw`` fragments that do not end in a newline are
+    glued onto one line — silently producing a single long statement instead of
+    a sequence. Returns the message it reported, or None when the slot is fine.
+
+    Default posture matches the rest of the spec loader and the
+    ``core.replace.*`` policies: report in compatibility mode, raise under
+    ``strict``. Nothing about the generated workbook changes either way.
+    """
+    if any(str(f).startswith("FW_Concatenator=") for f in flags):
+        return None                               # the author set one explicitly
+    arity = verb_max_row_arity(verb, len(values))
+    if arity < 2:
+        return None
+    # A value is safe when it already carries its own statement boundary: a
+    # newline, or a terminator such as ';' / '}' that separates statements in
+    # brace-and-semicolon languages. Only a value ending in neither can fuse
+    # into the next one and change meaning.
+    fused = [i for i, v in enumerate(values)
+             if str(v).rstrip(" \t") and
+             not str(v).rstrip(" \t").endswith(("\n", "\r", ";", "}", "{", ","))]
+    if not fused:
+        return None
+    where = f"spec '{name}' " if name else ""
+    msg = (f"{where}slot '{sheet}': verb {verb} places up to {arity} values in one row and the "
+           f"sheet has no FW_Concatenator, so raw value(s) at index {fused} — which end in "
+           f"neither a newline nor a statement terminator — will be concatenated onto a SINGLE "
+           f"line. End each value with a newline (or ';'), or set FW_Concatenator=.")
+    if strict:
+        raise ValueError(msg + " (strict mode)")
+    print(f"  \u26a0 {msg}")
+    return msg
+
+
 # Verbs whose row count is a closed-form function of (n, k) — the formula sees
 # every input it needs, so the prediction is EXACT, not a best-effort guess.
 _EXACT_FORMULA_PREFIXES = (
@@ -381,45 +463,482 @@ def verb_cardinality(verb: str, n: int, other_n: int = 0) -> CardinalityEstimate
                  f"unverified for this verb — treat as informational only, not a bound",))
 
 
-def brace_cardinality(expr: str) -> CardinalityEstimate:
-    """Classify a brace-joiner FW_(...) row from `seq_extra` (STEP 9 action 4).
+def brace_fields(expr: str) -> "tuple[str, ...]":
+    """The nine positional fields of a brace `FW_(start,_,E1,rel,E2,_,end,sep,mult)`.
 
-    A brace JOINS the result tables of its two operand slots — a second-order
-    effect that depends on each operand's actual post-verb row count, which
-    `estimate_core_combos`/`verb_cardinality` cannot see (they only know
-    declared slot sizes). Per the plan, never present this as an approximate
-    number dressed up as exact: it is UNKNOWN, with the reason spelled out.
+    Returns them stripped, padded to nine. Positions that matter to a row count
+    are E1 (2), E2 (4) and mult (8); the rest are formatting sheets that
+    contribute their first value and never change cardinality.
+    """
+    first = _first_line(expr).strip()
+    m = re.match(r"FW_\((.*)\)\s*$", first, re.S)
+    if not m:
+        return ()
+    parts = [p.strip() for p in m.group(1).split(",")]
+    return tuple(parts + [""] * (9 - len(parts)))[:9]
+
+
+def verb_row_length_histogram(verb: str, n: int) -> "dict[int, int] | None":
+    """How many produced rows hold exactly L values, keyed by L.
+
+    Needed only by the length-matched join cardinalities (`1:1`, `M:M`), which
+    pair an A-row with the B-rows of the SAME length
+    (`BraceOperand.readWithCardinality` in the Core). None when the verb's shape
+    is not statically known.
+    """
+    v = _first_line(verb).strip()
+
+    def _arg(default=1):
+        m = re.search(r"\((\d+)\)", v)
+        return int(m.group(1)) if m else default
+
+    if n <= 0:
+        return None
+    if v.startswith("FW_CombiR"):
+        if re.search(r"\((all|full)\)", v):
+            return {k: math.comb(n + k - 1, k) for k in range(1, n + 1)}
+        k = _arg()
+        return {k: math.comb(n + k - 1, k)} if k >= 1 else None
+    if v.startswith("FW_Combi"):
+        if re.search(r"\((all|full)\)", v):
+            return {k: math.comb(n, k) for k in range(1, n + 1)}
+        k = _arg()
+        return {k: math.comb(n, k)} if 0 <= k <= n else None
+    if v.startswith("FW_PermutR"):
+        if re.search(r"\((all|full)\)", v):
+            return {k: n ** k for k in range(1, n + 1)}
+        k = _arg()
+        return {k: n ** k} if k >= 1 else None
+    if v.startswith("FW_Permut"):
+        if re.search(r"\(\d+\)", v):
+            k = _arg()
+            return {k: math.perm(n, k)} if 0 <= k <= n else None
+        return {n: math.factorial(n)}
+    if v.startswith("FW_Subsets_"):
+        sizes = [int(x) for x in re.findall(r"\d+", v)]
+        mode = re.search(r"FW_Subsets_(\w+)", v).group(1).upper()
+        if mode == "EXACT" and sizes:
+            return {sizes[0]: math.comb(n, sizes[0])} if sizes[0] <= n else None
+        if mode == "RANGE" and len(sizes) >= 2:
+            return {k: math.comb(n, k) for k in range(sizes[0], min(sizes[1], n) + 1)}
+        if mode == "BEFORE" and sizes:
+            return {k: math.comb(n, k) for k in range(0, min(sizes[0], n + 1))}
+        if mode == "AFTER" and sizes:
+            return {k: math.comb(n, k) for k in range(sizes[0] + 1, n + 1)}
+        if mode == "GIVEN" and sizes:
+            return {k: math.comb(n, k) for k in sizes if 0 <= k <= n}
+        return None
+    if v.startswith("FW_Subsets"):
+        return {k: math.comb(n, k) for k in range(0, n + 1)}
+    return None
+
+
+def verb_rows(verb: str, values: "Sequence[str]") -> "list[tuple[str, ...]]":
+    """The actual rows a first-order verb produces over `values`.
+
+    `verb_output_count` says HOW MANY; this says WHICH — needed by the sieve
+    pre-count, which has to know each row's per-sheet value selection to run the
+    bond predicates. Returns [] for a verb whose rows are not closed-form
+    (`FW_Group`, `FW_Cartes`, braces); callers must treat [] as "not enumerable"
+    rather than "no rows". Self-consistency with `verb_output_count` is asserted
+    by the unit tests.
+    """
+    v = _first_line(verb).strip()
+    n = len(values)
+    vals = list(values)
+
+    def _arg(default=1):
+        m = re.search(r"\((\d+)\)", v)
+        return int(m.group(1)) if m else default
+
+    def _all(x):
+        return bool(re.search(r"\((all|full)\)", x))
+
+    if n == 0:
+        return []
+    if v.startswith("FW_CombiR"):
+        ks = range(1, n + 1) if _all(v) else [_arg()]
+        return [tuple(c) for k in ks if k >= 1
+                for c in itertools.combinations_with_replacement(vals, k)]
+    if v.startswith("FW_Combi"):
+        ks = range(1, n + 1) if _all(v) else [_arg()]
+        return [tuple(c) for k in ks if 0 <= k <= n for c in itertools.combinations(vals, k)]
+    if v.startswith("FW_PermutR"):
+        ks = range(1, n + 1) if _all(v) else [_arg()]
+        return [tuple(c) for k in ks if k >= 1 for c in itertools.product(vals, repeat=k)]
+    if v.startswith("FW_Permut"):
+        k = _arg(n) if re.search(r"\(\d+\)", v) else n
+        return [tuple(c) for c in itertools.permutations(vals, k)] if 0 <= k <= n else []
+    if v.startswith("FW_Subsets"):
+        hist = verb_row_length_histogram(v, n)
+        if hist is None:
+            return []
+        sizes = sorted(hist)
+        return [tuple(c) for k in sizes if 0 <= k <= n for c in itertools.combinations(vals, k)]
+    return []
+
+
+def sieve_survival_cardinality(spec: "Spec", mandatory: CardinalityEstimate,
+                               *, cap: int = 200_000) -> "CardinalityEstimate | None":
+    """EXACT post-sieve row count, by running the sieve's own predicate over the
+    enumerated mandatory product — the same thing the sieve will do to the real
+    `fw_final`, done in advance.
+
+    Only attempted when the product is closed-form and at or under `cap`;
+    otherwise None, and the caller keeps the conservative [0, mandatory] range.
+    A bond whose outcome depends on runtime data the spec does not carry
+    (`when` predicates over params, `mapping`, `assert`, `condition`) is still
+    evaluated here — the sieve evaluates them from the sidecar too — but any
+    sheet the enumeration cannot produce makes the whole attempt bail out.
+    """
+    if not (getattr(spec, "constraints", ()) or ()):
+        return None
+    if mandatory.mode != CardinalityMode.EXACT or not mandatory.value:
+        return None
+    if mandatory.value > cap:
+        return None
+    if getattr(spec, "seq_extra", ()) or ():
+        return None                      # brace targets are not enumerable here
+
+    mandatory_slots = [sl for sl in (getattr(spec, "slots", ()) or ())
+                       if not any(f in sl.flags for f in ("FW_Exclude", "FW_Heading", "FW_Optional"))]
+    per_slot_rows = []
+    for sl in mandatory_slots:
+        rows = verb_rows(sl.verb, sl.values)
+        if not rows:
+            return None                  # a non-enumerable verb: fall back to the range
+        per_slot_rows.append((sl.sheet, rows))
+
+    try:
+        sieve = _import_sieve()
+    except Exception:
+        return None
+
+    # A bond that references an FW_Optional sheet is DEFERRED by the sieve: it is
+    # not enforced against fw_final at all (deleting a mandatory row would drop it
+    # for every optional choice), and instead compiles into the candidate-assembly
+    # stage. Counting it here would credit removals the sieve never makes on
+    # fw_final, and ignoring it would credit survivors the assembly may still
+    # drop — so refuse the pre-count and keep the conservative range.
+    optional_sheets = {sl.sheet for sl in (getattr(spec, "slots", ()) or ())
+                       if "FW_Optional" in (getattr(sl, "flags", ()) or ())}
+    if optional_sheets:
+        for c in (getattr(spec, "constraints", ()) or ()):
+            try:
+                referenced = set(sieve._referenced_sheets(c))
+            except Exception:
+                return None
+            if referenced & optional_sheets:
+                return None
+
+    sidecar = {"version": 1, "params": getattr(spec, "params", {}) or {},
+               "constraints": list(getattr(spec, "constraints", ()) or ())}
+    if getattr(spec, "orders", None):
+        sidecar["orders"] = spec.orders
+
+    survivors = 0
+    total = 0
+    try:
+        for combo in itertools.product(*[rows for _s, rows in per_slot_rows]):
+            total += 1
+            if total > cap:
+                return None
+            row = [{"sheet": sheet, "value": val, "pos": pos}
+                   for pos, ((sheet, _rows), sel) in enumerate(zip(per_slot_rows, combo))
+                   for val in sel]
+            if not sieve.row_violations(row, sidecar):
+                survivors += 1
+    except Exception:
+        # A pre-count is an optimisation and must never make estimation worse
+        # than it was without it: any bond the enumeration cannot evaluate here
+        # (a `when` over params a value does not declare, an ordinal with no
+        # `orders`, ...) falls back to the conservative [0, mandatory] range,
+        # exactly as before.
+        return None
+
+    return CardinalityEstimate.exact(
+        survivors,
+        formula=f"{survivors} of {total} mandatory rows survive {len(spec.constraints)} bond(s)",
+        assumptions=("computed by running constraints/sieve.py's own row_violations over the "
+                     "enumerated mandatory product — the same predicate the sieve stage applies",))
+
+
+def _import_sieve():
+    """constraints/sieve.py, imported lazily so fwgen stays usable without it."""
+    import importlib.util
+    here = Path(__file__).resolve().parent / "constraints" / "sieve.py"
+    spec_ = importlib.util.spec_from_file_location("_fwgen_sieve", here)
+    mod = importlib.util.module_from_spec(spec_)
+    spec_.loader.exec_module(mod)
+    return mod
+
+
+def group_cardinality(verb: str, n: int, *, has_replace: bool = False) -> CardinalityEstimate:
+    """Row count of an `FW_Group` pass over a slot's own prior result rows.
+
+    `FW_Group` re-runs the slot's OWN generator with its produced rows as the
+    atoms (`SheetWorker.resolveAlgoType` reads the algo from the slot's verb,
+    and the group pass feeds it `inListFWasList` — the prior result rows). So
+    the count is the verb's formula applied **twice**: once over the declared
+    values to get `R` rows, then again over those `R` rows.
+
+    Confirmed by the canonical worked example in
+    `Core_trunk/README_CANONICAL_TRUTH.txt`: sheet E, `FW_Subsets` over 2 values
+    -> R = 2^2 = 4 rows, then the group pass enumerates the 2^4 = 16 subsets of
+    those rows.
+
+    `FW_ReplaceRE` rewrites can make two distinct rows collide after rewriting,
+    and the engine's dedup of that is not statically known — collisions can only
+    ever REDUCE the count, so a slot carrying `group_replace` is BOUNDED
+    ``[1, out]`` rather than exact.
+
+    The group pass EMITS that many rows and then DISTINCTs them, and the
+    collision rate is a property of the data, not of the verb — the canonical
+    file records the same 16 subsets collapsing to 13 or 14 under two different
+    orderings. So the emission count is a provable **upper** bound and 1 is the
+    only provable lower bound; this returns BOUNDED, never EXACT.
+
+    Measured end to end (`FW_Subsets` over 2 values): 4 first-order rows, 2^4 =
+    16 emissions, 6 distinct — inside [1, 16], and note that the first-order
+    count 4 is NOT a bound.
+    """
+    r = verb_output_count(verb, n)
+    out = verb_output_count(verb, r)
+    v = _first_line(verb).strip()
+    why = ("the group pass re-emits this slot's own algo over its R result rows and then "
+           "DISTINCTs the concatenations; collisions depend on the data, so the emission "
+           "count bounds the result from above and nothing below 1 is provable",)
+    if has_replace:
+        why += ("FW_ReplaceRE rewrites can collide two further rows, only ever reducing",)
+    return CardinalityEstimate.bounded(
+        lower=1, upper=out, value=None,
+        formula=f"{v} applied twice: over n={n} -> R={r} rows -> {out} emissions, then DISTINCT",
+        reasons=why,
+        assumptions=("the group pass re-runs this slot's own algo over its result rows "
+                     "(SheetWorker.resolveAlgoType reads the algo from the slot verb)",))
+
+
+def brace_cardinality(expr: str, spec: "Spec | None" = None, *,
+                      _depth: int = 0) -> CardinalityEstimate:
+    """Row count of a brace-joiner `FW_(...)` from `seq_extra`.
+
+    A brace joins the RESULT TABLES of its two operand slots. Those tables are
+    produced by ordinary first-order verbs over declared sheets, so their row
+    counts — and their row-length distributions — are closed-form. The join's
+    own cardinality is then a simple function of the multiplicity, verified
+    against `BraceOperationHandler`:
+
+    ==========  ================================================  ============
+    mult        Core behaviour                                    rows
+    ==========  ================================================  ============
+    ``1:N``     for each a in A, every b in B                     ``|A|·|B|``
+    ``M:N``     for each a in A, every b in B                     ``|A|·|B|``
+    ``M:1``     for each b in B, every a in A                     ``|A|·|B|``
+    ``1:1``     for each a, the b's with ``len(b) == len(a)``     ``Σ_L A_L·B_L``
+    ``M:M``     for each a, the b's with ``len(b) == len(a)``     ``Σ_L A_L·B_L``
+    ==========  ================================================  ============
+
+    (`readWithCardinality(a.length)` is what makes `1:1`/`M:M` length-matched.)
+
+    Without `spec` there is no way to size the operands, so the answer stays
+    UNKNOWN — the historical behaviour, unchanged for any existing caller.
     """
     first = _first_line(expr)
-    return CardinalityEstimate.unknown(
+    fields = brace_fields(expr)
+    unknown = CardinalityEstimate.unknown(
         formula=f"brace {first!r} joins two operand result tables",
-        reasons=(f"brace joiner {first!r} combines the RESULT TABLES of its operand slots "
-                 f"(not their raw declared sizes); that join's row count depends on each "
-                 f"operand's actual post-verb/post-exclusion Core output, which is only known "
-                 f"by running Core — no statically sound bound exists here",))
+        reasons=(f"brace joiner {first!r} combines the RESULT TABLES of its operand slots; "
+                 f"sizing them needs the spec's slot definitions",))
+    if spec is None or not fields:
+        return unknown
+
+    e1, e2, mult = fields[2], fields[4], (fields[8] or "M:N").upper()
+    by_sheet = {sl.sheet: sl for sl in (getattr(spec, "slots", ()) or ())}
+
+    # A brace nests: an operand may name the TARGET of an earlier brace rather than
+    # a plain slot, and SeqParser also resolves a literal FW_(...) in an operand
+    # position to the most recent prior brace target (~FWN/~FWG). Either way the
+    # operand's size is that earlier join's row count, not a declared verb's.
+    earlier: "list[tuple[str, str]]" = []
+    for row in (getattr(spec, "seq_extra", ()) or ()):
+        for c in row:
+            if _BRACE_RE.fullmatch(_first_line(c)):
+                if _first_line(c).strip() == first.strip():
+                    break
+                earlier.append((brace_target(row), c))
+        else:
+            continue
+        break
+
+    by_target = dict(earlier)
+
+    def _nested(field: str) -> "CardinalityEstimate | None":
+        if field.startswith("FW_("):                      # inline nested brace
+            if not earlier:
+                return CardinalityEstimate.unknown(
+                    formula=f"nested brace in operand position of {first!r}",
+                    reasons=("an inline FW_(...) operand resolves to the most recent prior brace "
+                             "target, and this spec declares none before it",))
+            return brace_cardinality(earlier[-1][1], spec, _depth=_depth + 1)
+        if field in by_target:                            # operand IS an earlier brace's target
+            return brace_cardinality(by_target[field], spec, _depth=_depth + 1)
+        return None
+
+    if _depth > 8:
+        return CardinalityEstimate.unknown(
+            formula=f"brace {first!r}", reasons=("brace nesting deeper than 8; refusing to recurse",))
+
+    n1, n2 = _nested(e1), _nested(e2)
+    a, b = by_sheet.get(e1), by_sheet.get(e2)
+    if (a is None and n1 is None) or (b is None and n2 is None):
+        missing = [x for x, sl, nn in ((e1, a, n1), (e2, b, n2)) if sl is None and nn is None]
+        return CardinalityEstimate.unknown(
+            formula=f"brace {first!r} over operands {e1!r}, {e2!r}",
+            reasons=(f"operand(s) {missing} are neither a declared slot nor an earlier brace target",))
+    if n1 is not None or n2 is not None:
+        parts = [n1 or CardinalityEstimate.exact(verb_output_count(a.verb, len(a.values)),
+                                                 formula=f"|{e1}|"),
+                 n2 or CardinalityEstimate.exact(verb_output_count(b.verb, len(b.values)),
+                                                 formula=f"|{e2}|")]
+        if mult not in ("1:N", "M:N", "M:1"):
+            return CardinalityEstimate.bounded(
+                lower=1, upper=(parts[0].upper or 0) * (parts[1].upper or 0), value=None,
+                formula=f"nested length-matched join (mult {mult})",
+                reasons=("a nested operand's row LENGTHS are not statically known, so only the "
+                         "cross-product ceiling holds",))
+        return _combine_product(
+            parts, formula=f"|{e1}|·|{e2}|  (mult {mult}, nested operand)",
+            reasons=("an operand is itself a brace result; its row count propagates with its own "
+                     "confidence tier",))
+
+    # A brace reads its operand's fw2_ (sub-combo/dual) table, and FW_Group writes
+    # THERE. Measured end-to-end, a grouped operand's fw2_ row count matches
+    # neither its first-order count nor `group_cardinality` (FW_Subsets over 2
+    # values: first-order 4, group formula 16, actually contributed 6), so it is
+    # not statically bounded in either direction. Refuse to guess.
+    grouped = [sl.sheet for sl in (a, b) if getattr(sl, "group_replace", ())]
+
+    def _operand_upper(sl):
+        # A brace reads its operand's fw2_ table, and FW_Group writes THERE, so a
+        # grouped operand contributes its group EMISSION count (post-DISTINCT is
+        # data-dependent and only bounded from above).
+        if getattr(sl, "group_replace", ()):
+            return group_cardinality(sl.verb, len(sl.values), has_replace=True).upper
+        return verb_output_count(sl.verb, len(sl.values))
+
+    na, nb = _operand_upper(a), _operand_upper(b)
+    if grouped and mult in ("1:N", "M:N", "M:1"):
+        return CardinalityEstimate.bounded(
+            lower=1, upper=na * nb, value=None,
+            formula=f"|{e1}|·|{e2}| <= {na}·{nb}  (mult {mult}; grouped operand bounded above)",
+            reasons=(f"operand(s) {grouped} carry FW_Group, whose emissions are DISTINCTed by a "
+                     f"data-dependent amount; {na}·{nb} is the provable ceiling",))
+    if grouped:
+        return CardinalityEstimate.bounded(
+            lower=1, upper=na * nb, value=None,
+            formula=f"length-matched join over a grouped operand (mult {mult})",
+            reasons=(f"operand(s) {grouped} carry FW_Group: their row LENGTHS after grouping and "
+                     f"rewriting are not statically known, so only the cross-product ceiling holds",))
+
+    if mult in ("1:N", "M:N", "M:1"):
+        return CardinalityEstimate.exact(
+            na * nb,
+            formula=f"|{e1}|·|{e2}| = {na}·{nb}  (mult {mult}: every A-row against every B-row)",
+            assumptions=("operand result-table sizes come from their declared verbs",))
+
+    if mult in ("1:1", "M:M"):
+        ha = verb_row_length_histogram(a.verb, len(a.values))
+        hb = verb_row_length_histogram(b.verb, len(b.values))
+        if ha is None or hb is None:
+            return CardinalityEstimate.bounded(
+                lower=0, upper=na * nb, value=min(na, nb),
+                formula=f"Σ_L {e1}_L·{e2}_L  (mult {mult}: length-matched join)",
+                reasons=("a row-length distribution is not statically known for one operand's verb; "
+                         "[0, |A|·|B|] is the provable range",))
+        if a.separator != b.separator:
+            return CardinalityEstimate.bounded(
+                lower=0, upper=na * nb, value=None,
+                formula=f"Σ_L {e1}_L·{e2}_L  (mult {mult}: length-matched join)",
+                reasons=("exactly one operand carries FW_Separator, which weaves a glue token into "
+                         "its fw2_ rows and so changes their lengths; the two length spaces are no "
+                         "longer comparable statically",))
+        total = sum(cnt * hb.get(L, 0) for L, cnt in ha.items())
+        return CardinalityEstimate.exact(
+            total,
+            formula=f"Σ_L {e1}_L·{e2}_L = {total}  (mult {mult}: B rows matched to len(a))",
+            assumptions=("operand row-length distributions come from their declared verbs",))
+
+    return CardinalityEstimate.unknown(
+        formula=f"brace {first!r} with multiplicity {mult!r}",
+        reasons=(f"unrecognised multiplicity {mult!r}; expected one of 1:1 1:N M:1 M:M M:N",))
+
+
+def _terminal_braces(spec: "Spec") -> "list[tuple[str, str]]":
+    """(target, expr) for the braces that actually contribute rows to fw_final.
+
+    A brace whose target sheet is consumed as an OPERAND of another brace is an
+    intermediate result: its rows reach fw_final only through the join that
+    reads it, so counting it again would multiply the same table in twice.
+    """
+    braces = [(brace_target(row), c) for row in (getattr(spec, "seq_extra", ()) or ())
+              for c in row if _BRACE_RE.fullmatch(_first_line(c))]
+    consumed: "set[str]" = set()
+    for _t, c in braces:
+        f = brace_fields(c)
+        if f:
+            consumed.update({f[2], f[4]} - {""})
+    return [(t, c) for t, c in braces if t not in consumed]
+
+
+def _brace_targets_of(spec: "Spec") -> "set[str]":
+    """Sheets whose table a `seq_extra` brace overwrites."""
+    return {brace_target(row) for row in (getattr(spec, "seq_extra", ()) or ())
+            if any(_BRACE_RE.fullmatch(_first_line(c)) for c in row)} - {""}
+
+
+def brace_target(row: "Sequence[str]") -> str:
+    """The sheet a `seq_extra` brace row writes its joined result into.
+
+    Convention (and every shipped demo): the row's first cell is the target
+    sheet name. The brace OVERWRITES that sheet's table, so the target's own
+    placeholder values must not also be counted as a factor.
+    """
+    return str(row[0]).strip() if row else ""
 
 
 def estimate_core_combos(spec: "Spec") -> int:
-    """Approximate fw_final row count = product over the MANDATORY (non-excluded,
-    non-optional) slots of each slot's verb output. Cartes operands sized via the
-    referenced sheet. Approximate (ignores brace/join effects) — for explosion
-    awareness, NOT an exact count."""
+    """fw_final row count = product over the MANDATORY (non-excluded, non-optional)
+    slots of each slot's verb output, with any `seq_extra` brace replacing its
+    target sheet's contribution by the joined row count (`brace_cardinality`).
+    Cartes operands sized via the referenced sheet. Exact for closed-form verbs;
+    see `spec_cardinality_plan` for the per-stage confidence tiers."""
     sheet_n = {s.sheet: len(s.values) for s in spec.slots}
+    braces = _terminal_braces(spec)
+    targets = _brace_targets_of(spec)
     prod = 1
     for s in spec.slots:
         if any(f in s.flags for f in ("FW_Exclude", "FW_Heading", "FW_Optional")):
             continue
+        if s.sheet in targets:
+            continue                       # the brace OVERWRITES this sheet's table
         ops = verb_sheet_operands(s.verb)
         other = sheet_n.get(ops[0], 0) if ops else 0
         prod *= max(1, verb_output_count(s.verb, len(s.values), other))
+    for _t, c in braces:                   # ... and contributes the joined row count instead
+        est = brace_cardinality(c, spec)
+        if est.value:
+            prod *= max(1, est.value)
     return prod
 
 
 def optional_multiplier_cardinality(spec: "Spec") -> CardinalityEstimate:
     """EXACT cardinality of the FW_Optional expansion factor (STEP 9 action 3).
 
-    Each FW_Optional slot independently contributes "any of its values, OR
-    absent" — a closed-form `len(values) + 1` per slot, multiplied together.
+    Each FW_Optional slot independently contributes "any row of its RESULT
+    TABLE, OR absent" — `verb_output_count(verb, n) + 1` per slot, multiplied
+    together. Result rows, not declared values: Core materializes `fw_opt<size>`
+    from each optional sheet's result table, so `FW_Subsets` over 2 values
+    contributes 4+1 = 5 branches, not 2+1 = 3.
     Mirrors bundle/cli.py's `optional_factor` computation, but as a reusable,
     confidence-tagged Spec-level API (no behavioral change to that call site)."""
     opt_slots = [s for s in spec.slots if "FW_Optional" in s.flags]
@@ -428,9 +947,9 @@ def optional_multiplier_cardinality(spec: "Spec") -> CardinalityEstimate:
     factor = 1
     terms = []
     for s in opt_slots:
-        n = len(s.values) + 1                                # its values, OR absent
-        factor *= n
-        terms.append(f"({len(s.values)}+1 absent)[{s.sheet}]")
+        rows = verb_output_count(getattr(s, "verb", DEFAULT_VERB), len(s.values))  # RESULT ROWS
+        factor *= rows + 1                                   # ... OR absent
+        terms.append(f"({rows}+1 absent)[{s.sheet}]")
     return CardinalityEstimate.exact(
         factor, formula=" × ".join(terms),
         assumptions=("each FW_Optional slot independently toggles present/absent "
@@ -504,15 +1023,15 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
         est = verb_cardinality(s.verb, len(s.values), other)
         per_slot[s.sheet] = est
         if not any(f in s.flags for f in ("FW_Exclude", "FW_Heading", "FW_Optional")):
-            mandatory_estimates.append(est)
+            if s.sheet not in _brace_targets_of(spec):
+                mandatory_estimates.append(est)
 
     # seq_extra brace joiners (STEP 9 fix): a brace FW_(...) replaces its excluded
     # operands' contribution to fw_final with the JOINED result-table row count —
     # an UNKNOWN second-order effect that per-slot estimates can't see. Folding it
     # into the mandatory product is what stops a valid brace spec from collapsing
     # to a bogus "EXACT 1" (empty mandatory product) when both operands are excluded.
-    brace_estimates = [brace_cardinality(c) for cells in spec.seq_extra for c in cells
-                       if _BRACE_RE.fullmatch(_first_line(c))]
+    brace_estimates = [brace_cardinality(c, spec) for _t, c in _terminal_braces(spec)]
     mandatory_estimates += brace_estimates
 
     mandatory = _combine_product(
@@ -521,8 +1040,8 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
                 + (" × brace joiner row-count(s) (seq_extra)" if brace_estimates else ""),
         reasons=("matches estimate_core_combos's slot filter and Cartes operand sizing "
                  "(declared sheet size, not post-verb result-table size)",)
-                + (("seq_extra brace joiner(s) contribute their joined-result-table row count, "
-                    "which is UNKNOWN until Core runs — it cannot be folded in as an exact factor",)
+                + (("seq_extra brace joiner(s) replace their target sheet's factor with the "
+                    "joined-result-table row count, computed from the operands' declared verbs",)
                    if brace_estimates else ()))
 
     if not spec.constraints:
@@ -530,8 +1049,9 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
             mode=mandatory.mode, value=mandatory.value, lower=mandatory.lower, upper=mandatory.upper,
             formula="= mandatory (no constraints declared -> sieve is a no-op)")
     else:
+        exact_post = sieve_survival_cardinality(spec, mandatory)
         upper = mandatory.upper if mandatory.upper is not None else mandatory.value
-        post_sieve = CardinalityEstimate.bounded(
+        post_sieve = exact_post if exact_post is not None else CardinalityEstimate.bounded(
             lower=0, upper=upper if upper is not None else 0,
             value=upper, formula="[0, mandatory] (sieve predicate selectivity not evaluated)",
             reasons=(f"{len(spec.constraints)} constraint(s) declared; the sieve can remove "
@@ -1010,6 +1530,8 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
             if len(e) != 2:
                 raise ValueError(f"slot '{sheet}' group_replace entries must be [pattern, replacement], got {e!r}")
         group_replace = tuple((str(e[0]), str(e[1])) for e in gr_raw)
+        if is_raw:
+            check_raw_row_arity(sheet, verb, exp_vals, flags, name=name, strict=strict)
         slots.append(Slot(sheet=sheet,
                           key=s.get("key", sheet.lower()),
                           values=exp_vals, verb=verb, flags=flags,

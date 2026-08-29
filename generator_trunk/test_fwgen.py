@@ -162,13 +162,12 @@ def test_cardinality_plan_aggregates_stages_with_confidence():
         assert needle in rendered
 
 
-def test_cardinality_plan_propagates_brace_confidence_into_aggregates():
+def test_cardinality_plan_sizes_a_brace_join_exactly():
+    """A brace joins two RESULT tables whose sizes are closed-form, so the join
+    itself is closed-form. Both operands are FW_Exclude'd, so the brace is the
+    ONLY source of fw_final rows: the plan must report the joined count, neither
+    a bogus "EXACT 1" empty product nor an UNKNOWN it can actually compute."""
     M = fg.CardinalityMode
-
-    # Both A and B are FW_Exclude'd (brace operands) -> the per-slot mandatory
-    # filter sees nothing mandatory of its own; the brace joiner is the ONLY
-    # source of fw_final rows. Before the fix this collapsed to a bogus
-    # "EXACT 1" empty-product instead of reflecting the brace's UNKNOWN join.
     spec = fg.parse_spec({
         "slots": [{"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
                   {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
@@ -177,16 +176,128 @@ def test_cardinality_plan_propagates_brace_confidence_into_aggregates():
     }, "brace-plan")
     plan = fg.spec_cardinality_plan(spec)
 
-    assert plan.mandatory.mode == M.UNKNOWN, plan.mandatory
-    assert plan.mandatory.value is None
-    assert any("brace" in r for r in plan.mandatory.reasons)
-    assert "brace" in plan.mandatory.formula
+    # M:N pairs every A-row with every B-row: 2 x 2 = 4, and the JOINED target's
+    # own placeholder is NOT also counted (the brace overwrites that table).
+    assert plan.mandatory.mode == M.EXACT, plan.mandatory
+    assert plan.mandatory.value == 4, plan.mandatory
+    assert plan.final.value == 4
+    assert fg.estimate_core_combos(spec) == 4
 
-    # UNKNOWN propagates all the way through post-sieve/optional/final — never
-    # silently reported as an exact number.
-    assert plan.post_sieve.mode == M.UNKNOWN
-    assert plan.final.mode == M.UNKNOWN
-    assert plan.final.value is None
+    # length-matched multiplicities pair only equal-length rows
+    lenmatched = fg.parse_spec({
+        "slots": [{"sheet": "A", "verb": "FW_Subsets", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "B", "verb": "FW_Subsets", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "JOINED", "values": [" placeholder"]}],
+        "seq_extra": [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:M)"]],
+    }, "brace-1to1")
+    # FW_Subsets over 2 -> lengths {0:1, 1:2, 2:1}; Sum_L A_L*B_L = 1 + 4 + 1 = 6
+    assert fg.estimate_core_combos(lenmatched) == 6
+
+
+def test_group_cardinality_is_bounded_by_its_emissions_not_exact():
+    """FW_Group EMITS `verb applied twice` rows and then DISTINCTs them, and the
+    collision rate is a property of the data — README_CANONICAL_TRUTH.txt records
+    the same 16 subsets collapsing to 13 or 14 under two different orderings. So
+    the emission count is a provable ceiling and nothing below 1 is provable.
+
+    The measured point: FW_Subsets over 2 values gives 4 first-order rows, 2^4 =
+    16 emissions, and 6 distinct rows end to end. Note 6 > 4, so the first-order
+    count is NOT a bound in either direction — only the emission count is.
+    """
+    est = fg.group_cardinality("FW_Subsets", 2)
+    assert est.mode == fg.CardinalityMode.BOUNDED, est
+    assert (est.lower, est.upper) == (1, 16), est
+    # per this module's convention a BOUNDED estimate still carries a conservative
+    # point value (== upper); the MODE is what stops it being read as exact
+    assert est.value == est.upper
+    assert est.lower <= 6 <= est.upper, "must bound the measured 6"
+
+    # a group carrying FW_ReplaceRE can only collide further, never create rows
+    rewritten = fg.group_cardinality("FW_Subsets", 2, has_replace=True)
+    assert (rewritten.lower, rewritten.upper) == (1, 16)
+    assert any("ReplaceRE" in r for r in rewritten.reasons)
+
+
+def test_brace_over_a_grouped_operand_is_bounded_not_unknown():
+    """A grouped operand is not exactly sizable, but it IS bounded: the brace can
+    never produce more rows than the group's emission ceiling times the other
+    operand. Measured end to end for this shape: 12, ceiling 32."""
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "A", "verb": "FW_Subsets", "values": ["a1", "a2"],
+                   "flags": ["FW_Exclude"], "group_replace": [["zzz", "zzz"]]},
+                  {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "JOINED", "values": [" x"]}],
+        "seq_extra": [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]],
+    }, "grouped-brace")
+    plan = fg.spec_cardinality_plan(spec)
+    assert plan.mandatory.mode == fg.CardinalityMode.BOUNDED
+    assert plan.mandatory.upper == 32, plan.mandatory      # 16 emissions x 2
+    assert plan.mandatory.upper >= 12, "must bound the measured 12"
+
+
+def test_chained_braces_are_not_counted_twice():
+    """A brace whose target another brace CONSUMES is an intermediate result: its
+    rows reach fw_final only through the join that reads it."""
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
+                  {"sheet": "C", "values": ["c1", "c2", "c3"], "flags": ["FW_Exclude"]},
+                  {"sheet": "J1", "values": [" x"], "flags": ["FW_Exclude"]},
+                  {"sheet": "J2", "values": [" y"]}],
+        "seq_extra": [["J1", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"],
+                      ["J2", "FW_Reuse", "FW_(,,J1,,C,,,,M:N)"]],
+    }, "chained")
+    # (2x2) x 3 = 12 -- not 4 x 12 = 48
+    assert fg.estimate_core_combos(spec) == 12
+    assert fg.spec_cardinality_plan(spec).mandatory.mode == fg.CardinalityMode.EXACT
+
+
+def test_verb_rows_agrees_with_verb_output_count():
+    """`verb_rows` says WHICH rows, `verb_output_count` says HOW MANY; the sieve
+    pre-count is only sound while they agree."""
+    vals = ["v1", "v2", "v3"]
+    for verb in ("FW_Combi(1)", "FW_Combi(2)", "FW_Combi(all)", "FW_CombiR(2)",
+                 "FW_Permut", "FW_Permut(2)", "FW_PermutR(3)", "FW_Subsets",
+                 "FW_Subsets_EXACT(2)", "FW_Subsets_RANGE(1,2)", "FW_Subsets_BEFORE(2)",
+                 "FW_Subsets_AFTER(1)", "FW_Subsets_GIVEN(1,3)"):
+        assert len(fg.verb_rows(verb, vals)) == fg.verb_output_count(verb, len(vals)), verb
+
+
+def test_sieve_pre_count_is_exact_and_fails_soft():
+    """The post-sieve figure used to be an unusable [0, mandatory]. When the
+    product is closed-form and small, the bonds can simply be RUN in advance,
+    with the sieve's own predicate, giving the exact survivor count."""
+    spec = fg.parse_spec({
+        "slots": [{"sheet": "S1", "values": ["x", "y", "z"]},
+                  {"sheet": "S2", "values": ["x", "y", "z"]}],
+        "constraints": [{"id": "no_xx", "sets": {"S1": ["x"], "S2": ["x"]}, "polarity": "forbid"}],
+    }, "presieve")
+    plan = fg.spec_cardinality_plan(spec)
+    assert plan.mandatory.value == 9
+    assert plan.post_sieve.mode == fg.CardinalityMode.EXACT
+    assert plan.post_sieve.value == 8, plan.post_sieve      # only (x,x) removed
+
+    # a bond that references an FW_Optional sheet is DEFERRED by the sieve, so the
+    # pre-count must refuse rather than credit a removal fw_final never gets
+    deferred = fg.parse_spec({
+        "slots": [{"sheet": "S1", "values": ["x", "y", "z"]},
+                  {"sheet": "S2", "values": ["x", "y"], "flags": ["FW_Optional"]}],
+        "constraints": [{"id": "d", "sets": {"S1": ["x"], "S2": ["x"]}, "polarity": "forbid"}],
+    }, "deferred")
+    assert fg.spec_cardinality_plan(deferred).post_sieve.mode == fg.CardinalityMode.BOUNDED
+
+def test_cardinality_plan_propagates_unknown_into_aggregates():
+    """The safety property the brace case used to stand in for: an UNKNOWN
+    factor must reach mandatory/post-sieve/final and never be laundered into a
+    number. Asserted directly on the combiner so it stays true no matter which
+    individual estimators later become sizable."""
+    M = fg.CardinalityMode
+    unknown = fg.CardinalityEstimate.unknown(formula="opaque", reasons=("not statically sizable",))
+    combined = fg._combine_product([fg.CardinalityEstimate.exact(7, formula="C(7,1)"), unknown],
+                                   formula="product")
+    assert combined.mode == M.UNKNOWN
+    assert combined.value is None
+    assert any("UNKNOWN" in r for r in combined.reasons)
 
 
 def test_cardinality_plan_optional_and_sieve_are_bounded_not_overclaimed():

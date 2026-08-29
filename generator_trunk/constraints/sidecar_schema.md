@@ -131,8 +131,11 @@ right (`min`/`max` of ranks). See `docs/28_SECOND_ORDER_AXES_AND_NESTED_BONDS.md
 
 ### Gate (positional) — generalized to n-ary
 
-`pos` is the index of a placement in the assembled output sequence (slot order; an ordered
-`FW_Permut` sheet's array order *is* the sequence). For the *k* placements a bond selects:
+`pos` is the index of the **materialized axis** the placement came from, in `FW_Seq` slot order —
+*not* an index into a sheet's own values. Each sheet contributes **one position** however many
+values it selects, so every value of a multi-select sheet shares that sheet's `pos`, and two
+placements sharing a position are never paired (see *Ordering and `pos`* below). For the *k*
+placements a bond selects:
 
 | gate | meaning (k placements) | reduces (k=2) to |
 |---|---|---|
@@ -141,6 +144,40 @@ right (`min`/`max` of ranks). See `docs/28_SECOND_ORDER_AXES_AND_NESTED_BONDS.md
 | `{"within": N}` | a **window of N**: `max(pos) − min(pos) ≤ N` | `\|pos_x − pos_y\| ≤ N` |
 
 Two placements that share a position are never paired (a sheet at one slot is one placement).
+
+#### Ordering and `pos` — encode the sequence one slot per step
+
+Because `pos` counts axes, **a single `FW_Permut` sheet's internal order is invisible to a gate**:
+all of its values arrive at that sheet's one position, and the shared-position rule above then skips
+them. A bond can never say "this value came before that one *within* this sheet."
+
+To make an ordering addressable by a gate, give every step its own slot:
+
+```toml
+# NOT gateable: one sheet, one pos, the permutation's order is not visible to a bond
+[[slots]]
+sheet = "OPS"    verb = "FW_Permut"    values = ["a", "b", "c"]
+
+# gateable: three axes, three positions, so adjacency and windows mean what they say
+[[slots]]
+sheet = "STEP1"  verb = "FW_Combi(1)"  values = ["a", "b", "c"]
+[[slots]]
+sheet = "STEP2"  verb = "FW_Combi(1)"  values = ["a", "b", "c"]
+[[slots]]
+sheet = "STEP3"  verb = "FW_Combi(1)"  values = ["a", "b", "c"]
+```
+
+The second form draws `3^3` sequences **with repetition** (what `FW_PermutR(3)` would draw from one
+sheet) while keeping each step positionally addressable, so a bond such as
+
+```jsonc
+{"id":"no_b_right_after_a", "polarity":"forbid",
+ "sets":{"STEP1":["a"], "STEP2":["b"]}, "gate":{"adjacent":true}}
+```
+
+means exactly what it reads as. Note that with per-step slots the *sheets you name* already fix the
+positions; the gate is then a guard that states the intent and fails loudly if the slot order
+changes, rather than the sole carrier of the ordering.
 
 ### Arity
 

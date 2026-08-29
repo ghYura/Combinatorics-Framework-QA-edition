@@ -95,16 +95,18 @@ def test_synthetic_large_spec_classified_without_materialization():
 
 def test_unknown_final_count_never_collapses_to_zero_cost():
     M = CardinalityMode
-    # both brace operands excluded -> mandatory/final collapse to UNKNOWN
-    # (see fwgen STEP-9 fix); every resource dimension must say UNKNOWN too,
-    # never silently report 0.
-    spec = fg.parse_spec({
-        "slots": [{"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
-                  {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
-                  {"sheet": "JOINED", "values": [" x"]}],
-        "seq_extra": [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]],
-    }, "brace-resources")
-    plan = fg.spec_cardinality_plan(spec)
+    # An UNKNOWN final must make every resource dimension UNKNOWN too, never a
+    # silent 0. A brace used to be the convenient way to produce UNKNOWN; braces
+    # now carry a closed-form row count, so the plan is built directly -- the
+    # subject here is resource estimation, and it should not depend on which
+    # cardinality happens to be unsizable this month.
+    unknown = fg.CardinalityEstimate.unknown(
+        formula="opaque dimension", reasons=("not statically sizable",))
+    plan = fg.SpecCardinalityPlan(
+        raw_values={"A": 2}, per_slot={"A": unknown},
+        mandatory=unknown, post_sieve=unknown,
+        optional_multiplier=fg.CardinalityEstimate.exact(1, formula="1"),
+        final=unknown)
     assert plan.final.mode == M.UNKNOWN
 
     rp = estimate_resources(plan)

@@ -318,10 +318,17 @@ def _domain_by_sheet(spec) -> dict[str, list[str]]:
 
 
 def _optional_factor(spec) -> int:
+    # RESULT ROWS + 1 per optional slot, not declared values + 1: Core builds
+    # fw_opt<size> from each optional sheet's result table (see
+    # bundle/optional_contract._optional_slot_rows).
     factor = 1
     for slot in spec.slots:
         if "FW_Optional" in slot.flags:
-            factor *= len(slot.values) + 1
+            try:
+                rows = int(fg.verb_output_count(slot.verb, len(slot.values)))
+            except Exception:
+                rows = len(slot.values)
+            factor *= (rows if rows > 0 else len(slot.values)) + 1
     return factor
 
 

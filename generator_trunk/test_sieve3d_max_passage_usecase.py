@@ -99,7 +99,16 @@ class TestSieve3dMaxPassageUsecase(unittest.TestCase):
         plan = fg.spec_cardinality_plan(spec)
         self.assertEqual(plan.mandatory.value, 200)
         self.assertEqual(plan.optional_multiplier.value, 1)
-        self.assertEqual(plan.final.value, 200)
+        # The one bond forbids MODIFICATION="scale" (1 of its 2 values) against
+        # the single POLICY value, so it removes exactly half the product. The
+        # spec says so itself: "scaling is represented for classification and
+        # removed by the mandatory Bundle sieve before SUT execution."
+        # post-sieve used to sit at the conservative upper bound (== mandatory)
+        # because nothing evaluated the bond in advance; it is now computed by
+        # running the sieve's own predicate over the enumerated product.
+        self.assertEqual(plan.post_sieve.mode, fg.CardinalityMode.EXACT)
+        self.assertEqual(plan.post_sieve.value, 100)
+        self.assertEqual(plan.final.value, 100)
         self.assertEqual(len(spec.constraints), 1)
         self.assertEqual(spec.constraints[0]["id"],
                          "rigid_policy_forbids_scale")
