@@ -1,0 +1,137 @@
+title = "C12 - ordering encoded per position, so the sieve's bonds can speak about ORDER"
+note  = "A positional gate resolves pos per materialized AXIS, and two placements sharing a position are never paired - so a single FW_Permut sheet's internal order is invisible to a bond. Encoding the sequence as one slot per STEP gives every step its own pos, and adjacency/window gates become real ordering constraints. The bonds here MASK the shapes already explained (a refund immediately followed by a replay = F3; two refunds anywhere = F2) so the remaining budget goes to sequences that are not yet accounted for."
+args  = ["mode=c12_order_bonds"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    except Exception as _e:
+        trace.append(name + ":" + type(_e).__name__)
+    _probe()
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=30, proration="none")
+''']
+
+[[slots]]
+sheet = "STEP1"
+key   = "step1"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_do("tick", lambda: a.tick(30))', '_do("up", lambda: a.change_plan("team"))', '_do("refund", a.refund)', '_do("replay", a.replay)', '_do("coupon", lambda: a.apply_coupon("half"))']
+
+[[slots]]
+sheet = "STEP2"
+key   = "step2"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_do("tick", lambda: a.tick(30))', '_do("up", lambda: a.change_plan("team"))', '_do("refund", a.refund)', '_do("replay", a.replay)', '_do("coupon", lambda: a.apply_coupon("half"))']
+
+[[slots]]
+sheet = "STEP3"
+key   = "step3"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_do("tick", lambda: a.tick(30))', '_do("up", lambda: a.change_plan("team"))', '_do("refund", a.refund)', '_do("replay", a.replay)', '_do("coupon", lambda: a.apply_coupon("half"))']
+
+[[slots]]
+sheet = "STEP4"
+key   = "step4"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_do("tick", lambda: a.tick(30))', '_do("up", lambda: a.change_plan("team"))', '_do("refund", a.refund)', '_do("replay", a.replay)', '_do("coupon", lambda: a.apply_coupon("half"))']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+_ghost = sum(1 for _i in a.invoices if _i["reason"] == "replay")
+_v = len(_bad) + len(_trans)
+FW_VAR = 1 if _v else 0
+print("viol=%d inv=%s trans=%s ghost=%d trace=%s cash=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _ghost, ">".join(trace), a.cash_collected, len(a.invoices), FW_VAR))
+''']
+
+[[constraints]]
+id       = "mask_f3_refund_then_replay_12"
+polarity = "forbid"
+desc     = "a refund immediately followed by a webhook redelivery is the F3 shape, already explained"
+gate     = { adjacent = true }
+sets     = { STEP1 = ['_do("refund", a.refund)'], STEP2 = ['_do("replay", a.replay)'] }
+
+[[constraints]]
+id       = "mask_f3_refund_then_replay_23"
+polarity = "forbid"
+desc     = "a refund immediately followed by a webhook redelivery is the F3 shape, already explained"
+gate     = { adjacent = true }
+sets     = { STEP2 = ['_do("refund", a.refund)'], STEP3 = ['_do("replay", a.replay)'] }
+
+[[constraints]]
+id       = "mask_f3_refund_then_replay_34"
+polarity = "forbid"
+desc     = "a refund immediately followed by a webhook redelivery is the F3 shape, already explained"
+gate     = { adjacent = true }
+sets     = { STEP3 = ['_do("refund", a.refund)'], STEP4 = ['_do("replay", a.replay)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_12"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP1 = ['_do("refund", a.refund)'], STEP2 = ['_do("refund", a.refund)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_13"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP1 = ['_do("refund", a.refund)'], STEP3 = ['_do("refund", a.refund)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_14"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP1 = ['_do("refund", a.refund)'], STEP4 = ['_do("refund", a.refund)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_23"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP2 = ['_do("refund", a.refund)'], STEP3 = ['_do("refund", a.refund)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_24"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP2 = ['_do("refund", a.refund)'], STEP4 = ['_do("refund", a.refund)'] }
+
+[[constraints]]
+id       = "mask_f2_two_refunds_34"
+polarity = "forbid"
+desc     = "the same invoice refunded twice is the F2 shape, already explained"
+sets     = { STEP3 = ['_do("refund", a.refund)'], STEP4 = ['_do("refund", a.refund)'] }

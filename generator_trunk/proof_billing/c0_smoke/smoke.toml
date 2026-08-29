@@ -1,0 +1,57 @@
+title = "smoke - billing_core reachable from a generated candidate"
+note  = "Validates Core -> Reader -> py Executor with the frozen SUT on sys.path."
+args  = ["mode=billing_smoke"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+''']
+
+[[slots]]
+sheet = "PLAN"
+key   = "plan"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_plan = "basic"
+''','''_plan = "pro"
+''','''_plan = "team"
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan=_plan, cycle_days=30)
+''']
+
+[[slots]]
+sheet = "OPS"
+key   = "ops"
+verb  = "FW_Permut"
+raw   = true
+values = ['''a.tick(30); trace.append("tick30")
+''','''a.refund(); trace.append("refund")
+''','''a.replay(); trace.append("replay")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+FW_VAR = 1 if _bad else 0
+print("viol=%d inv=%s trace=%s plan=%s cash=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", ">".join(trace), _plan, a.cash_collected, FW_VAR))
+''']

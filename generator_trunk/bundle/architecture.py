@@ -185,7 +185,14 @@ LAYERS: "tuple[LayerSpec, ...]" = (
                # The flagship extends the demonstration SUT with versioned
                # defects and baseline constructions. Same layer: it proves an
                # engine property and imports no reference application.
-               "generator_trunk/flagship"),
+               "generator_trunk/flagship",
+               # Controlled comparative studies: a hash-frozen SUT, a classic
+               # baseline (including its parameter model run to exhaustion) and
+               # the campaigns that answer what the verbs reach and the model
+               # cannot. Same layer as the other demonstrations -- they prove an
+               # engine property end to end and import no reference application.
+               "generator_trunk/proof_billing",
+               "generator_trunk/proof_fulfilment"),
     ),
     LayerSpec(
         id=PRESENTATION,

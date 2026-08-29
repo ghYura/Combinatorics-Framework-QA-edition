@@ -1,0 +1,58 @@
+title = "C1 - lifecycle verbs with their own inverses, permuted WITH repetition"
+note  = "FW_PermutR(4) over {pause,resume,cancel,reactivate} = 4^4 = 256 op sequences. Every atom advances the clock by 3 days, so state that is captured at one moment and consumed at another becomes observable. Illegal calls are swallowed the way an at-least-once caller swallows them - the question is not 'is the error raised' but 'is the STATE still sound afterwards'."
+args  = ["mode=c1_lifecycle"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="basic", cycle_days=30)
+''']
+
+[[slots]]
+sheet = "LIFE"
+key   = "life"
+verb  = "FW_PermutR(4)"
+raw   = true
+values = [
+'''_do("pause", a.pause); a.tick(3)
+''',
+'''_do("resume", a.resume); a.tick(3)
+''',
+'''_do("cancel", a.cancel); a.tick(3)
+''',
+'''_do("react", a.reactivate); a.tick(3)
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+FW_VAR = 1 if _bad else 0
+print("viol=%d inv=%s trace=%s state=%s drift=%d cash=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", ">".join(trace), a.state, a.cycle_start - a.now, a.cash_collected, FW_VAR))
+''']

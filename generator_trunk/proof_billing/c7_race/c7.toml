@@ -1,0 +1,94 @@
+title = "C7 - the interleaving itself as a combinatorial axis"
+note  = "The Bootstrap pre-loads a high-contention multi-threaded harness; the candidate only declares WHICH concurrent scenario to run. Combined: workload shape x operation count x worker count x caller-side lock x contention barrier x the CPython thread-switch interval (1e-9 forces preemption at almost every bytecode). Oracle: the component's OWN accounting identity cash_collected == charges - refunds - chargebacks, which no legal interleaving may break, plus duplicate invoice ids from a racing counter. NOTE the SUT's docstring declares itself single-threaded; this campaign asks the deployment question anyway, because a webhook receiver behind four workers is how it will actually be run."
+args  = ["mode=c7_race"]
+
+runme = '''import runpy
+runpy.run_path("proof_billing/c7_race/runme.py", run_name="__main__")
+'''
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, "/tmp/fw_work")
+import c7_harness
+SUT = os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut")
+FW_VAR = 0
+_bar = False
+''']
+
+[[slots]]
+sheet = "SWITCH"
+key   = "switch"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_sw = "default"
+''','''_sw = "1e-9"
+sys.setswitchinterval(0.000000001)
+''']
+
+[[slots]]
+sheet = "MODE"
+key   = "mode"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_m = "tick"
+''','''_m = "mixed"
+''','''_m = "both"
+''']
+
+[[slots]]
+sheet = "NOPS"
+key   = "nops"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_n = 64
+''','''_n = 256
+''']
+
+[[slots]]
+sheet = "WORKERS"
+key   = "workers"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_w = 4
+''','''_w = 16
+''','''_w = 64
+''']
+
+[[slots]]
+sheet = "LOCK"
+key   = "lock"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_lock = False
+''','''_lock = True
+''']
+
+[[slots]]
+sheet = "BARRIER"
+key   = "barrier"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_bar = True
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_r = c7_harness.run(SUT, _m, _n, _w, _lock, _bar)
+_lost = _r["cash"] != _r["expected_cash"]
+_dupe = _r["uniqids"] != _r["invoices"]
+_v = (1 if _lost else 0) + (1 if _dupe else 0) + len(_r["errors"])
+FW_VAR = 1 if _v else 0
+print("viol=%d lost=%s dupe=%s crash=%s mode=%s n=%d w=%d lock=%s bar=%s sw=%s inv=%d audit=%s FW_VAR=%d" % (_v, _lost, _dupe, "+".join(_r["errors"]) or "none", _m, _n, _w, _lock, _bar, _sw, _r["invoices"], "+".join(_r["audit"]) or "none", FW_VAR))
+''']

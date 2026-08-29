@@ -1,0 +1,97 @@
+title = "C4 - concurrency as a combinatorial axis, differential against a serialized golden"
+note  = "The Bootstrap (RunMeFirstOnce) verifies the SUT hash, pre-loads a multi-threaded harness, and computes the SERIALIZED golden outcome once. Each candidate then runs the same operation multiset CONCURRENTLY and is a differential test against that golden. Combined axes: operation x multiset size x worker count x caller-side lock x contention barrier x the CPython thread-switch interval. The last one is the unusual move - the interpreter's own scheduling knob is a legitimate degree of freedom, and nothing in classic test design has a place to put it."
+args  = ["mode=c4_concurrent"]
+
+runme = '''import runpy
+runpy.run_path("proof_billing/c4_concurrent/runme.py", run_name="__main__")
+'''
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys, json
+sys.path.insert(0, "/tmp/fw_work")
+import c4_harness
+SUT = os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut")
+GOLD = json.load(open("/tmp/fw_work/c4_golden.json"))
+FW_VAR = 0
+_bar = False
+''']
+
+[[slots]]
+sheet = "SWITCH"
+key   = "switch"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_sw = "default"
+''','''_sw = "aggressive"
+sys.setswitchinterval(0.000001)
+''']
+
+[[slots]]
+sheet = "OP"
+key   = "op"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_op = "replay"
+''','''_op = "tick"
+''','''_op = "refund"
+''','''_op = "coupon"
+''','''_op = "change"
+''']
+
+[[slots]]
+sheet = "NOPS"
+key   = "nops"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_n = 2
+''','''_n = 4
+''','''_n = 8
+''']
+
+[[slots]]
+sheet = "WORKERS"
+key   = "workers"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_w = 2
+''','''_w = 4
+''','''_w = 8
+''']
+
+[[slots]]
+sheet = "LOCK"
+key   = "lock"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_lock = False
+''','''_lock = True
+''']
+
+[[slots]]
+sheet = "BARRIER"
+key   = "barrier"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_bar = True
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_r = c4_harness.run(SUT, _op, _n, _w, _lock, _bar)
+_g = GOLD["%s:%d" % (_op, _n)]
+_div = [_k for _k in ("cash", "invoices", "ledger") if _r[_k] != _g[_k]]
+FW_VAR = 1 if (_div or _r["errors"]) else 0
+print("viol=%d div=%s crash=%s op=%s n=%d w=%d lock=%s bar=%s sw=%s cash=%d gold=%d FW_VAR=%d" % (len(_div) + len(_r["errors"]), "+".join(_div) or "none", "+".join(_r["errors"]) or "none", _op, _n, _w, _lock, _bar, _sw, _r["cash"], _g["cash"], FW_VAR))
+''']

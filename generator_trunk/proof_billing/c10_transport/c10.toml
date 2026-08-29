@@ -1,0 +1,94 @@
+title = "C10 - transport pathology x functional scenario"
+note  = "A complex SUT does not receive its events cleanly. The webhook surface is at-least-once, so the transport can DELAY an event past a renewal boundary, REORDER it behind newer state, DUPLICATE it, DROP it, or hand over a DISTORTED identifier. Classic methodology puts those in a different discipline entirely - network/chaos simulation - and never multiplies them by the functional scenario. Here they are one space: FW_Permut over the functional operations x delivery lag x FW_Subsets over four transport pathologies (every combination of them, including none and all)."
+args  = ["mode=c10_transport"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    except Exception as _e:
+        trace.append(name + ":" + type(_e).__name__)
+    _probe()
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=30, proration="credit")
+_stale = a.ledger[-1]["event"]
+_cash0 = a.cash_collected
+''']
+
+[[slots]]
+sheet = "LAG"
+key   = "lag"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_lag = 0
+''','''_lag = 5
+''','''_lag = 45
+''']
+
+[[slots]]
+sheet = "FUNC"
+key   = "func"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("tick", lambda: a.tick(_lag))
+''',
+'''_do("up", lambda: a.change_plan("team"))
+''',
+'''_do("refund", a.refund)
+''',
+]
+
+[[slots]]
+sheet = "TRANSPORT"
+key   = "transport"
+verb  = "FW_Subsets"
+raw   = true
+values = [
+'''_do("DUP", a.replay)
+''',
+'''_do("STALE", lambda: a.replay(_stale))
+''',
+'''_do("DISTORT", lambda: a.replay("charge-9999"))
+''',
+'''_do("TRUNC", lambda: a.replay("charge"))
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+_ghost = sum(1 for _i in a.invoices if _i["reason"] == "replay")
+_v = len(_bad) + len(_trans) + _ghost
+FW_VAR = 1 if _v else 0
+print("viol=%d inv=%s trans=%s ghost=%d lag=%d trace=%s cash=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _ghost, _lag, ">".join(trace), a.cash_collected, len(a.invoices), FW_VAR))
+''']

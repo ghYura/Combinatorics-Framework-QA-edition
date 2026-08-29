@@ -1,0 +1,94 @@
+title = "C6 - the brace: TWO accounts crossed, differential against isolated replay"
+note  = "I can combine anything - including two separate SUT instances. A = every 2-of-3 op subset applied to account a; B = every 2-of-3 op subset applied to account b. Both operands are FW_Exclude'd and joined M:N by the brace, so fw_final is the 9-way cross of two INDEPENDENTLY COMPUTED result tables - a second-order space, not a cartesian of raw values. The oracle is differential: at the end, b's own operations are replayed on a pristine account and the two final states are compared. Any difference is cross-instance interference - shared module state, a class attribute, a global sequence. No classic technique tests two instances against each other; the model has one SUT."
+args  = ["mode=c6_brace"]
+
+seq_extra = [["JOINED", "FW_Reuse", "FW_(,,A,,B,,,,M:N)"]]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+bops = []
+def _mk(acct, name):
+    if name == "coupon":
+        return lambda: acct.apply_coupon("half")
+    if name == "tick":
+        return lambda: acct.tick(30)
+    return lambda: acct.change_plan("team")
+def _do(tag, acct, name):
+    try:
+        _mk(acct, name)(); trace.append(tag + ":" + name)
+    except B.BillingError:
+        trace.append(tag + ":" + name + "!")
+def _b(name):
+    bops.append(name); _do("b", b, name)
+a = B.BillingAccount(plan="pro", cycle_days=30, proration="credit")
+b = B.BillingAccount(plan="basic", cycle_days=30, proration="credit")
+''']
+
+[[slots]]
+sheet = "A"
+key   = "a"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''_do("a", a, "coupon")
+''',
+'''_do("a", a, "tick")
+''',
+'''_do("a", a, "up")
+''',
+]
+
+[[slots]]
+sheet = "B"
+key   = "b"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''_b("coupon")
+''',
+'''_b("tick")
+''',
+'''_b("up")
+''',
+]
+
+[[slots]]
+sheet = "JOINED"
+key   = "joined"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''pass  # the brace overwrites this sheet with the A x B join
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_ref = B.BillingAccount(plan="basic", cycle_days=30, proration="credit")
+for _n in bops:
+    try:
+        _mk(_ref, _n)()
+    except B.BillingError:
+        pass
+_got = (b.cash_collected, b.credit_balance, len(b.invoices), len(b.ledger))
+_exp = (_ref.cash_collected, _ref.credit_balance, len(_ref.invoices), len(_ref.ledger))
+_bad = sorted(set(a.audit()) | set(b.audit()))
+_leak = "yes" if _got != _exp else "no"
+FW_VAR = 1 if (_bad or _leak == "yes") else 0
+print("viol=%d inv=%s leak=%s trace=%s got=%s exp=%s FW_VAR=%d" % (len(_bad) + (1 if _leak == "yes" else 0), "+".join(_bad) or "none", _leak, ">".join(trace), _got, _exp, FW_VAR))
+''']

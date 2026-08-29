@@ -1,0 +1,85 @@
+title = "D2 - the brace: every pair of concurrent orders CROSSED with every pair of injected faults"
+note  = "Both operands are RESULT tables, not value sheets. MIX = FW_Combi(2) over three order submissions -> 3 computed pairs. FAULTS = FW_Combi(2) over four fault injections -> 6 computed pairs. The brace joins those two results M:N -> 18 scenarios, each one 'these two orders in flight, these two faults applied'. A flat cartesian cannot express this: the operands are themselves combinations, computed by earlier FW_Seq rows. This is the construct the first study never had a use for, because a single in-process class has no topology to compose."
+args  = ["mode=d2_brace"]
+
+seq_extra = [["JOINED", "FW_Reuse", "FW_(,,MIX,,FAULTS,,,,M:N)"]]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_fulfilment/sut"))
+import fulfilment as F
+FW_VAR = 0
+sched = []
+seen = set()
+def _probe():
+    for i in s.audit():
+        seen.add(i)
+def _m(tag, fn):
+    try:
+        fn(); sched.append(tag)
+    except Exception as _e:
+        sched.append(tag + ":" + type(_e).__name__)
+    _probe()
+s = F.System(timeout=3, compensate_order="release_first", retry=True)
+''']
+
+[[slots]]
+sheet = "MIX"
+key   = "mix"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''_m("o1", lambda: s.submit("o1", "widget", 2, 100))
+''',
+'''_m("o2", lambda: s.submit("o2", "doohickey", 1, 250))
+''',
+'''_m("o3", lambda: s.submit("o3", "gadget", 8, 400))
+''',
+]
+
+[[slots]]
+sheet = "FAULTS"
+key   = "faults"
+verb  = "FW_Combi(2)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''_m("dup", lambda: (s.deliver(0), s.duplicate(0)))
+''',
+'''_m("lifo", lambda: (s.deliver(-1), s.deliver(-1)))
+''',
+'''_m("crashpay", lambda: (s.deliver(0), s.restart("payment")))
+''',
+'''_m("timeout", lambda: (s.deliver(0), s.tick(5)))
+''',
+]
+
+[[slots]]
+sheet = "JOINED"
+key   = "joined"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['pass  # the brace overwrites this sheet with MIX x FAULTS']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''s.tick(12)
+s.drain()
+_bad = s.audit()
+_trans = sorted(seen - set(_bad))
+_sum = s.summary()
+FW_VAR = 1 if (_bad or _trans) else 0
+print("viol=%d inv=%s trans=%s sched=%s bal=%d shipped=%d inflight=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", ">".join(sched), _sum["balance"], _sum["shipped"], _sum["inflight"], FW_VAR))
+''']

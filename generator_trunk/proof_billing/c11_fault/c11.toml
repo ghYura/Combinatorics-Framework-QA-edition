@@ -1,0 +1,115 @@
+title = "C11 - transient fault INSIDE the operation x the retry that follows x order"
+note  = "Every production caller retries a transient failure. So the real contract is not 'the operation works' but 'the operation is ATOMIC: a failure partway through, followed by a retry, leaves the state as if it had succeeded exactly once'. This campaign injects a one-shot fault into a named internal function at a chosen call index, lets the caller retry exactly as it would in production, and permutes the functional order around it. Fault injection lives in resilience testing and retry semantics live in integration testing; neither discipline multiplies them by the functional sequence, and no covering array has a column for 'which internal function failed on which call'."
+args  = ["mode=c11_fault"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+_state = {"n": 0}
+def _arm(target, nth):
+    _state["n"] = 0
+    if target == "none":
+        return
+    if target == "_round":
+        _orig = B._round
+        def _patched(amount, mode):
+            _state["n"] += 1
+            if _state["n"] == nth:
+                raise RuntimeError("transient")
+            return _orig(amount, mode)
+        B._round = _patched
+    else:
+        _orig = getattr(B.BillingAccount, target)
+        def _patched(self, *args, **kw):
+            _state["n"] += 1
+            if _state["n"] == nth:
+                raise RuntimeError("transient")
+            return _orig(self, *args, **kw)
+        setattr(B.BillingAccount, target, _patched)
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    except Exception:
+        trace.append(name + "~")
+        try:
+            fn(); trace.append(name + "R")
+        except B.BillingError:
+            trace.append(name + "R!")
+        except Exception:
+            trace.append(name + "RX")
+    _probe()
+''']
+
+[[slots]]
+sheet = "TARGET"
+key   = "target"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_t = "none"
+''','''_t = "_round"
+''','''_t = "_discount_lines"
+''','''_t = "_charge_invoice"
+''']
+
+[[slots]]
+sheet = "NTH"
+key   = "nth"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_nth = 1
+''','''_nth = 2
+''','''_nth = 3
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=30, proration="credit")
+a.apply_coupon("loyal10")
+_arm(_t, _nth)
+''']
+
+[[slots]]
+sheet = "FUNC"
+key   = "func"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("tick", lambda: a.tick(30))
+''',
+'''_do("up", lambda: a.change_plan("team"))
+''',
+'''_do("refund", a.refund)
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+_v = len(_bad) + len(_trans)
+FW_VAR = 1 if _v else 0
+print("viol=%d inv=%s trans=%s target=%s nth=%d trace=%s plan=%s cash=%d credit=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _t, _nth, ">".join(trace), a.plan, a.cash_collected, a.credit_balance, len(a.invoices), FW_VAR))
+''']

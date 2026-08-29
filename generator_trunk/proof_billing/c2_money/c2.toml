@@ -1,0 +1,101 @@
+title = "C2 - money operations permuted x sudden events x a probe after EVERY step"
+note  = "Three unusual combinations at once. (1) FW_Permut over the money verbs: the SAME four operations in all 24 orders. (2) FW_Optional over three sudden events (refund / chargeback / webhook replay) - every subset of them co-fires, at their slot position, before the verdict. (3) the oracle is evaluated after EVERY step, not only at the end, so an invariant that breaks and then heals is still caught. Classic suites check the end state; a self-healing corruption is invisible to them."
+args  = ["mode=c2_money"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    _probe()
+''']
+
+[[slots]]
+sheet = "PROR"
+key   = "pror"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_pror = "credit"
+''','''_pror = "immediate"
+''','''_pror = "none"
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=30, proration=_pror)
+''']
+
+[[slots]]
+sheet = "OPS"
+key   = "ops"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("up", lambda: a.change_plan("team"))
+''',
+'''_do("down", lambda: a.change_plan("free"))
+''',
+'''_do("coupon", lambda: a.apply_coupon("half"))
+''',
+'''_do("tick30", lambda: a.tick(30))
+''',
+]
+
+[[slots]]
+sheet = "SUD_REFUND"
+key   = "sud_refund"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("REFUND", a.refund)
+''']
+
+[[slots]]
+sheet = "SUD_CHARGEBACK"
+key   = "sud_chargeback"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("CHARGEBACK", a.chargeback)
+''']
+
+[[slots]]
+sheet = "SUD_REPLAY"
+key   = "sud_replay"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("REPLAY", a.replay)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+FW_VAR = 1 if (_bad or _trans) else 0
+print("viol=%d inv=%s trans=%s pror=%s trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
+''']

@@ -1,0 +1,124 @@
+title = "C5 flagship - combine EVERYTHING: config x order x mid-flight config mutation x sudden events x probe-after-every-step"
+note  = "The greedy campaign. Six degrees of freedom of five different KINDS multiplied together: (1) three static config axes; (2) FW_Permut over four money verbs - the same operations in all 24 orders; (3) FW_Subsets over two MID-FLIGHT CONFIG MUTATIONS - a feature flag flipped while the account is live, which is how config actually changes in production and which no test model represents; (4) FW_Optional over two sudden events; (5) an oracle evaluated after EVERY step so self-healing corruption is caught; (6) cycle_days=7 so proration fractions stop being exact and the rounding mode starts to matter."
+args  = ["mode=c5_flagship"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    _probe()
+''']
+
+[[slots]]
+sheet = "PROR"
+key   = "pror"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_pror = "credit"
+''','''_pror = "immediate"
+''','''_pror = "none"
+''']
+
+[[slots]]
+sheet = "ROUND"
+key   = "round"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_round = "half_up"
+''','''_round = "floor"
+''','''_round = "bankers"
+''']
+
+[[slots]]
+sheet = "CYCLE"
+key   = "cycle"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_cycle = 7
+''','''_cycle = 30
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=_cycle, proration=_pror, rounding=_round)
+''']
+
+[[slots]]
+sheet = "OPS"
+key   = "ops"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("up", lambda: a.change_plan("team"))
+''',
+'''_do("coupon", lambda: a.apply_coupon("half"))
+''',
+'''_do("tick", lambda: a.tick(4))
+''',
+'''_do("down", lambda: a.change_plan("basic"))
+''',
+]
+
+[[slots]]
+sheet = "FLIP"
+key   = "flip"
+verb  = "FW_Subsets"
+raw   = true
+values = [
+'''a.proration = "immediate"; trace.append("FLIP_pror")
+''',
+'''a.rounding = "bankers"; trace.append("FLIP_round")
+''',
+]
+
+[[slots]]
+sheet = "SUD_REPLAY"
+key   = "sud_replay"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("REPLAY", a.replay)
+''']
+
+[[slots]]
+sheet = "SUD_CB"
+key   = "sud_cb"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("CHARGEBACK", a.chargeback)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_do("settle", lambda: a.tick(_cycle))
+_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+FW_VAR = 1 if (_bad or _trans) else 0
+print("viol=%d inv=%s trans=%s pror=%s round=%s cycle=%d trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, _round, _cycle, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
+''']

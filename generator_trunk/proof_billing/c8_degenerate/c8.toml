@@ -1,0 +1,89 @@
+title = "C8 - the degenerate call: arguments a test designer never bothers to pass"
+note  = "Every classic suite calls the API the way the use cases describe it. The API accepts more than that. Combined here: change_plan to the plan already active (a no-op the caller believes is free); subscribe on an ALREADY active account; tick(0) and tick(-1); refund by an explicit invoice id rather than the convenience default; apply_coupon('none'). FW_Permut puts all 24 orders of the four principal degenerate calls against each other, FW_Subsets adds every combination of two more, and the oracle runs after every step. A degenerate call is not a bad input to be rejected - it is a legal call whose SIDE EFFECT nobody has priced."
+args  = ["mode=c8_degenerate"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    except Exception as _e:
+        trace.append(name + ":" + type(_e).__name__)
+    _probe()
+''']
+
+[[slots]]
+sheet = "PROR"
+key   = "pror"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_pror = "credit"
+''','''_pror = "immediate"
+''','''_pror = "none"
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=30, proration=_pror)
+_paid0 = a.cash_collected
+''']
+
+[[slots]]
+sheet = "OPS"
+key   = "ops"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("same_plan", lambda: a.change_plan("pro"))
+''',
+'''_do("resubscribe", lambda: a.subscribe("pro"))
+''',
+'''_do("tick0", lambda: a.tick(0))
+''',
+'''_do("refund_id1", lambda: a.refund(1))
+''',
+]
+
+[[slots]]
+sheet = "EXTRA"
+key   = "extra"
+verb  = "FW_Subsets"
+raw   = true
+values = [
+'''_do("coupon_none", lambda: a.apply_coupon("none"))
+''',
+'''_do("tick_neg", lambda: a.tick(-1))
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+FW_VAR = 1 if (_bad or _trans) else 0
+print("viol=%d inv=%s trans=%s pror=%s trace=%s credit=%d cash=%d ninv=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, ">".join(trace), a.credit_balance, a.cash_collected, len(a.invoices), FW_VAR))
+''']

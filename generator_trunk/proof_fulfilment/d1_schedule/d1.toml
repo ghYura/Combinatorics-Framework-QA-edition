@@ -1,0 +1,94 @@
+title = "D1 - the delivery schedule as a combinatorial object"
+note  = "In a deterministic simulation the message schedule is data, so it can be enumerated. FW_PermutR(4) over four scheduler moves (FIFO deliver, LIFO deliver, at-least-once redelivery, timeout tick) gives 4^4 = 256 interleavings WITH repetition; FW_Optional injects service restarts that wipe the in-memory idempotency set while persisted rows survive - which is what a real process restart does. The oracle is eight saga invariants over money, stock and shipment."
+args  = ["mode=d1_schedule"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_fulfilment/sut"))
+import fulfilment as F
+FW_VAR = 0
+sched = []
+seen = set()
+def _probe():
+    for i in s.audit():
+        seen.add(i)
+def _m(tag, fn):
+    try:
+        fn(); sched.append(tag)
+    except Exception as _e:
+        sched.append(tag + ":" + type(_e).__name__)
+    _probe()
+''']
+
+[[slots]]
+sheet = "COMP"
+key   = "comp"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_comp = "release_first"
+''','''_comp = "void_first"
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''s = F.System(timeout=3, compensate_order=_comp, retry=True)
+s.submit("o1", "widget", 2, 100)
+s.submit("o2", "doohickey", 1, 250)
+''']
+
+[[slots]]
+sheet = "SCHED"
+key   = "sched"
+verb  = "FW_PermutR(4)"
+raw   = true
+values = [
+'''_m("fifo", lambda: s.deliver(0))
+''',
+'''_m("lifo", lambda: s.deliver(-1))
+''',
+'''_m("dup", lambda: s.duplicate(0))
+''',
+'''_m("tick", lambda: s.tick(4))
+''',
+]
+
+[[slots]]
+sheet = "CRASH_PAY"
+key   = "crash_pay"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['_m("CRASH_pay", lambda: s.restart("payment"))']
+
+[[slots]]
+sheet = "CRASH_INV"
+key   = "crash_inv"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['_m("CRASH_inv", lambda: s.restart("inventory"))']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''s.tick(10)
+s.drain()
+_bad = s.audit()
+_trans = sorted(seen - set(_bad))
+_sum = s.summary()
+FW_VAR = 1 if (_bad or _trans) else 0
+print("viol=%d inv=%s trans=%s comp=%s sched=%s bal=%d shipped=%d inflight=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _comp, ">".join(sched), _sum["balance"], _sum["shipped"], _sum["inflight"], FW_VAR))
+''']

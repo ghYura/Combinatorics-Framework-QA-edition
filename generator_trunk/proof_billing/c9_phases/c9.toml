@@ -1,0 +1,131 @@
+title = "C9 - crossing the phases nobody crosses: functional x stress x chaos"
+note  = "Functional QA, performance QA and resilience/chaos are three separate phases in every classic methodology - different teams, different tools, different reports, never multiplied together. Here they are ONE space. Functional: FW_Permut over the money verbs. Stress: a billing horizon of 1 / 120 / 1200 cycles, delivered as one burst or as N separate ticks (same elapsed time, different code path). Chaos: FW_Optional injects a PROCESS RESTART mid-sequence - state is persisted the way a real store persists it (the declared columns) and rebuilt, which is exactly how a production restart behaves - and a second FW_Optional fires a webhook redelivery afterwards. A bug that needs 'long-running AND restarted AND then redelivered' has no home in any single phase."
+args  = ["mode=c9_phases"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys, time
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_billing/sut"))
+import billing_core as B
+FW_VAR = 0
+trace = []
+seen = set()
+def _probe():
+    for i in a.audit():
+        seen.add(i)
+def _do(name, fn):
+    try:
+        fn(); trace.append(name)
+    except B.BillingError:
+        trace.append(name + "!")
+    except Exception as _e:
+        trace.append(name + ":" + type(_e).__name__)
+    _probe()
+def _restart(acct):
+    # A persistence layer stores the DECLARED columns. Private bookkeeping
+    # (leading underscore) is not part of the schema, so it does not come back.
+    keep = dict((k, v) for k, v in acct.__dict__.items() if not k.startswith("_"))
+    fresh = B.BillingAccount(plan=acct.plan, cycle_days=acct.cycle_days,
+                             proration=acct.proration, rounding=acct.rounding)
+    fresh.__dict__.update(keep)
+    return fresh
+''']
+
+[[slots]]
+sheet = "ROUND"
+key   = "round"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_round = "half_up"
+''','''_round = "floor"
+''','''_round = "bankers"
+''']
+
+[[slots]]
+sheet = "HORIZON"
+key   = "horizon"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_h = 1
+''','''_h = 120
+''','''_h = 1200
+''']
+
+[[slots]]
+sheet = "SHAPE"
+key   = "shape"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_shape = "burst"
+''','''_shape = "steady"
+''']
+
+[[slots]]
+sheet = "BUILD"
+key   = "build"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''a = B.BillingAccount(plan="pro", cycle_days=7, proration="credit", rounding=_round)
+_t0 = time.time()
+def _age():
+    if _shape == "burst":
+        a.tick(7 * _h)
+    else:
+        for _i in range(_h):
+            a.tick(7)
+''']
+
+[[slots]]
+sheet = "OPS"
+key   = "ops"
+verb  = "FW_Permut"
+raw   = true
+values = [
+'''_do("age", _age)
+''',
+'''_do("coupon", lambda: a.apply_coupon("loyal10"))
+''',
+'''_do("up", lambda: a.change_plan("team"))
+''',
+]
+
+[[slots]]
+sheet = "CHAOS_RESTART"
+key   = "chaos_restart"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''a = _restart(a); trace.append("RESTART")
+_probe()
+''']
+
+[[slots]]
+sheet = "CHAOS_REPLAY"
+key   = "chaos_replay"
+verb  = "FW_Combi(1)"
+flags = ["FW_Optional"]
+raw   = true
+values = ['''_do("REPLAY", a.replay)
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = a.audit()
+_trans = sorted(seen - set(_bad))
+_ids = [_i["id"] for _i in a.invoices]
+_dupe = len(_ids) != len(set(_ids))
+_ms = (time.time() - _t0) * 1000.0
+_v = len(_bad) + len(_trans) + (1 if _dupe else 0)
+FW_VAR = 1 if _v else 0
+print("viol=%d inv=%s trans=%s dupeids=%s round=%s h=%d shape=%s trace=%s ninv=%d ms=%.0f FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _dupe, _round, _h, _shape, ">".join(trace), len(a.invoices), _ms, FW_VAR))
+''']
