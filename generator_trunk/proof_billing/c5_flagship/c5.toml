@@ -120,5 +120,5 @@ values = ['''_do("settle", lambda: a.tick(_cycle))
 _bad = a.audit()
 _trans = sorted(seen - set(_bad))
 FW_VAR = 1 if (_bad or _trans) else 0
-print("viol=%d inv=%s trans=%s pror=%s round=%s cycle=%d trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, _round, _cycle, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
+print("app=c5 viol=%d inv=%s trans=%s pror=%s round=%s cycle=%d trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, _round, _cycle, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
 ''']

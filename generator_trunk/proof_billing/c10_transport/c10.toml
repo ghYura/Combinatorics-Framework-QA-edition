@@ -90,5 +90,5 @@ _trans = sorted(seen - set(_bad))
 _ghost = sum(1 for _i in a.invoices if _i["reason"] == "replay")
 _v = len(_bad) + len(_trans) + _ghost
 FW_VAR = 1 if _v else 0
-print("viol=%d inv=%s trans=%s ghost=%d lag=%d trace=%s cash=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _ghost, _lag, ">".join(trace), a.cash_collected, len(a.invoices), FW_VAR))
+print("app=c10 viol=%d inv=%s trans=%s ghost=%d lag=%d trace=%s cash=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _ghost, _lag, ">".join(trace), a.cash_collected, len(a.invoices), FW_VAR))
 ''']

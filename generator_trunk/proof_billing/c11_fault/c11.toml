@@ -111,5 +111,5 @@ values = ['''_bad = a.audit()
 _trans = sorted(seen - set(_bad))
 _v = len(_bad) + len(_trans)
 FW_VAR = 1 if _v else 0
-print("viol=%d inv=%s trans=%s target=%s nth=%d trace=%s plan=%s cash=%d credit=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _t, _nth, ">".join(trace), a.plan, a.cash_collected, a.credit_balance, len(a.invoices), FW_VAR))
+print("app=c11 viol=%d inv=%s trans=%s target=%s nth=%d trace=%s plan=%s cash=%d credit=%d ninv=%d FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _t, _nth, ">".join(trace), a.plan, a.cash_collected, a.credit_balance, len(a.invoices), FW_VAR))
 ''']

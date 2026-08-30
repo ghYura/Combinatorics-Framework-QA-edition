@@ -54,5 +54,5 @@ verb  = "FW_Combi(1)"
 raw   = true
 values = ['''_bad = a.audit()
 FW_VAR = 1 if _bad else 0
-print("viol=%d inv=%s trace=%s state=%s drift=%d cash=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", ">".join(trace), a.state, a.cycle_start - a.now, a.cash_collected, FW_VAR))
+print("app=c1 viol=%d inv=%s trace=%s state=%s drift=%d cash=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", ">".join(trace), a.state, a.cycle_start - a.now, a.cash_collected, FW_VAR))
 ''']

@@ -90,5 +90,5 @@ _lost = _r["cash"] != _r["expected_cash"]
 _dupe = _r["uniqids"] != _r["invoices"]
 _v = (1 if _lost else 0) + (1 if _dupe else 0) + len(_r["errors"])
 FW_VAR = 1 if _v else 0
-print("viol=%d lost=%s dupe=%s crash=%s mode=%s n=%d w=%d lock=%s bar=%s sw=%s inv=%d audit=%s FW_VAR=%d" % (_v, _lost, _dupe, "+".join(_r["errors"]) or "none", _m, _n, _w, _lock, _bar, _sw, _r["invoices"], "+".join(_r["audit"]) or "none", FW_VAR))
+print("app=c7 viol=%d lost=%s dupe=%s crash=%s mode=%s n=%d w=%d lock=%s bar=%s sw=%s inv=%d audit=%s FW_VAR=%d" % (_v, _lost, _dupe, "+".join(_r["errors"]) or "none", _m, _n, _w, _lock, _bar, _sw, _r["invoices"], "+".join(_r["audit"]) or "none", FW_VAR))
 ''']

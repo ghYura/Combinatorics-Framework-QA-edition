@@ -127,5 +127,5 @@ _dupe = len(_ids) != len(set(_ids))
 _ms = (time.time() - _t0) * 1000.0
 _v = len(_bad) + len(_trans) + (1 if _dupe else 0)
 FW_VAR = 1 if _v else 0
-print("viol=%d inv=%s trans=%s dupeids=%s round=%s h=%d shape=%s trace=%s ninv=%d ms=%.0f FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _dupe, _round, _h, _shape, ">".join(trace), len(a.invoices), _ms, FW_VAR))
+print("app=c9 viol=%d inv=%s trans=%s dupeids=%s round=%s h=%d shape=%s trace=%s ninv=%d ms=%.0f FW_VAR=%d" % (_v, "+".join(_bad) or "none", "+".join(_trans) or "none", _dupe, _round, _h, _shape, ">".join(trace), len(a.invoices), _ms, FW_VAR))
 ''']

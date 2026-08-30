@@ -93,5 +93,5 @@ values = ['''_r = c4_harness.run(SUT, _op, _n, _w, _lock, _bar)
 _g = GOLD["%s:%d" % (_op, _n)]
 _div = [_k for _k in ("cash", "invoices", "ledger") if _r[_k] != _g[_k]]
 FW_VAR = 1 if (_div or _r["errors"]) else 0
-print("viol=%d div=%s crash=%s op=%s n=%d w=%d lock=%s bar=%s sw=%s cash=%d gold=%d FW_VAR=%d" % (len(_div) + len(_r["errors"]), "+".join(_div) or "none", "+".join(_r["errors"]) or "none", _op, _n, _w, _lock, _bar, _sw, _r["cash"], _g["cash"], FW_VAR))
+print("app=c4 viol=%d div=%s crash=%s op=%s n=%d w=%d lock=%s bar=%s sw=%s cash=%d gold=%d FW_VAR=%d" % (len(_div) + len(_r["errors"]), "+".join(_div) or "none", "+".join(_r["errors"]) or "none", _op, _n, _w, _lock, _bar, _sw, _r["cash"], _g["cash"], FW_VAR))
 ''']

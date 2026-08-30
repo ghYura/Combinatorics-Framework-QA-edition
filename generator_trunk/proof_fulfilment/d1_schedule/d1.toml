@@ -90,5 +90,5 @@ _bad = s.audit()
 _trans = sorted(seen - set(_bad))
 _sum = s.summary()
 FW_VAR = 1 if (_bad or _trans) else 0
-print("viol=%d inv=%s trans=%s comp=%s sched=%s bal=%d shipped=%d inflight=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _comp, ">".join(sched), _sum["balance"], _sum["shipped"], _sum["inflight"], FW_VAR))
+print("app=d1 viol=%d inv=%s trans=%s comp=%s sched=%s bal=%d shipped=%d inflight=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _comp, ">".join(sched), _sum["balance"], _sum["shipped"], _sum["inflight"], FW_VAR))
 ''']

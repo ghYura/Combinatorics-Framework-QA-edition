@@ -97,5 +97,5 @@ raw   = true
 values = ['''_bad = a.audit()
 _trans = sorted(seen - set(_bad))
 FW_VAR = 1 if (_bad or _trans) else 0
-print("viol=%d inv=%s trans=%s pror=%s trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
+print("app=c2 viol=%d inv=%s trans=%s pror=%s trace=%s cash=%d credit=%d FW_VAR=%d" % (len(_bad) + len(_trans), "+".join(_bad) or "none", "+".join(_trans) or "none", _pror, ">".join(trace), a.cash_collected, a.credit_balance, FW_VAR))
 ''']

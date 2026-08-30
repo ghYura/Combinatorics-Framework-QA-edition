@@ -90,5 +90,5 @@ _exp = (_ref.cash_collected, _ref.credit_balance, len(_ref.invoices), len(_ref.l
 _bad = sorted(set(a.audit()) | set(b.audit()))
 _leak = "yes" if _got != _exp else "no"
 FW_VAR = 1 if (_bad or _leak == "yes") else 0
-print("viol=%d inv=%s leak=%s trace=%s got=%s exp=%s FW_VAR=%d" % (len(_bad) + (1 if _leak == "yes" else 0), "+".join(_bad) or "none", _leak, ">".join(trace), _got, _exp, FW_VAR))
+print("app=c6 viol=%d inv=%s leak=%s trace=%s got=%s exp=%s FW_VAR=%d" % (len(_bad) + (1 if _leak == "yes" else 0), "+".join(_bad) or "none", _leak, ">".join(trace), _got, _exp, FW_VAR))
 ''']
