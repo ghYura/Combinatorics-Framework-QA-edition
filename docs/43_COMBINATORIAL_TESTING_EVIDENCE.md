@@ -12,15 +12,45 @@
 
 ## 1. The claim, and what would falsify it
 
-> A design expressed in these verbs reaches defects that a parameter model **cannot express**, at
-> any sampling strength.
+> A design expressed in these verbs reaches defects that a conventional parameter model **cannot
+> express** — not at 2-way, not at 6-way, not at complete enumeration of that model.
 
-The weak version of that claim — "combinatorial testing found more bugs" — is not worth making. Any
-method finds more bugs when it runs more cases. The claim is falsified if a larger sample of the
-classic model finds what the verbs found.
+Two phrasings of this are commonly offered and both are worse than the one above.
 
-So the study did not compare 24 pairwise cases against eleven thousand candidates. It **exhausted
-the classic model**.
+**"It finds more defects than pairwise."** Not worth making. Every method finds more when it runs
+more cases; that is an argument about sample size, and it is answered by raising the strength.
+
+**"Pairwise cannot find these."** True here, but it points at the wrong thing and invites the wrong
+reading. The limitation is not a property of a covering array's *strength* — it is a property of the
+**model** the array samples. Naming pairwise suggests raising t would help. It does not.
+
+So the claim is falsified if any sampling of the classic model — of any size, up to and including
+all of it — reaches what the verbs reached. The study therefore did not compare 24 pairwise cases
+against eleven thousand candidates. It **exhausted the classic model** and compared that.
+
+### The honest boundary of the claim
+
+The limit is **practical, not information-theoretic**. Nothing forbids a determined modeller from
+encoding order as a parameter — declare `operation_order` with n! values and a covering array will
+happily sample it.
+
+But at that point the parameter carries 40,320 values for eight operations, the array's economics
+collapse, you must already know which orderings matter, and repetition and interleaving multiply it
+again. You are now constructing the combinatorial space by hand — which is the work the verbs do for
+you — and it has stopped being a covering array in any useful sense.
+
+So the precise claim is about *the kind of parameter model people actually build*: one whose
+parameters are independent value-axes, with no column for "this happened twice", "these happened in
+this order", or "this fired between those two". Demonstrating the gap by exhaustion is what removes
+sampling from the argument entirely.
+
+### And pairwise is not the loser here
+
+The same study's covering array found two genuine defects — a redelivery re-executing a refund, and
+a mid-cycle upgrade crediting at the wrong price — for 24 cases and almost no modelling effort. That
+is a good return. Pairwise reaches *value*-shaped defects cheaply; these verbs reach *shape*-shaped
+ones. The result below is a statement about coverage of a different axis, not about one technique
+defeating another.
 
 ## 2. The decisive control
 
@@ -57,7 +87,9 @@ candidate is a generated program rather than a filled-in row of parameters. Four
 | **what is combined** | parameter values | fragments of a program | all of the above |
 
 A parameter model has no column for "this operation happened twice", "these happened in this
-order", or "this fired *between* those two". Not a small column — no column.
+order", or "this fired *between* those two" — not a small column, no column. As §1 notes, one can
+always be *manufactured* by declaring a parameter whose values enumerate orderings; what cannot be
+manufactured is doing so without hand-building the very space the verbs generate.
 
 ## 4. Three systems, three shapes of evidence
 
