@@ -28,21 +28,33 @@ So the claim is falsified if any sampling of the classic model — of any size, 
 all of it — reaches what the verbs reached. The study therefore did not compare 24 pairwise cases
 against eleven thousand candidates. It **exhausted the classic model** and compared that.
 
-### The honest boundary of the claim
+### The objection worth answering, and why it fails
 
-The limit is **practical, not information-theoretic**. Nothing forbids a determined modeller from
-encoding order as a parameter — declare `operation_order` with n! values and a covering array will
-happily sample it.
+The standing objection is: *a good enough modeller could encode any of this as a parameter.* It
+fails in three distinct ways, and they are worth separating because only the first is about
+cleverness.
 
-But at that point the parameter carries 40,320 values for eight operations, the array's economics
-collapse, you must already know which orderings matter, and repetition and interleaving multiply it
-again. You are now constructing the combinatorial space by hand — which is the work the verbs do for
-you — and it has stopped being a covering array in any useful sense.
+**Some of it is not an input property at all.** One finding is an invariant that breaks and then
+**heals** before the run ends. Measured on the frozen SUT: `['I8']` after the change, `['I8']` after
+the first renewal, `clean` after the second, `clean` at the end. No combination of inputs reaches
+that defect, because the defect is not in the inputs — it is in *where the oracle stands*. A
+parameter model asserts at the end; every strength of it, and complete enumeration of it, asserts at
+the end. At a 1,200-cycle horizon this was visible at the end in **zero** candidates and caught
+mid-run in 162. That gap is absolute, not economic.
 
-So the precise claim is about *the kind of parameter model people actually build*: one whose
-parameters are independent value-axes, with no column for "this happened twice", "these happened in
-this order", or "this fired between those two". Demonstrating the gap by exhaustion is what removes
-sampling from the argument entirely.
+**Encoding the rest dissolves the thing doing the encoding.** Order can be made a parameter —
+declare `operation_order` and enumerate its values. But that parameter carries n! values, and
+repetition and interleaving multiply it again. You are no longer sampling a model of independent
+axes; you are hand-writing the combinatorial space itself and calling the result a parameter. That
+is not a rival model that also reaches these defects — it is the framework's job, done manually and
+without its counting, budgeting or pruning.
+
+**And it is circular where it matters.** To encode a shape you must already know the shape. A
+`refund_count = 0|1|2` parameter finds the double-refund defect only if someone suspected that
+refunding twice was interesting. The exhaustion control measures precisely the case where nobody
+suspected: a competent engineer's model, built from the specification rather than from the answer,
+run to completion. It reached two defects of ten. That is the measurement — not an argument about
+what a model could contain if it had been told what to contain.
 
 ### And pairwise is not the loser here
 
@@ -87,9 +99,10 @@ candidate is a generated program rather than a filled-in row of parameters. Four
 | **what is combined** | parameter values | fragments of a program | all of the above |
 
 A parameter model has no column for "this operation happened twice", "these happened in this
-order", or "this fired *between* those two" — not a small column, no column. As §1 notes, one can
-always be *manufactured* by declaring a parameter whose values enumerate orderings; what cannot be
-manufactured is doing so without hand-building the very space the verbs generate.
+order", or "this fired *between* those two" — not a small column, no column. A column can be
+*manufactured* by enumerating the space as parameter values (§1), but only by hand-building what the
+verbs generate, and only for a shape already suspected. For an observation-time defect not even that
+works: there is no input to encode.
 
 ## 4. Three systems, three shapes of evidence
 
