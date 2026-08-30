@@ -302,10 +302,13 @@ def verb_output_count(verb: str, n: int, other_n: int = 0) -> int:
             return sum(n ** k for k in range(1, n + 1)) or 1
         return n ** _arg()
     if v.startswith("FW_Permut"):
-        if re.search(r"\(\d+\)", v):
-            k = _arg()
-            return math.perm(n, k) if 0 <= k <= n else 1
-        return math.factorial(n) or 1                       # incl. multiset (Core streams all n!)
+        # MEASURED, not assumed: the Core's PermutationsSimpleG takes no k --
+        # its constructors are (List, boolean) and (List, boolean, boolean) --
+        # so FW_Permut(k) emits the FULL n! permutations and the k is inert.
+        # Verified end to end: FW_Permut(2) over 4 values produced fw_final = 24,
+        # not P(4,2) = 12. Reporting math.perm(n, k) here under-states the space,
+        # which is the direction a budget gate must never be wrong in.
+        return math.factorial(n) or 1                       # k-perms, plain and multiset alike
     if v.startswith("FW_Subsets_"):
         sizes = [int(x) for x in re.findall(r"\d+", v)]
         mode = re.search(r"FW_Subsets_(\w+)", v).group(1).upper()
@@ -346,9 +349,7 @@ def verb_max_row_arity(verb: str, n: int) -> int:
             return n
         return _arg()
     if v.startswith("FW_Permut"):
-        if re.search(r"\(\d+\)", v):
-            return _arg()
-        return n                                  # bare FW_Permut / multiset: the whole sheet
+        return n                                  # every FW_Permut form emits the whole sheet
     if v.startswith("FW_Subsets_"):
         sizes = [int(x) for x in re.findall(r"\d+", v)]
         mode = re.search(r"FW_Subsets_(\w+)", v).group(1).upper()
@@ -364,6 +365,39 @@ def verb_max_row_arity(verb: str, n: int) -> int:
     if v.startswith("FW_Subsets"):
         return n
     return 1
+
+
+def check_inert_permut_arg(sheet: str, verb: str, values, *,
+                           name: str = "", strict: bool = False) -> "str | None":
+    """Warn when a slot writes ``FW_Permut(k)`` with k < n.
+
+    The Core's ``PermutationsSimpleG`` takes no size argument, so the k is
+    inert: the slot emits all n! orderings, not the P(n,k) the author asked
+    for. That is a silent factor of n!/P(n,k) -- for a 16-value sheet with
+    k=2 it is eighty-seven trillion -- and it lands on the side that
+    UNDER-states the space, which is the side a budget gate must never be
+    wrong on.
+
+    Reports in compatibility mode, raises under ``strict``. The generated
+    workbook is unchanged either way; only the author's expectation is at
+    stake, and this is the only place it can be corrected before a run.
+    """
+    m = re.fullmatch(r"FW_Permut\((\d+)\)", _first_line(verb).strip())
+    if not m:
+        return None
+    k, n = int(m.group(1)), len(values)
+    if k >= n:
+        return None
+    where = f"spec '{name}' " if name else ""
+    msg = (f"{where}slot '{sheet}': FW_Permut({k}) over {n} values does NOT draw {k}-permutations. "
+           f"The Core's PermutationsSimpleG takes no size argument, so the {k} is inert and the "
+           f"slot emits all {n}! orderings -- {math.factorial(n):,} rows, not "
+           f"{math.perm(n, k):,}. Use FW_Permut over a sheet of the size you want, or "
+           f"FW_PermutR({k}) if repetition is acceptable.")
+    if strict:
+        raise ValueError(msg + " (strict mode)")
+    print(f"  \u26a0 {msg}")
+    return msg
 
 
 def check_raw_row_arity(sheet: str, verb: str, values, flags=(), *,
@@ -510,10 +544,7 @@ def verb_row_length_histogram(verb: str, n: int) -> "dict[int, int] | None":
         k = _arg()
         return {k: n ** k} if k >= 1 else None
     if v.startswith("FW_Permut"):
-        if re.search(r"\(\d+\)", v):
-            k = _arg()
-            return {k: math.perm(n, k)} if 0 <= k <= n else None
-        return {n: math.factorial(n)}
+        return {n: math.factorial(n)}       # k is inert -- see verb_output_count
     if v.startswith("FW_Subsets_"):
         sizes = [int(x) for x in re.findall(r"\d+", v)]
         mode = re.search(r"FW_Subsets_(\w+)", v).group(1).upper()
@@ -567,8 +598,7 @@ def verb_rows(verb: str, values: "Sequence[str]") -> "list[tuple[str, ...]]":
         ks = range(1, n + 1) if _all(v) else [_arg()]
         return [tuple(c) for k in ks if k >= 1 for c in itertools.product(vals, repeat=k)]
     if v.startswith("FW_Permut"):
-        k = _arg(n) if re.search(r"\(\d+\)", v) else n
-        return [tuple(c) for c in itertools.permutations(vals, k)] if 0 <= k <= n else []
+        return [tuple(c) for c in itertools.permutations(vals, n)]   # k is inert
     if v.startswith("FW_Subsets"):
         hist = verb_row_length_histogram(v, n)
         if hist is None:
@@ -1530,6 +1560,7 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
             if len(e) != 2:
                 raise ValueError(f"slot '{sheet}' group_replace entries must be [pattern, replacement], got {e!r}")
         group_replace = tuple((str(e[0]), str(e[1])) for e in gr_raw)
+        check_inert_permut_arg(sheet, verb, exp_vals, name=name, strict=strict)
         if is_raw:
             check_raw_row_arity(sheet, verb, exp_vals, flags, name=name, strict=strict)
         slots.append(Slot(sheet=sheet,
