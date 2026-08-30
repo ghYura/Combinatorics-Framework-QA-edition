@@ -6,7 +6,7 @@ Two shapes:
 - **A run** — the default parser: `bundle_run.py <spec-dir> [options]`.
 - **A subcommand** — `bundle_run.py <verb> ...` for `plan | doctor | resume | cancel | cleanup |
   constraints | iterate | bench | deploy | inventory | hygiene | architecture | coverage |
-  capabilities | sut-manifests | release | provenance | report`.
+  capabilities | sut-manifests | release | provenance | report | triage`.
 
 > The verb list above is asserted against `bundle.cli._VERBS` by
 > `test_bundle_cli_docs.py`, so a new subcommand cannot ship undocumented and this
@@ -210,6 +210,40 @@ python3 bundle_run.py release       [--out PATH] [--sbom PATH] [--pytest-output 
   SUT adapters, including that every referenced test exists.
 - **`release`** — release manifest, optional SBOM, and skip classification from a pytest log; an
   unclassified skip is `BLOCKING_UNEXPECTED` unless `--allow-blocking-skips` (doc 34).
+
+## `triage <run>` — reduce a finished run's failures to findings
+
+```bash
+python3 bundle_run.py triage /tmp/fw_work/mydb [--write] [--json PATH] [--top N] [--fail-on-findings]
+```
+
+A large campaign does not fail in many ways; it fails in a few ways, many times over. `triage`
+turns that pile into the shape a person can act on:
+
+- **findings** — failures grouped by what distinguishes them, so one defect is one row however many
+  candidates carry it (312 failing candidates in one measured run reduce to 6 findings);
+- **a minimal witness** per finding — the smallest candidate that still shows it, which is what
+  someone will open in a debugger;
+- **axis enrichment** — which declared values are over-represented among the failures, with the
+  `lift` that says whether that is signal, ranked by how much of the corpus the effect explains.
+
+Accepts a run directory or any path containing `runs/<run-id>/`, taking the most recent. `--write`
+puts `triage.json` (`bundle.triage/v1`) in the run directory.
+
+Like `report`, it reads only what the run persisted and **re-executes nothing**: re-running
+generated code outside the recorded execution policy would bypass the sandbox, and a stateful
+candidate would give a different verdict on a second firing.
+
+Its input is the Executor's K=V corpus, `metrics.kv`. A candidate contributes a line only when it
+prints one starting with `app=` and containing `FW_VAR=` — the Executor's own selection rule. A run
+whose specs do not follow it produces an empty corpus, and `triage` says so rather than reporting
+"no findings" over no data.
+
+Grouping needs no per-spec configuration: a key whose value never varies among the **passing**
+candidates describes an outcome (`inv=I4`), and one that varies is an input axis the design was
+balancing (`pror=credit`). One consequence is worth knowing — an axis that predicts the outcome
+*perfectly* is also constant among the passes, so it is read as part of the failure's identity and
+appears in the finding's label rather than in the enrichment table.
 
 ## `report <run-dir|run-id>` — read a finished run (Face 3, doc 26)
 

@@ -237,6 +237,7 @@ def _main_cancel(argv):
 _VERBS = (
     ("plan", "compile a spec to a plan + exact cardinality (no DB, no run)"),
     ("doctor", "diagnose host config; --deploy checks the deploy stack"),
+    ("triage", "group a finished run's failures into findings + minimal witnesses"),
     ("resume", "continue an interrupted or failed run in place"),
     ("cancel", "stop a running run"),
     ("cleanup", "remove a run's scratch state (and its credential files)"),
@@ -269,6 +270,13 @@ def main(*, stages: 'StageTable | None' = None):
     # state — diagnostics live entirely outside the legacy single-run parser.
     if len(sys.argv) > 1 and sys.argv[1] == "doctor":
         return _main_doctor(sys.argv[2:])
+    # `bundle triage <run>` (post-run): group a finished run's failures into
+    # distinct findings with a minimal witness each. Like plan/doctor it is
+    # side-effect-free -- it reads what the run persisted and never re-executes
+    # a candidate.
+    if len(sys.argv) > 1 and sys.argv[1] == "triage":
+        from .commands.triage import _main_triage
+        return _main_triage(sys.argv[2:])
     # `bundle resume <run-dir|run-id>` (STEP 24): continue an interrupted/failed
     # run in place -- its own parser/dispatch, like plan/doctor above, since it
     # operates on an *existing* run directory rather than starting a fresh one.

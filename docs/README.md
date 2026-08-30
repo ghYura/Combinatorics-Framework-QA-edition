@@ -66,6 +66,8 @@ invariants.
 | **A command that used to work has stopped working** (Phases 01-05 breaking changes, migration and how to revert) | [38_MIGRATION_PHASE_01_05.md](38_MIGRATION_PHASE_01_05.md) |
 | **CI cannot check out the private sibling SUT** (the deploy key / PAT it needs, rotation, and what each pre-flight failure means) | [40_SIBLING_SUT_CREDENTIAL.md](40_SIBLING_SUT_CREDENTIAL.md) |
 | **`group_replace` / `FW_ReplaceRE` did nothing, or dropped rows** (why it matches value-CODES not text, and the opt-in `core.replace.*` policies that make both failures visible) | [41_FW_REPLACERE_POLICIES.md](41_FW_REPLACERE_POLICIES.md) |
+| **A campaign failed hundreds of times and I do not know in how many WAYS** (grouping failures into distinct findings, the minimal witness for each, and which axis values explain them) | [42_RESULT_TRIAGE.md](42_RESULT_TRIAGE.md) |
+| **Does this actually find anything pairwise cannot?** (three frozen SUTs, the classic model run to exhaustion, and what the verbs reached that it could not) | [43_COMBINATORIAL_TESTING_EVIDENCE.md](43_COMBINATORIAL_TESTING_EVIDENCE.md) |
 | Migrating from the pre-refactor Bundle | [16_LEGACY_TO_V2_MIGRATION.md](16_LEGACY_TO_V2_MIGRATION.md) |
 | Extending the code | [17_DEVELOPER_GUIDE.md](17_DEVELOPER_GUIDE.md), [19_API_AND_SCHEMA_REFERENCE.md](19_API_AND_SCHEMA_REFERENCE.md) |
 | Implementing or independently verifying repeat-policy / Loom plans | [22_PLAN1_PLAN2_QA_READINESS.md](22_PLAN1_PLAN2_QA_READINESS.md) |
