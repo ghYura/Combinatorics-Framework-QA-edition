@@ -383,3 +383,66 @@ over an empty corpus, and a concatenator trap that broke 2,048 candidates at onc
 main practical obstacle* (the second study's first campaign was 100% failing on a single defect and
 told me nothing until it was masked). The framework's ceiling is higher than the first study showed;
 its ergonomics are exactly as rough as the first study suggested.
+
+---
+
+## Third study — the rest of the vocabulary, and what using it found
+
+[../proof_authz](../proof_authz) exists because an audit of the first two studies was unflattering:
+five of roughly fifteen verbs, and **none** of the sieve's five bond tiers. Not because those are
+weak — because a billing account and a message bus offered them nothing to bite on. An
+authorization engine does: seniority is ordinal, a role's actions are a dependent allowed-set, a
+clause is built from clauses.
+
+| campaign | predicted | delivered | capability shown working |
+|---|---|---|---|
+| `e1_bounded` | 648 | 648 | `FW_Subsets_EXACT/RANGE/BEFORE` |
+| `e2_multiset` | 72 | 72 | `FW_CombiR` multisets, `FW_Permut` orderings |
+| `e3_secondorder` | ≤6 | 6 | `FW_Group` + `FW_Separator` + brace |
+| `e4_bonds` | 288→133 | 288→133 | `orders`, `assert/geSheet`, `mapping`, `condition`, `when` |
+
+**`FW_Group` is demonstrated by content, not by count.** `FW_Combi(2)` over three predicates gives
+three pairs; the assembled candidates carry *four* tokens each — those pairs recombined as atoms,
+C(3,2)=3 groups — with `AND` woven between every element. The count 6 = 3×2 would have looked
+identical with no grouping at all.
+
+**`e4` is the sharpest single result in three studies.** The post-sieve figure 133 was predicted by
+the pre-count, reproduced independently by a hand model of the four bonds, and confirmed by the
+sieve removing 155 of 288. All 133 survivors pass — the bonds carve the space to the legally
+reachable region of an authorization model, and inside it the engine holds. A negative result that
+means something, because the space it covers is precisely defined.
+
+### The defect this study found in the framework
+
+**`FW_Permut(k)`'s argument is inert.** `PermutationsSimpleG` takes no size argument, so the slot
+emits all n! orderings. `verb_output_count` returned `math.perm(n, k)` — *smaller*, and a budget
+gate that under-states is wrong on the only side that matters, because it approves the run.
+
+It hid because the two agree at n=3, k=2 (P(3,2) = 3! = 6), which is the shape every existing test
+used. It surfaced only because a campaign printed its fragments: `FW_CombiR(2)` produced two,
+`FW_Permut(2)` produced three.
+
+It is live in shipped material. `10_third_order_brace` declares `FW_Permut(2)` over a 16-value
+sheet; the plan reported **EXACT 530,841,600,000** while that slot alone emits 16! =
+20,922,789,888,000 rows — confidently stated, and low by 39× for the spec. Corrected in the
+estimator, with a spec-load warning; the engine semantics are left as the owner's call.
+
+### And a defect in the triage stage this session added
+
+`e3` failed on 100% of candidates, and triage returned **six findings from six failures** — no
+reduction, exactly when a saturated run needs it most. With no passing candidates the
+passing-set rule makes every key classifying. The fix uses **balance**: a combinatorial design
+spreads an axis evenly by construction; an outcome is constant or lopsided. Both halves are
+load-bearing — constancy alone would bury a rare finding among 399 of its dominant sibling.
+
+### What this adds to the assessment
+
+Nothing above changes the verdicts. Two are reinforced:
+
+- **The framework's expressiveness is now demonstrated across its whole vocabulary**, not argued.
+  Every verb and every bond tier has been run end to end against a frozen SUT with predicted counts.
+- **Used seriously, it finds defects in itself.** Across three studies the framework's own
+  guardrails caught four of my errors, and the campaigns found two defects in the framework and one
+  in the tooling built for it. The `FW_Permut(k)` case is the strongest evidence for the study's
+  central claim in miniature: the *count* agreed and the *content* did not, and only a method that
+  generates real artifacts could tell the difference.

@@ -8,6 +8,9 @@ has no topology, so composition had nothing to compose.
 
 This study uses a SUT built to have somewhere for those to bite.
 
+**The consolidated evidence across all three studies:**
+[../../docs/43_COMBINATORIAL_TESTING_EVIDENCE.md](../../docs/43_COMBINATORIAL_TESTING_EVIDENCE.md)
+
 ## The system under test
 
 `sut/fulfilment.py` — 475 lines, sha256 `470c7570…4fd26b`, frozen read-only before the first campaign.

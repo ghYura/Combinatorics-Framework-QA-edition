@@ -192,7 +192,8 @@ LAYERS: "tuple[LayerSpec, ...]" = (
                # cannot. Same layer as the other demonstrations -- they prove an
                # engine property end to end and import no reference application.
                "generator_trunk/proof_billing",
-               "generator_trunk/proof_fulfilment"),
+               "generator_trunk/proof_fulfilment",
+               "generator_trunk/proof_authz"),
     ),
     LayerSpec(
         id=PRESENTATION,

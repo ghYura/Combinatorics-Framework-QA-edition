@@ -1,0 +1,122 @@
+title = "E4 - the full bond vocabulary: orders, assert/geSheet, mapping, condition, when"
+note  = "Authorization is where the sieve's richer tiers stop being decoration. Role seniority is ORDINAL, so `orders` ranks it and an `assert` with geSheet keeps only the rows where the held role actually reaches what the resource demands. Which actions a role may even be asked for is a DEPENDENT ALLOWED SET, which is `mapping`. Deleting in production is forbidden only in production, which is a `condition`. And a resource's sensitivity is a property of the VALUE, not of the sheet, which is `params` plus a `when` predicate. Every one of these five tiers is expressible only because the bond layer is separate from the generator."
+args  = ["mode=e4_bonds"]
+
+[orders]
+ROLE     = ['_role = "viewer"', '_role = "editor"', '_role = "admin"', '_role = "owner"']
+REQUIRED = ['_need = "viewer"', '_need = "editor"', '_need = "admin"', '_need = "owner"']
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[params]]
+sheet = "RESOURCE"
+value = '_res = "docs/public"'
+sensitivity = 0
+
+[[params]]
+sheet = "RESOURCE"
+value = '_res = "docs/reports"'
+sensitivity = 1
+
+[[params]]
+sheet = "RESOURCE"
+value = '_res = "docs/secret"'
+sensitivity = 3
+
+# 1. ORDINAL, cross-field: keep only rows where the held role reaches what the
+#    resource demands. Without `orders` this comparison has no meaning at all.
+[[constraints]]
+id       = "role_reaches_requirement"
+polarity = "require"
+desc     = "the held role must be at least as senior as the resource requires"
+assert   = { sheet = "ROLE", geSheet = "REQUIRED" }
+
+# 2. DEPENDENT ALLOWED SET: which actions each role may even be asked for.
+[[constraints]]
+id       = "role_action_envelope"
+polarity = "forbid"
+desc     = "a role is only probed for actions its tier could plausibly hold"
+mapping  = { source = "ROLE", target = "ACTION", allow = { '_role = "viewer"' = ['_act = "read"'], '_role = "editor"' = ['_act = "read"', '_act = "write"'], '_role = "admin"' = ['_act = "read"', '_act = "write"', '_act = "delete"'] } }
+
+# 3. CONTEXTUAL: destructive actions are out of scope in production only.
+[[constraints]]
+id       = "no_delete_in_prod"
+polarity = "forbid"
+desc     = "deleting in production is not a case this campaign explores"
+sets     = { ACTION = ['_act = "delete"'] }
+condition = { sheet = "ENV", eq = '_env = "prod"' }
+
+# 4. PREDICATE over a VALUE's own property: a junior role never meets a
+#    sensitive resource, whatever the ordinal comparison says.
+[[constraints]]
+id       = "junior_never_meets_sensitive"
+polarity = "forbid"
+desc     = "viewer against a sensitivity-3 resource is not a case worth a candidate"
+sheets   = ["ROLE", "RESOURCE"]
+when     = "RESOURCE.sensitivity >= 3 and ROLE.value == '_role = \"viewer\"'"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_authz/sut"))
+import authz as A
+FW_VAR = 0
+e = A.Engine()
+''']
+
+[[slots]]
+sheet = "ROLE"
+key   = "role"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_role = "viewer"', '_role = "editor"', '_role = "admin"', '_role = "owner"']
+
+[[slots]]
+sheet = "REQUIRED"
+key   = "required"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_need = "viewer"', '_need = "editor"', '_need = "admin"', '_need = "owner"']
+
+[[slots]]
+sheet = "ACTION"
+key   = "action"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_act = "read"', '_act = "write"', '_act = "delete"']
+
+[[slots]]
+sheet = "RESOURCE"
+key   = "resource"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_res = "docs/public"', '_res = "docs/reports"', '_res = "docs/secret"']
+
+[[slots]]
+sheet = "ENV"
+key   = "env"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['_env = "dev"', '_env = "prod"']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_ranks = {"viewer": 0, "editor": 1, "admin": 2, "owner": 3}
+for _n, _r in _ranks.items():
+    e.define_role(_n, _r)
+e.roles[_need].grants.append((_act, _res))
+e.assign("u", _role)
+_probes = [("u", _act, _res, {})]
+_bad = e.audit(_probes)
+_allowed = e.can("u", _act, _res, {})
+FW_VAR = 1 if _bad else 0
+print("app=e4 viol=%d inv=%s role=%s need=%s act=%s res=%s env=%s allowed=%s FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", _role, _need, _act, _res, _env, _allowed, FW_VAR))
+''']

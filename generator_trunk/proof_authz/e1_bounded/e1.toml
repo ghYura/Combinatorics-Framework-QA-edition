@@ -1,0 +1,119 @@
+title = "E1 - bounded subsets: EXACT / RANGE / BEFORE over a policy's parts"
+note  = "A policy is not 'every option on or off'. It is 'exactly two grants', 'one or two rules', 'at most one condition' - sizes the design must state, not discover. FW_Subsets_EXACT(2), FW_Subsets_RANGE(1,2) and FW_Subsets_BEFORE(2) say each of those directly, and the count falls out: 3 x C(4,2) x (C(3,1)+C(3,2)) x (C(2,0)+C(2,1)) x 2. A plain powerset would draw sizes nobody asked for and a covering array cannot express a size constraint at all."
+args  = ["mode=e1_bounded"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_authz/sut"))
+import authz as A
+FW_VAR = 0
+e = A.Engine()
+_g = []
+_probes = []
+_ctx = {}
+''']
+
+[[slots]]
+sheet = "ROLEDEF"
+key   = "roledef"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''_shape = "flat"
+e.define_role("viewer", 0)
+e.define_role("editor", 1)
+''',
+'''_shape = "chain"
+e.define_role("viewer", 0)
+e.define_role("editor", 1, includes=["viewer"])
+''',
+'''_shape = "diamond"
+e.define_role("viewer", 0)
+e.define_role("auditor", 1, includes=["viewer"])
+e.define_role("editor", 1, includes=["viewer", "auditor"])
+''',
+]
+
+[[slots]]
+sheet = "GRANTS"
+key   = "grants"
+verb  = "FW_Subsets_EXACT(2)"
+raw   = true
+values = [
+'''_g.append(("read", "docs/*"))
+''',
+'''_g.append(("write", "docs/reports"))
+''',
+'''_g.append(("*", "docs/q1"))
+''',
+'''_g.append(("read", "*"))
+''',
+]
+
+[[slots]]
+sheet = "WIRE"
+key   = "wire"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''e.roles["viewer"].grants.extend(_g)
+e.assign("alice", "editor")
+''']
+
+[[slots]]
+sheet = "RULES"
+key   = "rules"
+verb  = "FW_Subsets_RANGE(1,2)"
+raw   = true
+values = [
+'''e.add_rule("deny", "alice", "delete", "docs/*")
+''',
+'''e.add_rule("allow", "editor", "write", "docs/*")
+''',
+'''e.add_rule("deny", "viewer", "read", "docs/secret")
+''',
+]
+
+[[slots]]
+sheet = "CONDS"
+key   = "conds"
+verb  = "FW_Subsets_BEFORE(2)"
+raw   = true
+values = [
+'''e.add_rule("allow", "alice", "configure", "docs/*", {"mfa": True, "vpn": True})
+''',
+'''_ctx = {"mfa": True}
+''',
+]
+
+[[slots]]
+sheet = "PROBE"
+key   = "probe"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''_probes.append(("alice", "read", "docs/q1", _ctx))
+_probes.append(("alice", "delete", "docs/q1", _ctx))
+''',
+'''_probes.append(("alice", "configure", "docs/q1", _ctx))
+_probes.append(("alice", "read", "docs-shadow/x", _ctx))
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_bad = e.audit(_probes)
+_allowed = sum(1 for p in _probes if e.can(*p))
+FW_VAR = 1 if _bad else 0
+print("app=e1 viol=%d inv=%s shape=%s grants=%d rules=%d allowed=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", _shape, len(_g), len(e.rules), _allowed, FW_VAR))
+''']

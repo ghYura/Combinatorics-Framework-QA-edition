@@ -1,0 +1,98 @@
+title = "E2 - the multiset and the k-permutation: FW_CombiR(2) x FW_Permut(2)"
+note  = "Two freedoms a covering array has no words for. FW_CombiR(2) draws grant MULTISETS - including the same grant twice, which is how a policy actually accumulates when two roles carry it. FW_Permut(2) draws ORDERED PAIRS of lifecycle operations from three, so assign/revoke is tested in both directions rather than in the one order a canonical script would fix. Counts: C(3+2-1,2)=6 multisets x P(3,2)=6 ordered pairs x 2 shapes."
+args  = ["mode=e2_multiset"]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_authz/sut"))
+import authz as A
+FW_VAR = 0
+e = A.Engine()
+_g = []
+_ops = []
+_ctx = {}
+def _do(tag, fn):
+    try:
+        fn(); _ops.append(tag)
+    except A.AuthzError:
+        _ops.append(tag + "!")
+''']
+
+[[slots]]
+sheet = "SHAPE"
+key   = "shape"
+verb  = "FW_Combi(1)"
+raw   = true
+values = [
+'''_shape = "flat"
+e.define_role("viewer", 0)
+e.define_role("editor", 1)
+''',
+'''_shape = "chain"
+e.define_role("viewer", 0)
+e.define_role("editor", 1, includes=["viewer"])
+''',
+]
+
+[[slots]]
+sheet = "GRANTS"
+key   = "grants"
+verb  = "FW_CombiR(2)"
+raw   = true
+values = [
+'''_g.append(("read", "docs/*"))
+''',
+'''_g.append(("write", "docs/reports"))
+''',
+'''_g.append(("*", "docs/q1"))
+''',
+]
+
+[[slots]]
+sheet = "WIRE"
+key   = "wire"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''e.roles["viewer"].grants.extend(_g)
+_before = e.snapshot()
+''']
+
+[[slots]]
+sheet = "LIFECYCLE"
+key   = "lifecycle"
+verb  = "FW_Permut(2)"
+raw   = true
+values = [
+'''_do("assign_ed", lambda: e.assign("alice", "editor"))
+''',
+'''_do("assign_vw", lambda: e.assign("alice", "viewer"))
+''',
+'''_do("revoke_ed", lambda: e.revoke("alice", "editor"))
+''',
+]
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_probes = [("alice", "read", "docs/q1", _ctx),
+           ("alice", "write", "docs/reports", _ctx),
+           ("alice", "delete", "docs/q1", _ctx)]
+_bad = e.audit(_probes)
+_after = e.snapshot()
+_held = len(e.assignments.get("alice", []))
+_uniq = len(set(e.assignments.get("alice", [])))
+_dup = "yes" if _held != _uniq else "no"
+_allowed = sum(1 for p in _probes if e.can(*p))
+FW_VAR = 1 if (_bad or _dup == "yes") else 0
+print("app=e2 viol=%d inv=%s dup=%s shape=%s ops=%s grants=%d held=%d allowed=%d FW_VAR=%d" % (len(_bad) + (1 if _dup == "yes" else 0), "+".join(_bad) or "none", _dup, _shape, ">".join(_ops), len(_g), _held, _allowed, FW_VAR))
+''']

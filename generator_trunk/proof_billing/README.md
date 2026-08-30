@@ -5,6 +5,8 @@ An empirical study run on 2026-08-29 against the full Bundle chain
 
 Report: https://claude.ai/code/artifact/be7fe9f6-673c-4d57-b721-4f63bf2315cb
 
+**The consolidated evidence across all three studies:** [../../docs/43_COMBINATORIAL_TESTING_EVIDENCE.md](../../docs/43_COMBINATORIAL_TESTING_EVIDENCE.md)
+
 **Assessment of the framework itself:** [ASSESSMENT.md](ASSESSMENT.md) (short) ·
 [ASSESSMENT_FULL.md](ASSESSMENT_FULL.md) (comprehensive — maturity, limits, other application areas).
 

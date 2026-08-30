@@ -1,0 +1,91 @@
+title = "E3 - second order: FW_Group over produced rows, FW_Separator as the glue, brace as the join"
+note  = "A policy clause is not an atom - it is built from clauses. CLAUSE produces its own result table with FW_Combi(2) (pairs of predicates), FW_Separator weaves the AND token between the pieces so an assembled clause reads as a conjunction rather than a bare list, and FW_Group then re-runs the sheet's own generator over THOSE PRODUCED ROWS as atoms: combinations of combinations. The brace joins that grouped result with the subject table, because FW_Group writes to fw2_ and only a join reads it. This is the construct a flat product cannot reach at any strength."
+args  = ["mode=e3_secondorder"]
+
+seq_extra = [["POLICY", "FW_Reuse", "FW_(,,CLAUSE,,SUBJECT,,,,M:N)"]]
+
+[[goals]]
+key = "viol"
+dir = "max"
+
+[[slots]]
+sheet = "FRAME"
+key   = "frame"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''import os, sys
+sys.path.insert(0, os.environ.get("PROOF_SUT_ROOT", "proof_authz/sut"))
+import authz as A
+FW_VAR = 0
+e = A.Engine()
+e.define_role("viewer", 0, grants=[("read", "docs/*")])
+e.define_role("editor", 1, includes=["viewer"], grants=[("write", "docs/*")])
+_clauses = []
+_subject = "alice"
+''']
+
+# CLAUSE: its own result table (pairs of predicates), glued by AND, then
+# RE-COMBINED over those produced rows by FW_Group. Excluded from the mandatory
+# product because the brace consumes it.
+[[slots]]
+sheet     = "CLAUSE"
+key       = "clause"
+verb      = "FW_Combi(2)"
+flags     = ["FW_Exclude", "FW_Reuse", "FW_ReuseTableOnly"]
+separator = "GLUE"
+group_replace = [["FW_NOOP_MARKER", "FW_NOOP_MARKER"]]
+raw       = true
+values = [
+'''_clauses.append("mfa")
+''',
+'''_clauses.append("vpn")
+''',
+'''_clauses.append("office")
+''',
+]
+
+[[slots]]
+sheet = "SUBJECT"
+key   = "subject"
+verb  = "FW_Combi(1)"
+flags = ["FW_Exclude"]
+raw   = true
+values = [
+'''_subject = "alice"
+''',
+'''_subject = "bob"
+''',
+]
+
+[[slots]]
+sheet = "POLICY"
+key   = "policy"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''pass  # the brace overwrites this sheet with CLAUSE x SUBJECT
+''']
+
+[[slots]]
+sheet = "GLUE"
+key   = "glue"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_clauses.append("AND")
+''']
+
+[[slots]]
+sheet = "TAIL"
+key   = "tail"
+verb  = "FW_Combi(1)"
+raw   = true
+values = ['''_conds = dict((c, True) for c in _clauses if c != "AND")
+e.assign(_subject, "editor")
+e.add_rule("allow", _subject, "configure", "docs/*", _conds)
+_ctx = {"mfa": True}
+_probes = [(_subject, "configure", "docs/q1", _ctx),
+           (_subject, "read", "docs/q1", _ctx)]
+_bad = e.audit(_probes)
+_allowed = sum(1 for p in _probes if e.can(*p))
+FW_VAR = 1 if _bad else 0
+print("app=e3 viol=%d inv=%s subject=%s clauses=%s nconds=%d allowed=%d FW_VAR=%d" % (len(_bad), "+".join(_bad) or "none", _subject, "|".join(_clauses), len(_conds), _allowed, FW_VAR))
+''']
