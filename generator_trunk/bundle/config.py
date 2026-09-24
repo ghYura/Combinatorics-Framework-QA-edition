@@ -71,7 +71,7 @@ _FIELD_KINDS: "Mapping[str, type]" = {
     "budget_warn_fraction": float,
     "candidate_sink": str, "shard_max_records": int, "shard_max_bytes": int,
     "grpc_host": str, "grpc_port": int, "grpc_bind_host": str,
-    "executor_pool_size": int,
+    "executor_pool_size": int, "executor_workers": int,
     "seed_output": bool, "exploration_floor": float, "min_winner_support": int,
     "unleash_initial_productivity_power": bool,
     "repeat_each_candidate": int, "repeat_policy": str, "repeat_scope": str,
@@ -201,6 +201,14 @@ class BundleConfig:
     # orchestrator is introduced. v1 constraints (fail-closed in preflight):
     # Java candidates, loose-files transport, K=1, trusted-local flow via manifest.
     executor_pool_size: int = 1
+    # Python Executor worker pool (2026-09-24): py_executor's own STEP 33 local pool --
+    # N workers over deterministic id-hash partitions of the ONE candidate directory,
+    # summaries/Results/metrics merged, a crashed worker re-run alone on resume. The
+    # pool existed but nothing reached it, so every Python run executed serially. It is
+    # a different mechanism from executor_pool_size (one Reader directory per Java
+    # member). v1 constraints (fail-closed in the capability registry): Python
+    # candidates, loose-files transport, verdict mode, K=1.
+    executor_workers: int = 1
     # BundleSeed feedback loop. seed_output is deliberately default-off so the
     # legacy single-run path stays unchanged unless the operator opts in or the
     # iterate driver forces it on.

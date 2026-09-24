@@ -202,6 +202,8 @@ def capability_selection(args, cfg: BundleConfig) -> "dict":
         "execution_policy": (getattr(cfg, "execution_policy_profile", "") or "").strip(),
         "executor_pool": ("multi" if int(getattr(cfg, "executor_pool_size", 1) or 1) > 1
                           else "single"),
+        "executor_workers": ("multi" if int(getattr(cfg, "executor_workers", 1) or 1) > 1
+                             else "single"),
         "repeat": ("k_gt_1" if int(getattr(cfg, "repeat_each_candidate", 1) or 1) > 1 else "k1"),
         "repeat_policy": getattr(cfg, "repeat_policy", "local") or "local",
         "repeat_scope": getattr(cfg, "repeat_scope", "metrics") or "metrics",
@@ -253,6 +255,9 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
     pool = int(getattr(cfg, "executor_pool_size", 1) or 1)
     if pool < 1 or pool > 64:
         raise PreflightError(f"executor_pool_size must be in 1..64, got {pool}")
+    workers = int(getattr(cfg, "executor_workers", 1) or 1)
+    if workers < 1 or workers > 64:
+        raise PreflightError(f"executor_workers must be in 1..64, got {workers}")
 
     # Prompt 03 Part A: ONE capability registry decides which combinations run.
     # These constraints used to be a sequence of inline `if`s here plus two more
@@ -1119,6 +1124,32 @@ def _java_repeat_executor_flags(cfg: BundleConfig, run_id=None) -> list:
     return []
 
 
+def _last_match(pattern: str, text: str):
+    """The LAST match of `pattern` in `text`, or None.
+
+    A pooled py_executor (``--workers N``) lets every worker print its own
+    partition's DONE / OUTCOMES / RESULTS_V2 lines before the dispatcher prints the
+    aggregated ones -- so the first match is one worker's share (seen live: 551 of
+    3456 candidates, failing the Results-count invariant) and only the last line
+    describes the whole run. A serial run prints each line once, so this reads it
+    exactly as before."""
+    last = None
+    for last in re.finditer(pattern, text):
+        pass
+    return last
+
+
+def _python_worker_flags(cfg: BundleConfig) -> list:
+    """``--workers N`` for py_executor's own local pool (STEP 33), or ``[]`` for N=1.
+
+    The pool re-invokes py_executor once per deterministic id-hash partition and
+    re-emits the DONE / OUTCOMES / RESULTS_V2 summary lines this stage parses, so
+    the launcher reads a pooled run exactly like a serial one. The capability gate
+    has already refused the combinations the pool is not verified for."""
+    workers = int(getattr(cfg, "executor_workers", 1) or 1)
+    return ["--workers", str(workers)] if workers > 1 else []
+
+
 def _stage_python_executor(src, hs, cfg: BundleConfig, manifest_path=None, run_id=None,
                            attempt: int = 1, summary_path=None, metrics_path=None):
     py_executor = Path(cfg.py_executor) if cfg.py_executor else PY_EXECUTOR
@@ -1141,6 +1172,7 @@ def _stage_python_executor(src, hs, cfg: BundleConfig, manifest_path=None, run_i
     # times in-sandbox and emit raw samples keyed by (candidate_id, repeat_idx, env_id). K=1 / any
     # non-capable mode ⇒ no flags ⇒ the unchanged single-measurement path (see _repeat_executor_flags).
     cmd += _repeat_executor_flags(cfg, run_id)
+    cmd += _python_worker_flags(cfg)
     # manifest mode reads the Results DB password from the environment — the v2
     # manifest never carries a secret (P3/P14). The launcher owns the env-var
     # transport, exactly as the benchmark stage does; a password supplied via
@@ -1158,7 +1190,7 @@ def _stage_python_executor(src, hs, cfg: BundleConfig, manifest_path=None, run_i
         pass
     tail = output.strip().splitlines()[-1:] or ["(no output)"]
     print("   ", tail[0])
-    summary = re.search(
+    summary = _last_match(
         r"py_executor DONE: processed=([0-9]+) pass=([0-9]+) fail=([0-9]+) broken=([0-9]+) inserted=([0-9]+)",
         output,
     )
@@ -1171,13 +1203,13 @@ def _stage_python_executor(src, hs, cfg: BundleConfig, manifest_path=None, run_i
         print(f"    (py_executor exited with status {r.returncode} but emitted a "
               f"completion summary -- deferring to the launcher's outcome invariants/policy)")
     processed, passed, failed, broken, inserted = map(int, summary.groups())
-    outcomes = re.search(
+    outcomes = _last_match(
         r"py_executor OUTCOMES: pass=([0-9]+) domain_fail=([0-9]+) broken=([0-9]+) "
         r"timeout=([0-9]+) infra_fail=([0-9]+) skipped=([0-9]+) cancelled=([0-9]+)",
         output,
     )
     timeout, infra_fail = map(int, outcomes.group(4, 5)) if outcomes else (0, 0)
-    v2_summary = re.search(
+    v2_summary = _last_match(
         r"py_executor RESULTS_V2: attempted=([0-9]+) inserted=([0-9]+) "
         r"already_present=([0-9]+) updated_selected=([0-9]+)",
         output,

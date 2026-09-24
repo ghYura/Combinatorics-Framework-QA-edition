@@ -456,6 +456,7 @@ def _check_capability_matrix(cfg: BundleConfig) -> DoctorCheck:
         "candidate_sink": getattr(cfg, "candidate_sink", "loose-files"),
         "execution_policy": (getattr(cfg, "execution_policy_profile", "") or "").strip(),
         "executor_pool": "multi" if int(getattr(cfg, "executor_pool_size", 1) or 1) > 1 else "single",
+        "executor_workers": "multi" if int(getattr(cfg, "executor_workers", 1) or 1) > 1 else "single",
         "repeat": "k_gt_1" if int(getattr(cfg, "repeat_each_candidate", 1) or 1) > 1 else "k1",
         "analyzer": "formal" if getattr(cfg, "analyzer_goals", "") else "none",
     }

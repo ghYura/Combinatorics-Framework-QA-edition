@@ -124,6 +124,9 @@ DIMENSIONS: "tuple[Dimension, ...]" = (
               "The run/lifecycle operation being requested.", "run", enumerated=False),
     Dimension("entrypoint", "Entry point", ("direct", "gateway"),
               "The local CLI, or the multi-tenant evaluation gateway.", "direct", enumerated=False),
+    Dimension("executor_workers", "Python Executor workers", ("single", "multi"),
+              "One py_executor process, or its local worker pool over partitions of the one "
+              "candidate directory.", "single", enumerated=False),
 )
 
 DIMENSIONS_BY_ID: "Mapping[str, Dimension]" = {d.id: d for d in DIMENSIONS}
@@ -194,6 +197,26 @@ RULES: "tuple[Rule, ...]" = (
          "BundleControlPlane's dispatch job (see CONTROL_PLANE_SEAM.md)",
          lambda s: s["executor_pool"] == "multi" and s["repeat"] != "k1",
          evidence=("test_bundle_capabilities.py",), since="2026-07-04"),
+    # ---- Python Executor worker pool -----------------------------------------
+    Rule("WORKERS_REQUIRE_PYTHON", UNSUPPORTED, "Executor workers require Python candidates",
+         "executor_workers>1 is py_executor's local worker pool (--lang py); Java candidates are "
+         "parallelized with --executor-pool instead",
+         lambda s: s["executor_workers"] == "multi" and _lang(s) != "python",
+         evidence=("test_bundle_executor_workers.py",), since="2026-09-24"),
+    Rule("WORKERS_REQUIRE_LOOSE_FILES", UNSUPPORTED, "Executor workers require loose files",
+         "executor_workers>1 partitions the Reader's loose candidate files; sharded and gRPC "
+         "transports have no verified worker partitioning",
+         lambda s: s["executor_workers"] == "multi" and s["candidate_sink"] != "loose-files",
+         evidence=("test_bundle_executor_workers.py",), since="2026-09-24"),
+    Rule("WORKERS_REQUIRE_VERDICT", UNSUPPORTED, "Executor workers cannot run stress mode",
+         "executor_workers>1 does not apply to --mode stress, whose concurrency is --workers",
+         lambda s: s["executor_workers"] == "multi" and s["run_mode"] == "stress",
+         evidence=("test_bundle_executor_workers.py",), since="2026-09-24"),
+    Rule("WORKERS_INCOMPATIBLE_WITH_REPEAT", UNSUPPORTED, "Executor workers are incompatible with K>1",
+         "executor_workers>1 with repeat_each_candidate>1 has no verified worker/repeat "
+         "interplay; run repeats serially",
+         lambda s: s["executor_workers"] == "multi" and s["repeat"] != "k1",
+         evidence=("test_bundle_executor_workers.py",), since="2026-09-24"),
     # ---- live gRPC candidate transport -------------------------------------
     Rule("GRPC_REQUIRES_JAVA", UNSUPPORTED, "Live gRPC transport requires Java candidates",
          "candidate_sink=grpc requires Java candidates (--lang java): the gRPC ingestion server "
@@ -274,6 +297,11 @@ RULES: "tuple[Rule, ...]" = (
          lambda s: s["executor_pool"] == "multi",
          requires=("Java Executor fat jar",), evidence=("test_bundle_capabilities.py",),
          since="2026-07-04"),
+    Rule("WORKERS_EXPERIMENTAL", EXPERIMENTAL, "Executor workers are experimental",
+         "The py_executor worker pool is proven at the executor level (partitioning, merge, "
+         "crash resume); its launcher wiring is new: Python + loose files + verdict + K=1 only.",
+         lambda s: s["executor_workers"] == "multi",
+         evidence=("test_bundle_executor_workers.py",), since="2026-09-24"),
     Rule("LEGACY_HANDOFF_EXPERIMENTAL", EXPERIMENTAL, "Legacy handoff is a compatibility path",
          "The legacy file handshake is retained for pre-v2 consumers. It carries no manifest, so "
          "language/count cross-checks and resume reuse are weaker.",

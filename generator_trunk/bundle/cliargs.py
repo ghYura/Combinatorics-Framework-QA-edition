@@ -196,6 +196,12 @@ def _add_bundle_config_args(ap) -> None:
                          "The launcher spawns/journals/cancels the members and merges their "
                          "summaries. Requires --lang java, loose-files transport, K=1 "
                          "(default: 1 — single executor, unchanged)")
+    cg.add_argument("--executor-workers", dest="executor_workers", type=int, default=_UNSET, metavar="N",
+                    help="Python Executor worker pool: run N local py_executor workers over "
+                         "deterministic partitions of the candidate directory (py_executor --workers), "
+                         "merging summaries, Results rows and the metrics corpus; a crashed worker is "
+                         "re-run alone on resume. Requires --lang py, loose-files transport, K=1 "
+                         "(default: 1 — serial, unchanged)")
     cg.add_argument("--seed-output", dest="seed_output", default=_UNSET, action="store_const", const=True,
                     help="emit bundle_seed.json from the Analyzer stage (default: off; iterate forces it on)")
     cg.add_argument("--exploration-floor", dest="exploration_floor", type=float, default=_UNSET, metavar="FRACTION",

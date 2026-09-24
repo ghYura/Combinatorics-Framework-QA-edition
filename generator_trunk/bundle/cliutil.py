@@ -83,7 +83,7 @@ _CLI_ARG_TO_CONFIG_KEY = {
     "sandbox_candidate_env": "sandbox_candidate_env",
     "executor_tolerate_outcomes": "executor_tolerate_outcomes",
     "candidate_sink": "candidate_sink", "grpc_host": "grpc_host", "grpc_port": "grpc_port",
-    "executor_pool_size": "executor_pool_size",
+    "executor_pool_size": "executor_pool_size", "executor_workers": "executor_workers",
     "seed_output": "seed_output", "exploration_floor": "exploration_floor",
     "min_winner_support": "min_winner_support",
     "main_port": "main_db_port", "results_port": "results_db_port",

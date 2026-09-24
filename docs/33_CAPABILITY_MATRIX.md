@@ -21,6 +21,7 @@ Schema `bundle.capability-matrix/v1`. 28 supported, 95 experimental, 741 unsuppo
 | **Repeat environments** _(not enumerated)_ | `inactive`, `configured` | `inactive` | Whether an explicit environment count is configured for a nested repeat plan. |
 | **Lifecycle verb** _(not enumerated)_ | `run`, `resume`, `cancel`, `cleanup` | `run` | The run/lifecycle operation being requested. |
 | **Entry point** _(not enumerated)_ | `direct`, `gateway` | `direct` | The local CLI, or the multi-tenant evaluation gateway. |
+| **Python Executor workers** _(not enumerated)_ | `single`, `multi` | `single` | One py_executor process, or its local worker pool over partitions of the one candidate directory. |
 
 ## Rules
 
@@ -32,6 +33,10 @@ Schema `bundle.capability-matrix/v1`. 28 supported, 95 experimental, 741 unsuppo
 | `POOL_REQUIRES_VERDICT` | UNSUPPORTED | Executor pool cannot run stress mode | — | — | 2026-07-04 |
 | `POOL_REQUIRES_HANDOFF_V2` | UNSUPPORTED | Executor pool requires Handoff v2 | — | — | 2026-07-04 |
 | `POOL_INCOMPATIBLE_WITH_REPEAT` | UNSUPPORTED | Executor pool is incompatible with K>1 | — | — | 2026-07-04 |
+| `WORKERS_REQUIRE_PYTHON` | UNSUPPORTED | Executor workers require Python candidates | — | — | 2026-09-24 |
+| `WORKERS_REQUIRE_LOOSE_FILES` | UNSUPPORTED | Executor workers require loose files | — | — | 2026-09-24 |
+| `WORKERS_REQUIRE_VERDICT` | UNSUPPORTED | Executor workers cannot run stress mode | — | — | 2026-09-24 |
+| `WORKERS_INCOMPATIBLE_WITH_REPEAT` | UNSUPPORTED | Executor workers are incompatible with K>1 | — | — | 2026-09-24 |
 | `GRPC_REQUIRES_JAVA` | UNSUPPORTED | Live gRPC transport requires Java candidates | Java Executor fat jar | — | 2026-07-03 |
 | `GRPC_REQUIRES_VERDICT` | UNSUPPORTED | Live gRPC transport cannot run stress mode | — | — | 2026-07-03 |
 | `GRPC_REQUIRES_HANDOFF_V2` | UNSUPPORTED | Live gRPC transport requires Handoff v2 | — | — | 2026-07-03 |
@@ -44,6 +49,7 @@ Schema `bundle.capability-matrix/v1`. 28 supported, 95 experimental, 741 unsuppo
 | `NESTED_REPEAT_REQUIRES_ENVIRONMENTS` | UNSUPPORTED | Nested K>1 requires an explicit environment count | — | — | 2026-07-01 |
 | `GRPC_EXPERIMENTAL` | EXPERIMENTAL | Live gRPC transport is experimental | Java Executor fat jar, loopback bind host | local trusted host only | 2026-07-03 |
 | `POOL_EXPERIMENTAL` | EXPERIMENTAL | Executor pool is experimental | Java Executor fat jar | — | 2026-07-04 |
+| `WORKERS_EXPERIMENTAL` | EXPERIMENTAL | Executor workers are experimental | — | — | 2026-09-24 |
 | `LEGACY_HANDOFF_EXPERIMENTAL` | EXPERIMENTAL | Legacy handoff is a compatibility path | — | — | 2026-06-11 |
 | `TRUSTED_LOCAL_UNSANDBOXED` | EXPERIMENTAL | trusted-local has no isolation boundary | — | none - reviewed code only | 2026-07-31 |
 | `REPEAT_LOCAL_ONLY` | EXPERIMENTAL | K>1 is launcher-executable for the local policy only | — | — | 2026-07-01 |
