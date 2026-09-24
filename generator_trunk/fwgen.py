@@ -84,7 +84,7 @@ import logging
 import math
 import re
 from concurrent.futures import ProcessPoolExecutor
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from enum import Enum
 from pathlib import Path
 from typing import Iterable, Iterator, Optional, Sequence
@@ -1088,16 +1088,87 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
                      f"anywhere from none to all mandatory rows depending on runtime data — "
                      f"only the conservative range is provable without running it",))
 
+    # A t-wise reduction the run will apply replaces the post-sieve count: the sieve
+    # stage keeps exactly the covering array's rows (bundle.stages.stage_sieve), so
+    # `final` must describe that suite, not the full product it was drawn from.
+    coverage = coverage_cardinality(spec, mandatory)
+    if coverage is not None and coverage.mode is CardinalityMode.EXACT:
+        post_sieve = CardinalityEstimate.exact(
+            coverage.value, formula=f"t-wise covering array of the mandatory product ({coverage.formula})",
+            assumptions=("the sieve stage deletes every fw_final row outside the covering array",))
+
     optional_multiplier = optional_multiplier_cardinality(spec)
     final = _combine_product(
         (post_sieve, optional_multiplier),
         formula="post_sieve × optional_multiplier",
         reasons=("each FW_Optional slot independently multiplies the post-sieve candidate space",))
 
-    coverage = coverage_cardinality(spec, mandatory)
     return SpecCardinalityPlan(raw_values=raw_values, per_slot=per_slot, mandatory=mandatory,
                                post_sieve=post_sieve, optional_multiplier=optional_multiplier,
                                final=final, coverage=coverage)
+
+
+def coverage_requested(spec: "Spec") -> bool:
+    """True when the spec asks for a t-wise reduction (strength or budget)."""
+    return int(spec.coverage_strength or 0) > 0 or int(spec.coverage_budget or 0) > 0
+
+
+def _coverage_levels(slot) -> "list[str]":
+    """A slot's levels as fw_final's decode sees them (NumberToValue1, stripped)."""
+    return [str(v).strip() for v in slot.values]
+
+
+def coverage_ineligibility(spec: "Spec") -> "str | None":
+    """Why a t-wise reduction cannot be applied faithfully to this spec, or None.
+
+    A covering array treats each slot as one factor whose levels are its declared
+    values. Core builds exactly that only for single-pick FW_Combi(1) slots; an
+    order, subset or join verb materializes combinations OF the values, so an array
+    over the raw values would cover the wrong levels. The run applies the array by
+    deleting fw_final rows, so it is also refused where fw_final is not the whole
+    mandatory product: brace rows, flagged operands, or a constraint sieve that
+    would delete rows the array relies on. FW_Optional slots stay outside the
+    array -- the Reader assembles them onto every kept row."""
+    if spec.constraints:
+        return ("a constraint sidecar is declared; its sieve would delete rows the covering "
+                "array relies on, leaving tuples uncovered")
+    if spec.seq_extra:
+        return "seq_extra brace/second-order rows are not independent axes of the product"
+    for slot in spec.slots:
+        if "FW_Optional" in slot.flags:
+            continue
+        if slot.flags:
+            return f"slot {slot.sheet!r} carries {list(slot.flags)}; it is not an independent axis of fw_final"
+        verb = _first_line(slot.verb).replace(" ", "")
+        if verb != "FW_Combi(1)":
+            return (f"slot {slot.sheet!r} uses {_first_line(slot.verb)}; a covering array treats each "
+                    f"declared value as one level, but that verb builds combinations or orders of them")
+        levels = _coverage_levels(slot)
+        if len(set(levels)) != len(levels):
+            return f"slot {slot.sheet!r} has values that coincide after whitespace normalization"
+    return None
+
+
+def coverage_allowlist(spec: "Spec", hard_cap: int = 2_000_000) -> "tuple[int, list[tuple[str, ...]]]":
+    """The rows a coverage-reduced run keeps: ``(strength, tuples)``.
+
+    Tuples run over the mandatory (non-FW_Optional) slots in slot order, with the
+    levels of :func:`_coverage_levels`. The plan and the run both call this, so the
+    count the plan states is the count the run keeps. strength 0 means the budget
+    admits the full mandatory product. Call only for an eligible spec."""
+    mandatory = [s for s in spec.slots if "FW_Optional" not in s.flags]
+    levels = [_coverage_levels(s) for s in mandatory]
+    if int(spec.coverage_budget or 0) > 0:
+        reduced_spec = replace(spec, slots=[replace(s, values=lv) for s, lv in zip(mandatory, levels)])
+        return pick_n_for_budget(reduced_spec, int(spec.coverage_budget), spec.coverage_optimal,
+                                 hard_cap=hard_cap)
+    full = 1
+    for lv in levels:
+        full *= len(lv)
+    if full > hard_cap:
+        raise ValueError(f"full mandatory product {full:,} exceeds hard cap {hard_cap:,}")
+    strength = int(spec.coverage_strength)
+    return strength, reduce_combos(list(itertools.product(*levels)), strength, spec.coverage_optimal)
 
 
 def coverage_cardinality(spec: "Spec", mandatory: CardinalityEstimate) -> "CardinalityEstimate | None":
@@ -1109,9 +1180,15 @@ def coverage_cardinality(spec: "Spec", mandatory: CardinalityEstimate) -> "Cardi
     `pick_n_for_budget`'s `hard_cap`; past that the answer is UNKNOWN rather than
     a guess.
     """
-    strength, budget = int(spec.coverage_strength or 0), int(spec.coverage_budget or 0)
-    if strength <= 0 and budget <= 0:
+    if not coverage_requested(spec):
         return None
+    strength, budget = int(spec.coverage_strength or 0), int(spec.coverage_budget or 0)
+    reason = coverage_ineligibility(spec)
+    if reason:
+        return CardinalityEstimate(
+            mode=CardinalityMode.UNKNOWN, formula="t-wise reduction not applicable to this spec",
+            reasons=(reason, "a run refuses this spec rather than apply a covering array over "
+                             "the wrong levels"))
     if mandatory.mode is not CardinalityMode.EXACT:
         return CardinalityEstimate(
             mode=CardinalityMode.UNKNOWN,
@@ -1122,17 +1199,16 @@ def coverage_cardinality(spec: "Spec", mandatory: CardinalityEstimate) -> "Cardi
     if full <= 0:
         return None
     try:
-        allc = list(cartesian(spec))
-    except Exception as exc:                                  # pragma: no cover - defensive
-        return CardinalityEstimate(mode=CardinalityMode.UNKNOWN,
-                                   formula="t-wise reduction", reasons=(f"{type(exc).__name__}: {exc}",))
+        chosen, reduced = coverage_allowlist(spec)
+    except ValueError as exc:
+        return CardinalityEstimate(mode=CardinalityMode.UNKNOWN, formula="t-wise reduction",
+                                   reasons=(str(exc),))
+    reducer = "nwise_optimal" if spec.coverage_optimal else "nwise_greedy"
     if budget > 0:
-        chosen, reduced = pick_n_for_budget(spec, budget, spec.coverage_optimal)
-        formula = (f"pick_n_for_budget(budget={budget:,}) -> t={chosen or 'full'}"
+        formula = (f"pick_n_for_budget(budget={budget:,}) -> {reducer}(t={chosen})"
                    if chosen else f"pick_n_for_budget(budget={budget:,}) -> full product fits")
     else:
-        chosen, reduced = strength, reduce_combos(allc, strength, spec.coverage_optimal)
-        formula = f"{'nwise_optimal' if spec.coverage_optimal else 'nwise_greedy'}(t={strength})"
+        formula = f"{reducer}(t={strength})"
     kept = len(reduced)
     return CardinalityEstimate(
         mode=CardinalityMode.EXACT, value=kept, lower=kept, upper=kept, formula=formula,
@@ -1305,11 +1381,12 @@ class Spec:
     # Ordinal `orders` for the sieve's ordinal leaves (ge/le/…, geSheet/…): {sheet: [v0,v1,…] |
     # "numeric" | "date"}. Flows verbatim into the sidecar; see constraints/sidecar_schema.md.
     orders: dict = field(default_factory=dict)
-    # OPT-IN t-wise covering-array reduction, applied PRE-CORE so `fw_final` is
-    # already reduced and the whole downstream chain is unchanged. 0 = off (full
-    # cartesian). This exposes the reducers that have existed in this module all
-    # along (`nwise_greedy`/`nwise_optimal`/`pick_n_for_budget`) but had no spec
-    # or CLI key, so no spec could ever ask for them.
+    # OPT-IN t-wise covering-array reduction. 0 = off (full cartesian). The run
+    # applies it between Core and Reader: the sieve stage deletes every fw_final
+    # row outside `coverage_allowlist(spec)`, so the Reader/Executor see only the
+    # covering array and `plan` states its exact size. Only specs whose mandatory
+    # slots are all single-pick qualify (`coverage_ineligibility` says why not);
+    # the run refuses the others rather than cover the wrong levels.
     coverage_strength: int = 0
     #: minimum set-cover instead of streaming greedy — smaller suite, more RAM.
     coverage_optimal: bool = False

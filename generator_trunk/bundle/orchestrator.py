@@ -540,6 +540,10 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
         a.sieve = True
     spec, toml_path, scratch = preflight(_with_db(a), cfg)
     a.db = a.db or spec.name
+    # A t-wise request is applied by the sieve stage; enabling it here, before the run
+    # directory records its settings, also makes resume re-apply or reuse it.
+    if fg.coverage_requested(spec):
+        a.sieve = True
     # STEP 27: resolve + validate this run's execution policy up front ("policy
     # validation before execution") -- an unknown profile / malformed policy
     # fails closed here, before any run directory, DB, or stage exists. STEP 28

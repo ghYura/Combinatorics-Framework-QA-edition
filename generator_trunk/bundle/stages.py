@@ -341,6 +341,14 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
         raise PreflightError(f"expected exactly one .toml in {args.spec_dir}, found {len(tomls)}")
     spec = fg.load_spec(tomls[0])
     ok(f"spec '{spec.name}' ({len(spec.slots)} slots)")
+    # A t-wise request is applied by the sieve stage after Core. Refuse the specs it
+    # cannot be applied to faithfully before Core spends time on the full product.
+    if fg.coverage_requested(spec):
+        reason = fg.coverage_ineligibility(spec)
+        if reason:
+            raise PreflightError(f"coverage_strength/coverage_budget cannot be applied to this spec: {reason}")
+        ok(f"t-wise coverage requested — the sieve stage keeps only the covering array "
+           f"({'budget ' + str(spec.coverage_budget) if spec.coverage_budget else 't=' + str(spec.coverage_strength)})")
     # STEP 13/14: scratch-root policy lives in `BundleConfig.scratch_for` —
     # default is `/tmp/fw_work/<db>`; `/mnt/F` (or anything else) is only
     # used if `cfg.scratch_root` (CLI/env/config-file) names it explicitly
@@ -517,14 +525,61 @@ def stage_draw(spec, scratch, cfg: BundleConfig = BundleConfig(), *, exact=False
     return cons, pars
 
 
+def _apply_coverage(conn, spec, code2val, baseline, combos_col) -> int:
+    """Delete every fw_final row outside the spec's t-wise covering array.
+
+    The allowlist is `fwgen.coverage_allowlist(spec)`, the list `plan` counted, so
+    the executed suite is the planned one. A faithful fw_final holds each allowed
+    tuple exactly once; anything else (a missing tuple, a duplicate) refuses the
+    run instead of executing a suite whose coverage claim is false."""
+    from . import twise
+    strength, reduced = fg.coverage_allowlist(spec)
+    allow = set(reduced)
+    sheets = [s.sheet for s in spec.slots if "FW_Optional" not in s.flags]
+    cols = [s for s in sheets if s in combos_col]
+    cur = conn.cursor()
+    cur.execute('SELECT combi_id' + "".join(f', "{combos_col[s]}"' for s in cols) + ' FROM "fw_final";')
+    records = [(rec[0], dict(zip(cols, rec[1:]))) for rec in cur.fetchall()]
+    try:
+        keep, drop, missing = twise.partition(records, sheets, code2val, baseline, allow)
+    except ValueError as exc:
+        raise StageError(f"t-wise coverage: cannot decode fw_final: {exc}") from exc
+    if missing or len(keep) != len(allow):
+        raise StageError(
+            f"t-wise coverage: fw_final holds {len(keep)} row(s) for {len(allow)} planned tuple(s) "
+            f"({len(missing)} planned tuple(s) have no row); refusing to run a suite whose "
+            f"coverage claim would be false")
+    if drop:
+        cur.execute('DELETE FROM "fw_final" WHERE combi_id = ANY(%s);', (drop,))
+        conn.commit()
+    cur.close()
+    ok(f"coverage: t={strength or 'full'} covering array keeps {len(keep)} of {len(records)} "
+       f"fw_final row(s) ({len(drop)} deleted) → fw_final now {len(keep)}")
+    return len(keep)
+
+
 def stage_sieve(spec, scratch, db, main_port, fw_final, cfg: BundleConfig = BundleConfig()):
-    print("\n[2.5/5] SIEVE — apply the constraint sidecar to fw_final (between Core and Reader)")
-    if not getattr(spec, "constraints", None):
+    print("\n[2.5/5] SIEVE — apply the constraint sidecar / t-wise covering array to fw_final "
+          "(between Core and Reader)")
+    coverage = fg.coverage_requested(spec)
+    if not getattr(spec, "constraints", None) and not coverage:
         print("    (spec has no constraints — skipping)")
         return fw_final
+    if coverage:
+        reason = fg.coverage_ineligibility(spec)
+        if reason:                                    # preflight refuses first; this is defence in depth
+            raise StageError(f"t-wise coverage refused: {reason}")
     import pg8000.dbapi
     sys.path.insert(0, str(HERE / "constraints"))
     import sieve as sv
+    if coverage:
+        conn = pg8000.dbapi.connect(host=cfg.main_db_host, port=main_port, user=cfg.main_db_user,
+                                    password=cfg.main_db_password, database=db)
+        try:
+            code2val, baseline, combos_col, _order = sv.build_maps_from_db(conn, "fw_final", spec.slots)
+            return _apply_coverage(conn, spec, code2val, baseline, combos_col)
+        finally:
+            conn.close()
     sidecar = {"version": 1, "params": spec.params, "constraints": spec.constraints}
     if getattr(spec, "orders", None):
         sidecar["orders"] = spec.orders
