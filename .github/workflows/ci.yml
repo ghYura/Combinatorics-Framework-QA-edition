@@ -226,18 +226,42 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           persist-credentials: false
-      - name: "Pre-flight: the private sibling SUT repository must be readable"
+      - name: "Pre-flight: the sibling SUT repository and its pinned revision must be readable"
+        id: sut_access
         env:
           SUT_DEPLOY_KEY: ${{ secrets.SUT_DEPLOY_KEY }}
           GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
         run: |
-          # github.token is scoped to THIS repository only; it can never read the
-          # private sibling, and GitHub reports an unreadable private repo as a
-          # misleading 404 "Repository not found" rather than a permission error.
-          # Establish readability BEFORE actions/checkout runs, so a misconfigured
-          # credential is diagnosed here in one line instead of masquerading as a
-          # missing repository. This gate FAILS — it never skips: a canonical gate
-          # that self-skips reads as green while the gate never ran.
+          # Establish readability BEFORE actions/checkout runs, so a problem is
+          # diagnosed here in one line instead of masquerading as a missing
+          # repository. This gate FAILS — it never skips: a canonical gate that
+          # self-skips reads as green while the gate never ran. The route that
+          # worked is published as `access` for the checkout step to use.
+          #
+          # The sibling is public, so the first probe is anonymous and needs no
+          # secret. That is what lets a pull request from a fork pass: GitHub
+          # never hands secrets to one.
+          export GIT_TERMINAL_PROMPT=0
+          public_url="https://github.com/${SUT_SIBLING_REPO}.git"
+          probe="$(mktemp -d)"
+          git init -q "$probe"
+          git -C "$probe" remote add origin "$public_url"
+          if git -C "$probe" fetch -q --depth=1 origin "${SUT_SIBLING_PIN}" 2>/dev/null; then
+            rm -rf "$probe"
+            echo "access=public" >> "$GITHUB_OUTPUT"
+            echo "Pre-flight OK (public): ${SUT_SIBLING_REPO} readable anonymously, pinned revision ${SUT_SIBLING_PIN} present."
+            exit 0
+          fi
+          rm -rf "$probe"
+          if git ls-remote "$public_url" HEAD >/dev/null 2>&1; then
+            echo "::error::${SUT_SIBLING_REPO} is publicly readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+            exit 1
+          fi
+          #
+          # Not publicly readable: the sibling was made private again, or GitHub
+          # could not be reached. GitHub reports an unreadable private repository
+          # as a misleading 404 "Repository not found", and github.token is scoped
+          # to THIS repository, so only a dedicated credential can help.
           #
           # Two credentials are accepted. SUT_DEPLOY_KEY is preferred: a read-only
           # deploy key is bound to that one repository, carries no user identity,
@@ -263,6 +287,7 @@ jobs:
               exit 1
             fi
             rm -f "$key"; rm -rf "$probe"
+            echo "access=deploy-key" >> "$GITHUB_OUTPUT"
             echo "Pre-flight OK (deploy key): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
           elif [ -n "${GH_TOKEN}" ]; then
             if ! gh api "repos/${SUT_SIBLING_REPO}" --silent; then
@@ -273,9 +298,10 @@ jobs:
               echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
               exit 1
             fi
+            echo "access=pat" >> "$GITHUB_OUTPUT"
             echo "Pre-flight OK (PAT): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
           else
-            echo "::error::no credential for the private sibling ${SUT_SIBLING_REPO} is configured, so this job cannot check it out (github.token is scoped to this repository only and can never work). Preferred fix: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY. Alternative: a fine-grained PAT with 'Contents: Read' stored as SUT_REPO_TOKEN. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+            echo "::error::${SUT_SIBLING_REPO} is not publicly readable (or GitHub could not be reached) and no credential for it is configured. If it was made private on purpose: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY, or store a fine-grained PAT with 'Contents: Read' as SUT_REPO_TOKEN. Pull requests from forks never receive secrets, so they cannot pass this gate while it is private. See docs/40_SIBLING_SUT_CREDENTIAL.md"
             exit 1
           fi
       - name: Check out the exact canonical sibling SUT revision
@@ -285,19 +311,20 @@ jobs:
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # actions/checkout prefers ssh-key when it is non-empty and falls back to
-          # token otherwise, so both supported credentials are offered here.
+          # Use exactly the route the pre-flight proved. `public` needs no secret:
+          # github.token can read any public repository. actions/checkout uses
+          # ssh-key when it is non-empty and token otherwise, so ssh-key stays
+          # empty unless the deploy key is the proven route.
           #
           # `token` is declared required by the action and is validated before it
           # decides which transport to use, so it must be non-empty even on the
           # ssh-key path where it is never used — an empty value fails the step
-          # with "Input required and not supplied: token". github.token is the
-          # harmless filler. It was previously removed because it silently turned
-          # a missing credential into a bogus 404; that can no longer happen,
-          # because the pre-flight above has already proved a real credential
-          # works and fails the job outright when neither secret is configured.
-          ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
-          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+          # with "Input required and not supplied: token". github.token is that
+          # filler. It cannot turn a missing credential into a bogus 404 any more:
+          # the pre-flight above has already proved the chosen route works, and
+          # fails the job outright when none does.
+          ssh-key: ${{ steps.sut_access.outputs.access == 'deploy-key' && secrets.SUT_DEPLOY_KEY || '' }}
+          token: ${{ steps.sut_access.outputs.access == 'pat' && secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
       - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
@@ -489,18 +516,42 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
-      - name: "Pre-flight: the private sibling SUT repository must be readable"
+      - name: "Pre-flight: the sibling SUT repository and its pinned revision must be readable"
+        id: sut_access
         env:
           SUT_DEPLOY_KEY: ${{ secrets.SUT_DEPLOY_KEY }}
           GH_TOKEN: ${{ secrets.SUT_REPO_TOKEN }}
         run: |
-          # github.token is scoped to THIS repository only; it can never read the
-          # private sibling, and GitHub reports an unreadable private repo as a
-          # misleading 404 "Repository not found" rather than a permission error.
-          # Establish readability BEFORE actions/checkout runs, so a misconfigured
-          # credential is diagnosed here in one line instead of masquerading as a
-          # missing repository. This gate FAILS — it never skips: a canonical gate
-          # that self-skips reads as green while the gate never ran.
+          # Establish readability BEFORE actions/checkout runs, so a problem is
+          # diagnosed here in one line instead of masquerading as a missing
+          # repository. This gate FAILS — it never skips: a canonical gate that
+          # self-skips reads as green while the gate never ran. The route that
+          # worked is published as `access` for the checkout step to use.
+          #
+          # The sibling is public, so the first probe is anonymous and needs no
+          # secret. That is what lets a pull request from a fork pass: GitHub
+          # never hands secrets to one.
+          export GIT_TERMINAL_PROMPT=0
+          public_url="https://github.com/${SUT_SIBLING_REPO}.git"
+          probe="$(mktemp -d)"
+          git init -q "$probe"
+          git -C "$probe" remote add origin "$public_url"
+          if git -C "$probe" fetch -q --depth=1 origin "${SUT_SIBLING_PIN}" 2>/dev/null; then
+            rm -rf "$probe"
+            echo "access=public" >> "$GITHUB_OUTPUT"
+            echo "Pre-flight OK (public): ${SUT_SIBLING_REPO} readable anonymously, pinned revision ${SUT_SIBLING_PIN} present."
+            exit 0
+          fi
+          rm -rf "$probe"
+          if git ls-remote "$public_url" HEAD >/dev/null 2>&1; then
+            echo "::error::${SUT_SIBLING_REPO} is publicly readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
+            exit 1
+          fi
+          #
+          # Not publicly readable: the sibling was made private again, or GitHub
+          # could not be reached. GitHub reports an unreadable private repository
+          # as a misleading 404 "Repository not found", and github.token is scoped
+          # to THIS repository, so only a dedicated credential can help.
           #
           # Two credentials are accepted. SUT_DEPLOY_KEY is preferred: a read-only
           # deploy key is bound to that one repository, carries no user identity,
@@ -526,6 +577,7 @@ jobs:
               exit 1
             fi
             rm -f "$key"; rm -rf "$probe"
+            echo "access=deploy-key" >> "$GITHUB_OUTPUT"
             echo "Pre-flight OK (deploy key): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
           elif [ -n "${GH_TOKEN}" ]; then
             if ! gh api "repos/${SUT_SIBLING_REPO}" --silent; then
@@ -536,9 +588,10 @@ jobs:
               echo "::error::${SUT_SIBLING_REPO} is readable, but the pinned canonical revision ${SUT_SIBLING_PIN} does not exist there. The pin has moved or history was rewritten — a real integration defect (fix the pin in this workflow), NOT a credential problem."
               exit 1
             fi
+            echo "access=pat" >> "$GITHUB_OUTPUT"
             echo "Pre-flight OK (PAT): ${SUT_SIBLING_REPO} readable, pinned revision ${SUT_SIBLING_PIN} present."
           else
-            echo "::error::no credential for the private sibling ${SUT_SIBLING_REPO} is configured, so this job cannot check it out (github.token is scoped to this repository only and can never work). Preferred fix: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY. Alternative: a fine-grained PAT with 'Contents: Read' stored as SUT_REPO_TOKEN. See docs/40_SIBLING_SUT_CREDENTIAL.md"
+            echo "::error::${SUT_SIBLING_REPO} is not publicly readable (or GitHub could not be reached) and no credential for it is configured. If it was made private on purpose: add a read-only deploy key to ${SUT_SIBLING_REPO} and store its private half as the secret SUT_DEPLOY_KEY, or store a fine-grained PAT with 'Contents: Read' as SUT_REPO_TOKEN. Pull requests from forks never receive secrets, so they cannot pass this gate while it is private. See docs/40_SIBLING_SUT_CREDENTIAL.md"
             exit 1
           fi
       - name: Check out the exact sibling SUT revision for release evidence
@@ -548,19 +601,20 @@ jobs:
           ref: ${{ env.SUT_SIBLING_PIN }}
           path: SUT
           persist-credentials: false
-          # actions/checkout prefers ssh-key when it is non-empty and falls back to
-          # token otherwise, so both supported credentials are offered here.
+          # Use exactly the route the pre-flight proved. `public` needs no secret:
+          # github.token can read any public repository. actions/checkout uses
+          # ssh-key when it is non-empty and token otherwise, so ssh-key stays
+          # empty unless the deploy key is the proven route.
           #
           # `token` is declared required by the action and is validated before it
           # decides which transport to use, so it must be non-empty even on the
           # ssh-key path where it is never used — an empty value fails the step
-          # with "Input required and not supplied: token". github.token is the
-          # harmless filler. It was previously removed because it silently turned
-          # a missing credential into a bogus 404; that can no longer happen,
-          # because the pre-flight above has already proved a real credential
-          # works and fails the job outright when neither secret is configured.
-          ssh-key: ${{ secrets.SUT_DEPLOY_KEY }}
-          token: ${{ secrets.SUT_REPO_TOKEN || github.token }}
+          # with "Input required and not supplied: token". github.token is that
+          # filler. It cannot turn a missing credential into a bogus 404 any more:
+          # the pre-flight above has already proved the chosen route works, and
+          # fails the job outright when none does.
+          ssh-key: ${{ steps.sut_access.outputs.access == 'deploy-key' && secrets.SUT_DEPLOY_KEY || '' }}
+          token: ${{ steps.sut_access.outputs.access == 'pat' && secrets.SUT_REPO_TOKEN || github.token }}
       - name: Keep the nested SUT checkout outside Framework source identity
         run: echo /SUT/ >> .git/info/exclude
 
