@@ -27,7 +27,7 @@
 #
 # QUICK_INSTALL_ALL.sh — one command from nothing to a verified Bundle install.
 #
-# Does everything QUICKSTART.md and SUT/QUICKSTART.md describe: clones both private
+# Does everything QUICKSTART.md and SUT/QUICKSTART.md describe: clones both
 # repositories side by side, builds the Python and Java components, provisions the
 # per-SUT virtualenvs, and runs the documented smoke tests, checking each published
 # count rather than merely reporting success.
@@ -41,8 +41,11 @@
 # Run it from anywhere: inside an existing checkout (it will find the sibling, or
 # clone it), or in an empty directory (it will clone both).
 #
-# Requirements: git, gh (authenticated), python3 >= 3.11, JDK 25, maven.
+# Requirements: git, python3 >= 3.11, JDK 25, maven.
 # --with-db additionally needs docker, psql and pg_isready.
+# gh is optional: both repositories are public, so they are cloned anonymously over
+# HTTPS. A logged-in gh is used first when present, which keeps its configured
+# transport (e.g. SSH) and still works if a repository is ever made private again.
 #
 # The script is idempotent: re-running it reuses what already exists. It never
 # writes outside the target directory, never installs anything system-wide, and
@@ -100,8 +103,11 @@ on_error() {
 }
 trap 'on_error $LINENO' ERR
 
+# The usage text is the comment block that starts at the script's title line and ends
+# at the first blank line. Located by content, not by line numbers, so a header added
+# above it (as the licence header once was) cannot turn --help into something else.
 usage() {
-    sed -n '3,26p' "$0" | sed 's/^# \{0,1\}//'
+    sed -n '/^# QUICK_INSTALL_ALL\.sh — /,/^$/p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
 }
 
@@ -156,7 +162,7 @@ printf '%s' "$C_0"
 step "Checking prerequisites"
 
 missing=()
-for tool in git gh python3 java mvn; do
+for tool in git python3 java mvn; do
     command -v "$tool" >/dev/null 2>&1 || missing+=("$tool")
 done
 if [ "$WITH_DB" -eq 1 ]; then
@@ -183,25 +189,27 @@ ok "java $JAVA_MAJOR"
 # `mvn --version` emits ANSI colour even when piped, so strip escapes before printing.
 ok "maven $(mvn --version 2>/dev/null | head -1 | sed -e 's/\x1b\[[0-9;]*m//g' -e 's/Apache Maven \([^ ]*\).*/\1/')"
 
-# gh must be authenticated: both repositories are private.
-if ! gh auth status --hostname github.com >/dev/null 2>&1; then
-    die "gh is not authenticated. Run:  gh auth login --hostname github.com --web
-       Both repositories are private, so an anonymous clone returns 404 rather than a permission error."
-fi
-ok "gh authenticated as $(gh api user --jq .login 2>/dev/null || echo '<unknown>')"
-
-# If gh is set to SSH, make sure that transport actually works before we rely on it.
-if [ "$(gh config get git_protocol 2>/dev/null || echo https)" = "ssh" ]; then
-    if ! ssh -o StrictHostKeyChecking=accept-new -o BatchMode=yes -T git@github.com 2>&1 | grep -qi "successfully authenticated"; then
-        die "gh is configured for SSH but 'ssh -T git@github.com' does not authenticate.
-       Either register your key with GitHub, or switch back:  gh config set git_protocol https --host github.com"
-    fi
-    ok "ssh transport verified"
+# Both repositories are public, so gh is optional. When it is installed and logged
+# in, clone_repo tries it first (keeping its configured transport); otherwise, or if
+# that attempt fails, it clones anonymously over HTTPS.
+GH_READY=0
+if command -v gh >/dev/null 2>&1 && gh auth status --hostname github.com >/dev/null 2>&1; then
+    GH_READY=1
+    ok "gh authenticated as $(gh api user --jq .login 2>/dev/null || echo '<unknown>')"
+else
+    info "gh not installed or not logged in — not needed: the repositories are public"
 fi
 
 if [ "$WITH_DB" -eq 1 ]; then
-    export DOCKER_HOST="${DOCKER_HOST:-unix:///run/user/$(id -u)/docker.sock}"
-    docker info >/dev/null 2>&1 || die "docker is installed but its daemon is not reachable (DOCKER_HOST=$DOCKER_HOST)"
+    # Reach Docker the way this host already does (DOCKER_HOST, the active context, or
+    # the default socket). Only when that fails and DOCKER_HOST is unset, try the
+    # rootless daemon's per-user socket, which a plain `docker` does not look for.
+    rootless_sock="/run/user/$(id -u)/docker.sock"
+    if [ -z "${DOCKER_HOST:-}" ] && [ -S "$rootless_sock" ] && ! docker info >/dev/null 2>&1; then
+        export DOCKER_HOST="unix://$rootless_sock"
+    fi
+    docker info >/dev/null 2>&1 \
+        || die "docker is installed but its daemon is not reachable (DOCKER_HOST=${DOCKER_HOST:-<unset>}, context=$(docker context show 2>/dev/null || echo '<unknown>'))"
     ok "docker reachable"
 fi
 
@@ -226,6 +234,20 @@ info "workspace: $ROOT"
 FW_ROOT="$ROOT/$FW_DIR_NAME"
 SUT_ROOT="$ROOT/$SUT_DIR_NAME"
 
+# A logged-in gh first (it keeps the user's configured transport), then an anonymous
+# HTTPS clone. GIT_TERMINAL_PROMPT=0 makes an unreachable repository fail at once
+# instead of stopping at a username prompt. Only called when "$dest" does not exist,
+# so removing what a failed attempt left behind cannot touch anything else.
+clone_repo() {
+    local repo="$1" dest="$2"
+    if [ "$GH_READY" -eq 1 ]; then
+        gh repo clone "$repo" "$dest" -- --quiet 2>/dev/null && return 0
+        rm -rf "$dest"
+        info "gh could not clone $repo — retrying anonymously over HTTPS"
+    fi
+    GIT_TERMINAL_PROMPT=0 git clone --quiet "https://github.com/$repo.git" "$dest"
+}
+
 clone_or_keep() {
     local repo="$1" dest="$2" label="$3"
     if [ -d "$dest/.git" ]; then
@@ -234,8 +256,9 @@ clone_or_keep() {
         die "$dest exists but is not a git checkout; move it aside or use --dir"
     else
         info "cloning $repo …"
-        gh repo clone "$repo" "$dest" -- --quiet \
-            || die "clone of $repo failed. Both repositories are private — confirm your account can read them:  gh repo view $repo"
+        clone_repo "$repo" "$dest" \
+            || die "clone of $repo failed. Check that https://github.com/$repo opens in a browser and that this host can reach github.com.
+       If the repository has been made private, log in first:  gh auth login --hostname github.com --web"
         ok "$label cloned"
     fi
     if [ -n "$REF" ]; then
