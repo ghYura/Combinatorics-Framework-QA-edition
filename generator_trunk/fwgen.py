@@ -400,6 +400,26 @@ def check_inert_permut_arg(sheet: str, verb: str, values, *,
     return msg
 
 
+def check_raw_literal_newline(sheet: str, values, *, name: str = "") -> None:
+    """Refuse a raw value that ends in a literal backslash-n.
+
+    TOML single-quoted strings do not process escapes, so ``'x = 1\\n'`` reaches
+    the candidate as ``x = 1`` + backslash + ``n``: in Python a line continuation
+    followed by a stray ``n``, in Java a stray escape -- a syntax error in EVERY
+    candidate (seen live: 3456 of 3456 BROKEN, with nothing pointing at the spec).
+    Unlike the arity heuristic this is never intended, so it is an error in both
+    postures, raised where the spec is read rather than after Core has run."""
+    bad = [i for i, v in enumerate(values)
+           if str(v).rstrip(" \t").endswith("\\n") and not str(v).rstrip(" \t").endswith("\\\\n")]
+    if bad:
+        where = f"spec '{name}' " if name else ""
+        raise ValueError(
+            f"{where}slot '{sheet}': raw value(s) {bad} end in a literal backslash-n. TOML "
+            f"single-quoted strings do not process escapes, so the candidate would get a "
+            f"backslash and an 'n', not a newline. Drop the \\n (each slot value already ends "
+            f"its own line) or use a double-quoted string.")
+
+
 def check_raw_row_arity(sheet: str, verb: str, values, flags=(), *,
                         name: str = "", strict: bool = False) -> str | None:
     """Catch the concatenator trap at authoring time.
@@ -1639,6 +1659,7 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
         group_replace = tuple((str(e[0]), str(e[1])) for e in gr_raw)
         check_inert_permut_arg(sheet, verb, exp_vals, name=name, strict=strict)
         if is_raw:
+            check_raw_literal_newline(sheet, exp_vals, name=name)
             check_raw_row_arity(sheet, verb, exp_vals, flags, name=name, strict=strict)
         slots.append(Slot(sheet=sheet,
                           key=s.get("key", sheet.lower()),
@@ -2312,12 +2333,16 @@ def validate_workbook(path: str | Path) -> list[str]:
                 int(row[0])
             except (TypeError, ValueError):
                 errs.append(f"FW_CUSTOM_VAR code '{row[0]}' is not an int")
-    # data cells must not start with FW_
+    # data cells must not start with FW_ -- Core would read the cell as a verb or
+    # control keyword, not as data. Say how to author around it: the common case is
+    # a raw code fragment that opens with `FW_VAR = ...`.
     for ds in data_sheets:
         for row in wb[ds].iter_rows(values_only=True):
             for v in row:
                 if v is not None and str(v).lstrip().startswith("FW_"):
-                    errs.append(f"data cell in '{ds}' starts with FW_: {v!r}")
+                    errs.append(f"data cell in '{ds}' starts with FW_: {v!r} -- Core reads a cell "
+                                f"that starts with FW_ as a verb, not data. Start the fragment with "
+                                f"another statement, e.g. `_v = ...` then `FW_VAR = _v`")
     wb.close()
     return errs
 
