@@ -67,10 +67,13 @@ This module keeps the strengths and drops the weaknesses:
         + BraceOperationHandler.{processOneToFormula,processManyToFormula,cleanupExcludedTables});
         NOTE: author seq_extra as a TOP-LEVEL toml key (before any [[slots]]/[[goals]]
         table) or it binds to the last table and is silently dropped;
-      - FW_Reuse / FW_ReuseTableOnly preserve a brace operand's table / rows from
-        the join's cleanup (Reuse=keep table, ReuseTableOnly=keep rows; nested
-        operands need both). On a PLAIN (non-operand) slot FW_Reuse is a harmless
-        no-op — a slot is in the cartesian by simply NOT being excluded;
+      - FW_Reuse / FW_ReuseTableOnly decide what a brace operand keeps after the join
+        (author's semantics): FW_Reuse keeps the table AND the rows it generated, so
+        another call of the sheet in a later FW_Seq row (another brace, a nested FW_())
+        reuses that data; FW_ReuseTableOnly keeps only the table, emptied; neither =
+        delete the rows and drop the table. FW_Reuse wins when both are present. On a
+        PLAIN (non-operand) slot FW_Reuse is a harmless no-op — a slot is in the
+        cartesian by simply NOT being excluded;
       - a lone FW_Combi(1) auto-promotes to dual;
       - FW_SheetNames: col0=sheet, col1=prefix, col2=ending; FW_EMPTY_STRING→"";
       - FW_CUSTOM_VAR: col0 MUST parse as int, col1=message;
@@ -148,14 +151,25 @@ DEFAULT_VERB = "FW_Combi(1)"
 # Unary verbs (operate on ONE sheet's rows). Arg forms: k=int | all|full (every
 # size, engine m=-2) | size (= list length); bare or () => k=1. R-variants first
 # so e.g. "FW_PermutR(2)" can't be mis-read as "FW_Permut".
+# The named arguments are case-INSENSITIVE and (size) is accepted for every sized
+# verb, exactly as the Core reads them (SheetWorker.resolveM matches
+# `(?i)size` / `(?i)(all|full)` for any algo type): legacy XLSX workbooks — the
+# Framework's original input format — use forms such as FW_Combi(alL),
+# FW_CombiR(siZe) and FW_PermutR(All), and a TOML spec must be able to say the
+# same thing. `_first` and the FW_Subsets_ modes are case-insensitive in the
+# Core as well (`FW_Cartes(?i)_first`, `SubsetMode.valueOf(mode.toUpperCase())`).
+_ARG_WORD = r"(?i:all|full|size)"
 _VERB_RE = re.compile(
-    r"FW_CombiR(\(\d+\)|\(all\)|\(full\)|\(\))?"                          # multicombinations
-    r"|FW_Combi(\(\d+\)|\(all\)|\(full\)|\(size\)|\(\))?"                 # combinations C(n,k)
-    r"|FW_PermutR(\(\d+\)|\(all\)|\(full\)|\(\))?"                        # permutations w/ repetition n^k
-    r"|FW_Permut(\(\d+\)|\(\)|\(PermutationGenerator\.TreatDuplicatesAs\.IDENTICAL\))?"  # perms / k-perms / multiset
-    r"|FW_Subsets(_(BEFORE|AFTER|EXACT|RANGE|GIVEN)\(\d+(,\d+)*\)|\(\d+\))?"  # powerset 2^n / bounded
-    r"|FW_Cartes(_first)?\([A-Za-z0-9_]+\)"                              # cartesian with another sheet
+    rf"FW_CombiR(\(\d+\)|\({_ARG_WORD}\)|\(\))?"                         # multicombinations
+    rf"|FW_Combi(\(\d+\)|\({_ARG_WORD}\)|\(\))?"                         # combinations C(n,k)
+    rf"|FW_PermutR(\(\d+\)|\({_ARG_WORD}\)|\(\))?"                       # permutations w/ repetition n^k
+    rf"|FW_Permut(\(\d+\)|\({_ARG_WORD}\)|\(\s*\)|\(PermutationGenerator\.TreatDuplicatesAs\.IDENTICAL\))?"  # n! perms (legacy also: "( )"; a digit k is inert) / multiset
+    r"|FW_Subsets(_(?i:BEFORE|AFTER|EXACT|RANGE|GIVEN)\(\d+(,\d+)*\)|\(\d+\))?"  # powerset 2^n / bounded
+    r"|FW_Cartes((?i:_first))?\([A-Za-z0-9_]+\)"                         # cartesian with another sheet
     r"|FW_Separator\([A-Za-z0-9_]+\)")                                   # interleave a separator sheet
+# argument probes shared by every sizing function below (same case rules as _VERB_RE)
+_ALL_ARG_RE = re.compile(r"\((all|full)\)", re.I)
+_SIZE_ARG_RE = re.compile(r"\(size\)", re.I)
 # Brace cross-sheet joiner (mirrors SeqParser.FW_BRACE_VALID): 9 fields / 8
 # commas, fields 1 & 5 empty, multiplicity ∈ {1:1,1:N,M:1,M:M,M:N}.
 # Either operand may be Core's nested marker: FW_() consumes the most-recent
@@ -168,7 +182,7 @@ _BRACE_RE = re.compile(
 _FLAG_RE = re.compile(
     r"FW_Optional|FW_Exclude|FW_Heading|FW_LastInQueue|FW_Reuse|FW_ReuseTableOnly|FW_Concatenator=.*")
 # operands a verb references as OTHER sheets (must exist), for validation.
-_OPERAND_RE = re.compile(r"FW_(?:Cartes(?:_first)?|Separator)\(([A-Za-z0-9_]+)\)")
+_OPERAND_RE = re.compile(r"FW_(?:Cartes(?:(?i:_first))?|Separator)\(([A-Za-z0-9_]+)\)")
 
 
 def _first_line(tok: str) -> str:
@@ -215,7 +229,11 @@ def compile_alias(tok: str) -> tuple[str, tuple[str, ...]]:
 
     - ``choose_one``        -> ``FW_Combi(1)``          (pick exactly one value)
     - ``choose_k(k)``       -> ``FW_Combi(k)``          (pick exactly k, C(n,k))
-    - ``permute`` / ``(k)`` -> ``FW_Permut`` / ``FW_Permut(k)`` (orderings / k-perms)
+    - ``permute``           -> ``FW_Permut``            (all n! orderings)
+    - ``permute(k)``        -> ``FW_Combi(k)`` then ``FW_Permut()`` in the same FW_Seq row
+                               (k-permutations P(n,k): pick k, then order each pick — the
+                               combinatoricslib3 recipe; FW_Permut itself has no k form, see
+                               `alias_chain`)
     - ``feature_subset``    -> ``FW_Subsets``           (powerset 2^n)
     - ``feature_subset(k)`` -> ``FW_Subsets(k)``        (bounded powerset)
     - ``optional_action``   -> ``FW_Combi(1)`` + flag ``FW_Optional`` (present-or-absent)
@@ -241,13 +259,24 @@ def compile_alias(tok: str) -> tuple[str, tuple[str, ...]]:
             raise ValueError(f"alias 'choose_k(k)' needs k >= 1, got {tok!r}")
         return f"FW_Combi({k})", ()
     if name == "permute":
-        return (f"FW_Permut({k})" if k is not None else "FW_Permut"), ()
+        if k is not None and k < 1:
+            raise ValueError(f"alias 'permute(k)' needs k >= 1, got {tok!r}")
+        return (f"FW_Combi({k})" if k is not None else "FW_Permut"), ()
     if name == "feature_subset":
         return (f"FW_Subsets({k})" if k is not None else "FW_Subsets"), ()
     if name == "optional_action":
         _no_arg()
         return "FW_Combi(1)", ("FW_Optional",)
     raise ValueError(f"unhandled alias {tok!r}")  # pragma: no cover
+
+
+def alias_chain(tok: str) -> "tuple[str, ...]":
+    """Directives an alias adds AFTER its verb in the slot's FW_Seq row. `permute(k)`
+    is `FW_Combi(k)` followed by `FW_Permut()`: the Core draws the k-subsets, then a later
+    pass permutes each one, giving C(n,k)·k! = P(n,k) rows. (Two combo-rule verbs, so the
+    Core appends no dual verb.)"""
+    t = str(tok).strip()
+    return ("FW_Permut()",) if re.fullmatch(r"permute\(\s*\d+\s*\)", t) else ()
 
 
 def verb_sheet_operands(tok: str) -> list[str]:
@@ -286,21 +315,21 @@ def verb_output_count(verb: str, n: int, other_n: int = 0) -> int:
     if v.startswith("FW_Cartes"):
         return max(1, n) * max(1, other_n or 1)
     if v.startswith("FW_CombiR"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return sum(math.comb(n + k - 1, k) for k in range(1, n + 1)) or 1
-        k = _arg()
+        k = n if _SIZE_ARG_RE.search(v) else _arg()
         return math.comb(n + k - 1, k) if k >= 0 and n > 0 else 1
     if v.startswith("FW_Combi"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return (2 ** n - 1) or 1
-        if re.search(r"\(size\)", v):
+        if _SIZE_ARG_RE.search(v):
             return 1
         k = _arg()
         return math.comb(n, k) if 0 <= k <= n else 1
     if v.startswith("FW_PermutR"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return sum(n ** k for k in range(1, n + 1)) or 1
-        return n ** _arg()
+        return n ** (n if _SIZE_ARG_RE.search(v) else _arg())
     if v.startswith("FW_Permut"):
         # MEASURED, not assumed: the Core's PermutationsSimpleG takes no k --
         # its constructors are (List, boolean) and (List, boolean, boolean) --
@@ -345,7 +374,7 @@ def verb_max_row_arity(verb: str, n: int) -> int:
     if v.startswith(("FW_Group", "FW_Cartes")):
         return max(2, n)
     if v.startswith(("FW_CombiR", "FW_Combi", "FW_PermutR")):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v) or _SIZE_ARG_RE.search(v):
             return n
         return _arg()
     if v.startswith("FW_Permut"):
@@ -392,7 +421,8 @@ def check_inert_permut_arg(sheet: str, verb: str, values, *,
     msg = (f"{where}slot '{sheet}': FW_Permut({k}) over {n} values does NOT draw {k}-permutations. "
            f"The Core's PermutationsSimpleG takes no size argument, so the {k} is inert and the "
            f"slot emits all {n}! orderings -- {math.factorial(n):,} rows, not "
-           f"{math.perm(n, k):,}. Use FW_Permut over a sheet of the size you want, or "
+           f"{math.perm(n, k):,}. For k-permutations use the alias permute({k}) (FW_Combi({k}) then "
+           f"FW_Permut() in one FW_Seq row), FW_Permut over a sheet of the size you want, or "
            f"FW_PermutR({k}) if repetition is acceptable.")
     if strict:
         raise ValueError(msg + " (strict mode)")
@@ -549,19 +579,19 @@ def verb_row_length_histogram(verb: str, n: int) -> "dict[int, int] | None":
     if n <= 0:
         return None
     if v.startswith("FW_CombiR"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return {k: math.comb(n + k - 1, k) for k in range(1, n + 1)}
-        k = _arg()
+        k = n if _SIZE_ARG_RE.search(v) else _arg()
         return {k: math.comb(n + k - 1, k)} if k >= 1 else None
     if v.startswith("FW_Combi"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return {k: math.comb(n, k) for k in range(1, n + 1)}
-        k = _arg()
+        k = n if _SIZE_ARG_RE.search(v) else _arg()       # (size): the whole list as ONE row
         return {k: math.comb(n, k)} if 0 <= k <= n else None
     if v.startswith("FW_PermutR"):
-        if re.search(r"\((all|full)\)", v):
+        if _ALL_ARG_RE.search(v):
             return {k: n ** k for k in range(1, n + 1)}
-        k = _arg()
+        k = n if _SIZE_ARG_RE.search(v) else _arg()
         return {k: n ** k} if k >= 1 else None
     if v.startswith("FW_Permut"):
         return {n: math.factorial(n)}       # k is inert -- see verb_output_count
@@ -602,21 +632,21 @@ def verb_rows(verb: str, values: "Sequence[str]") -> "list[tuple[str, ...]]":
         m = re.search(r"\((\d+)\)", v)
         return int(m.group(1)) if m else default
 
-    def _all(x):
-        return bool(re.search(r"\((all|full)\)", x))
+    def _ks(x):
+        # (all)/(full) -> every size 1..n ; (size) -> the list length ; else the k argument
+        if _ALL_ARG_RE.search(x):
+            return range(1, n + 1)
+        return [n] if _SIZE_ARG_RE.search(x) else [_arg()]
 
     if n == 0:
         return []
     if v.startswith("FW_CombiR"):
-        ks = range(1, n + 1) if _all(v) else [_arg()]
-        return [tuple(c) for k in ks if k >= 1
+        return [tuple(c) for k in _ks(v) if k >= 1
                 for c in itertools.combinations_with_replacement(vals, k)]
     if v.startswith("FW_Combi"):
-        ks = range(1, n + 1) if _all(v) else [_arg()]
-        return [tuple(c) for k in ks if 0 <= k <= n for c in itertools.combinations(vals, k)]
+        return [tuple(c) for k in _ks(v) if 0 <= k <= n for c in itertools.combinations(vals, k)]
     if v.startswith("FW_PermutR"):
-        ks = range(1, n + 1) if _all(v) else [_arg()]
-        return [tuple(c) for k in ks if k >= 1 for c in itertools.product(vals, repeat=k)]
+        return [tuple(c) for k in _ks(v) if k >= 1 for c in itertools.product(vals, repeat=k)]
     if v.startswith("FW_Permut"):
         return [tuple(c) for c in itertools.permutations(vals, n)]   # k is inert
     if v.startswith("FW_Subsets"):
@@ -962,6 +992,9 @@ def estimate_core_combos(spec: "Spec") -> int:
     target sheet's contribution by the joined row count (`brace_cardinality`).
     Cartes operands sized via the referenced sheet. Exact for closed-form verbs;
     see `spec_cardinality_plan` for the per-stage confidence tiers."""
+    if uses_program_sizing(spec):             # verb chains / legacy XLSX: the program the Core runs
+        est = _program_cardinality_plan(spec).mandatory
+        return int(est.value) if est.value is not None else 0
     sheet_n = {s.sheet: len(s.values) for s in spec.slots}
     braces = _terminal_braces(spec)
     targets = _brace_targets_of(spec)
@@ -991,6 +1024,8 @@ def optional_multiplier_cardinality(spec: "Spec") -> CardinalityEstimate:
     contributes 4+1 = 5 branches, not 2+1 = 3.
     Mirrors bundle/cli.py's `optional_factor` computation, but as a reusable,
     confidence-tagged Spec-level API (no behavioral change to that call site)."""
+    if uses_program_sizing(spec):             # verb chains / legacy XLSX: the program the Core runs
+        return _program_cardinality_plan(spec).optional_multiplier
     opt_slots = [s for s in spec.slots if "FW_Optional" in s.flags]
     if not opt_slots:
         return CardinalityEstimate.exact(1, formula="no FW_Optional slots -> factor 1")
@@ -1061,7 +1096,13 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
 
     Mirrors `estimate_core_combos`'s mandatory-product walk (same slot filter,
     same Cartes operand sizing) but keeps every stage's confidence tier and
-    formula instead of returning one bare integer — see `SpecCardinalityPlan`."""
+    formula instead of returning one bare integer — see `SpecCardinalityPlan`.
+
+    A legacy XLSX spec, or a TOML spec whose `seq_extra` re-declares a slot with a verb
+    chain, is sized from its effective FW_Seq program instead (`_program_cardinality_plan`):
+    its first verb alone would understate it while claiming EXACT."""
+    if uses_program_sizing(spec):
+        return _program_cardinality_plan(spec)
     sheet_n = {s.sheet: len(s.values) for s in spec.slots}
     raw_values = dict(sheet_n)
 
@@ -1294,6 +1335,786 @@ def format_cardinality_plan(plan: SpecCardinalityPlan) -> str:
     return "\n".join(lines)
 
 
+# ===========================================================================
+# 2b. The EFFECTIVE FW_Seq program, and sizing it the way the Core runs it
+# ===========================================================================
+# A slot says what the author declared; what the Core RUNS is the FW_Seq program it
+# parses (SeqParser). The two differ whenever a row holds more than one directive —
+# a verb chain, FW_Group between a previous and a FOLLOWING verb, FW_Separator, a
+# later row re-declaring a sheet, the dual verb the Core appends to a single combo
+# verb. Legacy XLSX workbooks (the Framework's original input) are written in exactly
+# that style, and a TOML `seq_extra` row can re-declare a slot as well. Sizing such a
+# sheet from its first verb alone understates it while claiming EXACT; the functions
+# below read the program with the Core's own rules and size it honestly — EXACT when
+# provable, BOUNDED by the rows actually emitted otherwise.
+
+_SEQ_FLAG_SUFFIXES = ("FW_Exclude", "FW_Heading", "FW_LastInQueue",
+                      "FW_Reuse", "FW_ReuseTableOnly", "FW_Optional")
+_WORKBOOK_SUFFIXES = {".xlsx", ".xlsm"}
+
+
+def _seq_flag(cell: str) -> "str | None":
+    """The FW_Seq flag a cell carries — SeqParser tests the SUFFIX — or None."""
+    v = str(cell)
+    for suffix in _SEQ_FLAG_SUFFIXES:
+        if v.endswith(suffix):
+            return suffix
+    return None
+
+
+def _is_combo_rule_verb(v: str) -> bool:
+    """SeqParser.isComboRuleVerb: the verbs the Core's dual-verb promotion counts."""
+    return (v.startswith(("FW_Combi(", "FW_CombiR(", "FW_Permut(", "FW_PermutR("))
+            or v == "FW_Subsets" or v.startswith("FW_Subsets("))
+
+
+def promote_directives(seq: "Sequence[str]") -> "list[str]":
+    """SeqParser Tier-0 fix 0.6: a row holding exactly ONE combo-rule verb and no
+    brace gets that verb appended again, so fw_<k> and fw2_<k> are both filled."""
+    seq = list(seq)
+    if not seq or any(_first_line(s).startswith("FW_(") for s in seq):
+        return seq
+    combo = [s for s in seq if _is_combo_rule_verb(_first_line(s))]
+    return seq + [combo[0]] if len(combo) == 1 else seq
+
+
+def _new_program_entry() -> dict:
+    return {"directives": [], "flags": [], "concat": None, "row": None, "role": "mandatory"}
+
+
+def parse_fw_seq_rows(rows, sheet_names) -> dict:
+    """Read FW_Seq rows exactly like the Core's SeqParser.parse.
+
+    `rows` are lists of cell values (None/blank cells are skipped); `sheet_names`
+    are the data sheets. Returns ``{sheet: {"directives", "flags", "concat", "row",
+    "role"}}`` for every sheet the program touches:
+      * a cell naming a data sheet selects the target, and the target persists into
+        the following rows — a row whose first cell is an FW_ directive continues it;
+      * flags accumulate per sheet across rows; FW_Exclude/FW_Heading or
+        FW_Optional, whichever comes first, takes the sheet out of the mandatory
+        product (the Core moves a sheet out of its map only once);
+      * a row's directives REPLACE the sheet's previous list — the last row wins —
+        after the dual-verb promotion.
+    """
+    names = {str(n) for n in sheet_names}
+    out: dict = {}
+    key = None
+    for ri, row in enumerate(rows):
+        seq: list = []
+        for cell in row:
+            if cell is None:
+                continue
+            v = str(cell)
+            if not v.strip():
+                continue
+            if v in names:
+                key = v
+            flag = _seq_flag(v)
+            if flag is not None:
+                if key is not None:
+                    entry = out.setdefault(key, _new_program_entry())
+                    if flag not in entry["flags"]:
+                        entry["flags"].append(flag)
+                    if entry["role"] == "mandatory":
+                        if flag in ("FW_Exclude", "FW_Heading"):
+                            entry["role"] = "excluded"
+                        elif flag == "FW_Optional":
+                            entry["role"] = "optional"
+            elif v.startswith("FW_Concatenator"):
+                if key is not None:
+                    out.setdefault(key, _new_program_entry())["concat"] = v.replace("FW_Concatenator=", "", 1)
+            elif v.startswith("FW_"):
+                seq.append(v)
+        seq = promote_directives(seq)
+        if seq and key is not None:
+            entry = out.setdefault(key, _new_program_entry())
+            entry["directives"] = seq
+            entry["row"] = ri
+    return out
+
+
+def effective_program(spec: "Spec") -> dict:
+    """The FW_Seq program the Core runs for `spec` (see `parse_fw_seq_rows`).
+
+    An XLSX spec carries its program as read from the workbook. A TOML spec's program
+    is rebuilt from the rows the compact builders emit — one per slot, then every
+    `seq_extra` row — so a `seq_extra` row that re-declares a slot wins, as it does
+    in the Core."""
+    if getattr(spec, "program", None):
+        return spec.program
+    rows = []
+    for s in spec.slots:
+        reuse = _reuse_flag_cell(s.flags)
+        row = [s.sheet, reuse] + [f for f in s.flags if f != reuse] + [s.verb] + list(getattr(s, "chain", ()))
+        if s.separator:
+            row.append(f"FW_Separator({s.separator})")
+        if s.group_replace:
+            row.append(_group_directive(s.group_replace))
+        rows.append(row)
+    rows.extend([list(r) for r in (spec.seq_extra or [])])
+    return parse_fw_seq_rows(rows, [s.sheet for s in spec.slots])
+
+
+def _redeclares_slot_with_verbs(spec: "Spec") -> bool:
+    """A TOML `seq_extra` row that re-declares a declared slot with (non-brace)
+    directives — a verb chain the slot-verb planner cannot see."""
+    extra = getattr(spec, "seq_extra", None) or []
+    if not extra:
+        return False
+    slots = {getattr(s, "sheet", None) for s in (getattr(spec, "slots", None) or [])}
+    for row in extra:
+        cells = [str(c) for c in row if c is not None and str(c).strip()]
+        if not cells or cells[0] not in slots:
+            continue
+        directives = [c for c in cells[1:] if c.startswith("FW_") and _seq_flag(c) is None
+                      and not c.startswith("FW_Concatenator")]
+        if directives and not any(_first_line(d).startswith("FW_(") for d in directives):
+            return True
+    return False
+
+
+def uses_program_sizing(spec: "Spec") -> bool:
+    """Size this spec from its effective program instead of per-slot verbs."""
+    return (getattr(spec, "source_format", "toml") == "xlsx" or _redeclares_slot_with_verbs(spec)
+            or any(getattr(s, "chain", ()) for s in (getattr(spec, "slots", None) or [])))
+
+
+@dataclass(frozen=True)
+class ProgramSizing:
+    """What is known about one sheet's final table after its whole program ran."""
+    est: CardinalityEstimate             # final (post-DISTINCT) row count
+    hist: "dict[int, int] | None"        # exact row-length histogram — EXACT sizings only
+    max_len: int                         # upper bound on one row's length, in codes
+    distinct_sets: bool                  # rows are pairwise-distinct SETS with no repeated code
+    emissions: int                       # the largest single pass's emitted rows (hidden work)
+
+
+_SIZING_CAP = 100_000                    # never evaluate R! / 2**R / R**m beyond this many atoms
+
+
+def _exact_sizing(hist: dict, *, distinct_sets: bool, emissions: int, formula: str,
+                  assumptions=()) -> ProgramSizing:
+    hist = {int(k): int(v) for k, v in hist.items() if v}
+    return ProgramSizing(CardinalityEstimate.exact(sum(hist.values()), formula=formula,
+                                                   assumptions=assumptions),
+                         hist, max(hist) if hist else 0, distinct_sets, emissions)
+
+
+def _bounded_sizing(upper: int, *, max_len: int, emissions: int, formula: str, reason: str,
+                    lower: int = 0) -> ProgramSizing:
+    upper = max(int(upper), int(lower))
+    return ProgramSizing(CardinalityEstimate.bounded(lower=int(lower), upper=upper, value=upper,
+                                                     formula=formula, reasons=(reason,)),
+                         None, int(max_len), False, int(emissions))
+
+
+def _exact_count_sizing(count: int, *, max_len: int, formula: str) -> ProgramSizing:
+    """An exact row count whose row LENGTHS are not modelled (a brace's woven output):
+    `hist` stays None, so nothing downstream pairs or flattens rows by a guessed length."""
+    if not count:
+        return _exact_sizing({}, distinct_sets=False, emissions=0, formula=formula)
+    return ProgramSizing(CardinalityEstimate.exact(int(count), formula=formula), None, int(max_len), False,
+                         int(count))
+
+
+def _unknown_sizing(formula: str, reason: str) -> ProgramSizing:
+    return ProgramSizing(CardinalityEstimate.unknown(formula=formula, reasons=(reason,)),
+                         None, 0, False, 0)
+
+
+def _arg_ms(v: str, length: int, *, later_pass: bool) -> "list[int]":
+    """The m values the Core iterates for a sized verb over `length` atoms
+    (SheetWorker.resolveM): (all|full) -> 1..length for Combi/CombiR/PermutR, (size) ->
+    length, digits -> k, bare/() -> 1."""
+    if _ALL_ARG_RE.search(v) and v.startswith(("FW_CombiR", "FW_Combi", "FW_PermutR")):
+        return list(range(1, length + 1))
+    if _SIZE_ARG_RE.search(v):
+        return [length]
+    m = re.search(r"\((\d+)\)", v)
+    return [max(1, int(m.group(1))) if later_pass else int(m.group(1))] if m else [1]
+
+
+def _first_pass_hist(verb: str, n: int, x_size: int) -> "dict[int, int] | None":
+    """Rows the FIRST directive emits over the sheet's own n values (runFirstPass)."""
+    v = _first_line(verb).strip()
+    if v.startswith("FW_Cartes"):
+        return {2: n * x_size} if n and x_size else {}
+    if v.startswith("FW_Combi") and not v.startswith("FW_CombiR"):
+        if not _ALL_ARG_RE.search(v) and not _SIZE_ARG_RE.search(v):
+            m = re.search(r"\((\d+)\)", v)
+            k = int(m.group(1)) if m else 1
+            if k > n:
+                return {0: 1}          # the Core emits ONE empty row when k exceeds the sheet
+    return verb_row_length_histogram(verb, n)
+
+
+def _later_pass_hist(verb: str, length: int, x_size: int) -> "dict[int, int] | None":
+    """Rows ONE later-pass directive emits from ONE previous row of `length` codes
+    (SheetWorker.runSubsequentPass). FW_Subsets ignores its size mode after the first
+    pass (DEFAULT powerset of the row); FW_Combi(k) with k > length emits one empty
+    row; FW_Cartes(X) pairs every element of the row with every value of X."""
+    v = _first_line(verb).strip()
+    if length <= 0:
+        return {}
+    if v.startswith("FW_Cartes"):
+        return {2: length * x_size} if x_size else {}
+    if v.startswith("FW_Subsets"):
+        return {k: math.comb(length, k) for k in range(0, length + 1)}
+    if v.startswith("FW_Permut") and not v.startswith("FW_PermutR"):
+        return {length: math.factorial(length)}
+    out: dict = {}
+    for k in _arg_ms(v, length, later_pass=True):
+        if v.startswith("FW_CombiR"):
+            out[k] = out.get(k, 0) + math.comb(length + k - 1, k)
+        elif v.startswith("FW_Combi"):
+            if k > length:
+                out[0] = out.get(0, 0) + 1
+            else:
+                out[k] = out.get(k, 0) + math.comb(length, k)
+        elif v.startswith("FW_PermutR"):
+            out[k] = out.get(k, 0) + length ** k
+        else:
+            return None
+    return out
+
+
+def _group_width_hist(verb: str, rows: int, x_size: int) -> "tuple[dict, int] | None":
+    """Outputs of a directive run in FW_Group mode over `rows` atoms (the rows produced
+    so far, content-sorted): ``({atoms per output: outputs}, extra codes per output)``.
+    FW_Cartes(X) pairs each grouped row with one value of X (author's intent, so one
+    extra code); (size) is the number of rows present; the empty selection of
+    FW_Subsets parses to nothing and is dropped."""
+    v = _first_line(verb).strip()
+    if rows > _SIZING_CAP:
+        return None
+    if v.startswith("FW_Cartes"):
+        return ({1: rows * x_size} if rows and x_size else {}), 1
+    if v.startswith("FW_Subsets"):
+        return {k: math.comb(rows, k) for k in range(1, rows + 1)}, 0
+    if v.startswith("FW_Permut") and not v.startswith("FW_PermutR"):
+        return ({rows: math.factorial(rows)} if rows else {}), 0
+    out: dict = {}
+    for m in _arg_ms(v, rows, later_pass=True):
+        if v.startswith("FW_CombiR"):
+            c = math.comb(rows + m - 1, m) if rows else 0
+        elif v.startswith("FW_Combi"):
+            c = math.comb(rows, m) if m <= rows else 0         # FW_Group skips m > rows
+        elif v.startswith("FW_PermutR"):
+            c = rows ** m if rows else 0
+        else:
+            return None
+        if c:
+            out[m] = out.get(m, 0) + c
+    return out, 0
+
+
+def _separated(hist: dict) -> dict:
+    """FW_Separator weaves one code between a row's elements: length L -> 2L-1, and a
+    separated pass never writes an empty row (consumeSubsequentPassChunk)."""
+    out: dict = {}
+    for length, count in hist.items():
+        if length <= 0:
+            continue
+        key = 2 * length - 1
+        out[key] = out.get(key, 0) + count
+    return out
+
+
+def _sheet_program_sizing(sheet: str, directives: "Sequence[str]", n: int,
+                          sizes: "dict[str, int]", operand,
+                          texts: "dict[str, set] | None" = None) -> ProgramSizing:
+    """Size one sheet's final table by walking its directives the way the Core does.
+
+    Directive i runs as pass i (SheetWorker.runDirective): pass 0 draws from the sheet's
+    own values, every later pass re-runs over each previous row, FW_Separator weaves a
+    code into the rows of the passes after it, and FW_Group makes the FOLLOWING verb
+    span the rows produced so far (second order). `operand(field)` sizes a brace
+    operand. EXACT only when every pass is provably injective; otherwise BOUNDED by what
+    the passes emit — the DISTINCT after each pass can only remove rows."""
+    kinds = [_first_line(d).strip() for d in directives]
+    verbs = [(i, k) for i, k in enumerate(kinds) if not k.startswith(("FW_Group", "FW_Separator("))]
+    # The dual (auto-promoted) verb over its own output is a closure — every row the second
+    # pass derives from a row of V(values) is itself a row of V(values) — so the final rows
+    # are V's rows (a separator between the two only weaves glue in and drops the empty row).
+    # Its emission count is the hidden F4 work: (n!)^2 for Permut, 3^n-1 for Subsets.
+    if (len(verbs) == 2 and verbs[0][0] == 0 and verbs[0][1] == verbs[1][1]
+            and not any(k.startswith("FW_Group") for k in kinds)
+            and verbs[0][1].startswith(_EXACT_FORMULA_PREFIXES)
+            and verb_row_length_histogram(verbs[0][1], n) is not None):
+        v = verbs[0][1]
+        first = _first_pass_hist(v, n, 0) or {}
+        second = sum(c * sum((_later_pass_hist(v, length, 0) or {}).values())
+                     for length, c in first.items())
+        hist = {length: c for length, c in first.items() if length > 0} if all(
+            length == 0 for length in first) else dict(first)
+        if any(k.startswith("FW_Separator(") for k in kinds[:verbs[1][0]]):
+            hist = _separated(hist)
+        return _exact_sizing(hist, distinct_sets=v.startswith(("FW_Subsets", "FW_Combi(")),
+                             emissions=max(sum(first.values()), second),
+                             formula=f"{v} over n={n} (the dual pass re-derives the same rows)")
+    hist: "dict | None" = None
+    upper = 0
+    max_len = 0
+    exact = True
+    distinct_sets = False
+    emissions = 0
+    sep = False
+    group = None
+    # rows share no code and none repeats a code (a single such row qualifies): a later
+    # pass over them can only collide on the empty row
+    disjoint = False
+    notes: list = []
+    for i, first in enumerate(kinds):
+        d = directives[i]
+        if first.startswith("FW_Separator("):
+            sep = True
+            continue
+        if first.startswith("FW_Group"):
+            group = d
+            continue
+        ops = verb_sheet_operands(first)
+        x_size = sizes.get(ops[0], 0) if ops and first.startswith("FW_Cartes") else 0
+        # (a resolved FW_()G operand carries the internal "~FWG" mark — see program_sizings)
+        if _BRACE_RE.fullmatch(first.replace("~FWG", "")):
+            if i != 0:
+                return _unknown_sizing(f"{sheet}: {first}", "a brace after other directives in one row "
+                                                              "is not sized statically")
+            b = _brace_sizing(first, operand)
+            if b.est.mode == CardinalityMode.UNKNOWN:
+                return b
+            hist, upper, max_len = b.hist, int(b.est.upper or 0), b.max_len
+            exact, distinct_sets, emissions = b.est.mode == CardinalityMode.EXACT, False, b.emissions
+            notes.append(first)
+            continue
+        if not is_core_verb(first):
+            return _unknown_sizing(f"{sheet}: {first}", f"directive {first!r} is not a sized Core verb")
+        if i == 0:                                           # pass 0: the sheet's own values
+            h = _first_pass_hist(first, n, x_size)
+            if h is None:
+                return _unknown_sizing(f"{sheet}: {first}", f"{first} over n={n} has no closed form")
+            hist, upper = dict(h), sum(h.values())
+            max_len = max(h) if h else 0
+            # FW_Cartes(X) rows are distinct SETS only when X is another sheet whose values
+            # cannot share a code with this sheet's: self-Cartes gives ab/ba (one set) and aa
+            # (a repeated code) — Codex r4 counterexample, Core 4 rows vs a claimed EXACT 8
+            cartes_disjoint = bool(first.startswith("FW_Cartes") and ops and ops[0] != sheet and texts
+                                   and sheet in texts and ops[0] in texts
+                                   and texts[sheet].isdisjoint(texts[ops[0]]))
+            distinct_sets = first.startswith("FW_Subsets") or cartes_disjoint or (
+                first.startswith("FW_Combi") and not first.startswith("FW_CombiR"))
+            disjoint = (first.startswith("FW_Subsets")
+                        or (first.startswith("FW_Combi") and not first.startswith("FW_CombiR"))
+                        or (first.startswith("FW_Permut") and not first.startswith("FW_PermutR"))
+                        ) and (upper <= 1 or max_len <= 1)
+            emissions = max(emissions, upper)
+            notes.append(f"{first}(n={n})")
+            continue
+        if not notes:
+            # a leading FW_Group/FW_Separator: the Core runs this verb as a later pass over an
+            # fw_ table no pass has filled, so the sheet ends empty
+            return _exact_sizing({}, distinct_sets=False, emissions=0,
+                                 formula=f"{sheet}: no first pass before {first} -> empty table")
+        if group is not None:                                # FW_Group: the FOLLOWING verb spans the rows
+            if exact and hist is not None and all(length == 0 for length in hist) and (
+                    not hist or ("FW_ReplaceRE" not in group and not first.startswith("FW_Cartes"))):
+                # nothing to group: an empty table (FW_Group skips it), or only the empty row,
+                # whose grouped outputs flatten to no codes and are dropped (w5_chain_probe H2/I2)
+                hist, upper, max_len, distinct_sets, disjoint, group = {}, 0, 0, False, False, None
+                notes.append(f"FW_Group->{first}(no rows to group)")
+                continue
+            rows = upper
+            g = _group_width_hist(first, rows, x_size)
+            if g is None:
+                return _unknown_sizing(f"{sheet}: FW_Group then {first}",
+                                       f"grouped {first} over up to {rows} rows is not sized statically")
+            widths, extra = g
+            out = sum(widths.values())
+            rewrites = "FW_ReplaceRE" in group
+            fixed = hist is not None and len(hist) == 1 and next(iter(hist)) > 0
+            # Flattening grouped rows is injective only when every atom has the same non-zero
+            # length and nothing is rewritten or woven in: the output then splits back into
+            # its atoms. Otherwise distinct selections may flatten to the same codes.
+            if exact and fixed and not rewrites and not sep:
+                length = next(iter(hist))
+                hist = {}
+                for width, count in widths.items():
+                    hist[width * length + extra] = hist.get(width * length + extra, 0) + count
+            else:
+                hist, exact = None, False
+            upper = out
+            width = max(widths) if widths else 0
+            atom_len = max(1, max_len)
+            max_len = width * atom_len * (2 if (rewrites or sep) else 1) + (width if rewrites else 0) + extra
+            distinct_sets = disjoint = False
+            emissions = max(emissions, out)
+            group = None
+            notes.append(f"FW_Group->{first}(rows<={rows})")
+            continue
+        # an ordinary later pass: the verb runs over EACH previous row (empty rows skipped)
+        if hist is not None:
+            new: dict = {}
+            for length, count in hist.items():
+                h = _later_pass_hist(first, length, x_size)
+                if h is None:
+                    return _unknown_sizing(f"{sheet}: {first}", f"later pass {first} has no closed form")
+                for k, c in h.items():
+                    new[k] = new.get(k, 0) + count * c
+            if sep:
+                new = _separated(new)
+            emitted = sum(new.values())
+            identity = (first.startswith("FW_Combi") and not first.startswith("FW_CombiR")
+                        and all(k == length for length in hist if length > 0
+                                for k in _arg_ms(first, length, later_pass=True)))
+            permuting = first.startswith("FW_Permut") and not first.startswith("FW_PermutR")
+            subset_like = first.startswith("FW_Subsets") or (
+                first.startswith("FW_Combi") and not first.startswith("FW_CombiR"))
+            if exact and new and all(k == 0 for k in new):
+                # every output is the empty row (FW_Combi(k) with k above each row's length):
+                # DISTINCT keeps ONE (measured: w5_chain_probe A2, J3)
+                new, distinct_sets, disjoint = {0: 1}, True, True
+            elif exact and disjoint and not sep and (subset_like or first.startswith(("FW_Combi", "FW_Permut"))):
+                # the rows share no code and repeat none: outputs of two rows cannot collide and
+                # the outputs of one row are different selections, so only the empty outputs
+                # coincide and DISTINCT keeps one of them (w5_chain_probe C3..G3, L3)
+                if new.get(0):
+                    new[0] = 1
+                lengths = [k for k in new if k > 0]
+                distinct_sets = subset_like
+                disjoint = subset_like and (sum(new[k] for k in lengths) <= 1 or max(lengths, default=0) <= 1)
+            elif exact and identity:
+                pass                                         # each non-empty row maps to itself
+            elif exact and permuting and distinct_sets:
+                distinct_sets = False                        # permutations of distinct sets never collide
+                disjoint = disjoint and all(k <= 1 for k in new)
+            else:
+                exact = disjoint = False
+            upper = sum(new.values())
+            hist = new if exact else None
+            max_len = max(new) if new else 0
+            emissions = max(emissions, emitted)
+        else:
+            disjoint = False
+            per_row = _later_pass_hist(first, max(1, max_len), x_size)
+            if per_row is None:
+                return _unknown_sizing(f"{sheet}: {first}", f"later pass {first} has no closed form")
+            if sep:
+                per_row = _separated(per_row)
+            upper = upper * sum(per_row.values())
+            max_len = max(per_row) if per_row else 0
+            exact = False
+            emissions = max(emissions, upper)
+        notes.append(first)
+    formula = f"{sheet}: " + " -> ".join(notes) if notes else f"{sheet}: (no directives)"
+    if exact and hist is not None:
+        return _exact_sizing(hist, distinct_sets=distinct_sets, emissions=emissions, formula=formula,
+                             assumptions=("every pass is injective, so DISTINCT removes nothing",))
+    if exact:                                            # a brace row: exact count, lengths not modelled
+        return _exact_count_sizing(upper, max_len=max_len, formula=formula)
+    return _bounded_sizing(upper, max_len=max_len, emissions=emissions, formula=formula,
+                           reason="DISTINCT after a pass that is not provably injective can only remove "
+                                  "rows: the rows emitted are an upper bound; the Core measures the "
+                                  "true count")
+
+
+def _brace_sizing(expr: str, operand) -> ProgramSizing:
+    """Rows a brace FW_(start,,E1,rel,E2,,end,sep,mult) writes, from its operands'
+    sizings (BraceOperationHandler): 1:N / M:N / M:1 pair every A-row with every
+    B-row; 1:1 / M:M pair only equal-length rows. The target is DISTINCTed, so the
+    count is EXACT only when the concatenation is provably injective."""
+    f = brace_fields(expr)
+    if not f:
+        return _unknown_sizing(expr, "not a brace")
+    mult = (f[8] or "M:N").upper()
+    a, b = operand(f[2]), operand(f[4])
+    if a is None or b is None:
+        missing = [x for x, s in ((f[2], a), (f[4], b)) if s is None]
+        return _unknown_sizing(expr, f"brace operand(s) {missing} are not sized")
+    if a.est.mode == CardinalityMode.UNKNOWN or b.est.mode == CardinalityMode.UNKNOWN:
+        return _unknown_sizing(expr, "a brace operand is UNKNOWN")
+    au, bu = int(a.est.upper or 0), int(b.est.upper or 0)
+    tokens = sum(1 for i in (0, 3, 6, 7) if f[i])
+    max_len = (a.max_len + 1) * max(1, b.max_len + 2) + a.max_len + b.max_len + tokens
+    both_exact = a.est.mode == CardinalityMode.EXACT and b.est.mode == CardinalityMode.EXACT
+    if mult in ("1:1", "M:M"):
+        if both_exact and a.hist is not None and b.hist is not None:
+            total = sum(c * b.hist.get(length, 0) for length, c in a.hist.items())
+            return _exact_count_sizing(total, max_len=max_len,
+                                       formula=f"{expr}: sum_L A_L*B_L = {total} (equal-length pairs)")
+        return _bounded_sizing(au * bu, max_len=max_len, emissions=au * bu,
+                               formula=f"{expr}: <= |A|*|B| = {au}*{bu}",
+                               reason="length-matched join over operands whose row lengths are not exact")
+    total = au * bu
+    injective = both_exact and (bool(f[3]) or (a.hist is not None and len(a.hist) == 1))
+    if injective:
+        return _exact_count_sizing(total, max_len=max_len, formula=f"{expr}: |A|*|B| = {au}*{bu} ({mult})")
+    return _bounded_sizing(total, max_len=max_len, emissions=total,
+                           formula=f"{expr}: <= |A|*|B| = {au}*{bu} ({mult})",
+                           reason="the joined rows are DISTINCTed and the concatenation is not provably "
+                                  "injective (no relation token and operand rows of several lengths)")
+
+
+def _grouped_operand_sizing(sheet: str, s: ProgramSizing) -> ProgramSizing:
+    """A FW_()G operand: the prior brace result flattened into ONE row (every code of every
+    row, concatenated). One row only when the table is provably non-empty; its length is
+    exact only when the table's row-length histogram is."""
+    formula = f"{sheet} grouped into one row"
+    if s.est.mode == CardinalityMode.UNKNOWN:
+        return s
+    if s.est.mode == CardinalityMode.EXACT and not s.est.value:
+        return _exact_sizing({}, distinct_sets=False, emissions=0, formula=f"{sheet} is empty: nothing to group")
+    if s.est.mode == CardinalityMode.EXACT and s.hist is not None:
+        width = sum(length * count for length, count in s.hist.items())
+        if width > 0:
+            return _exact_sizing({width: 1}, distinct_sets=False, emissions=1, formula=formula)
+    width = max(1, s.max_len * int(s.est.upper or 0))
+    if (s.est.value if s.est.mode == CardinalityMode.EXACT else s.est.lower or 0) >= 1 \
+            and (s.hist is None or any(length > 0 for length in s.hist)):
+        return ProgramSizing(CardinalityEstimate.exact(1, formula=formula), None, width, False, 1)
+    return _bounded_sizing(1, max_len=width, emissions=1, formula=formula,
+                           reason=f"{sheet} may end empty (or hold only empty rows), which groups into no row")
+
+
+def program_sizings(spec: "Spec") -> "dict[str, ProgramSizing]":
+    """ProgramSizing of every sheet the effective program runs, keyed by sheet."""
+    program = effective_program(spec)
+    values = {s.sheet: s.values for s in spec.slots}
+    values.update(getattr(spec, "passive_sheets", {}) or {})
+    sizes = {k: len(v) for k, v in values.items()}
+    texts = {k: {str(v).strip() for v in vals} for k, vals in values.items()}   # Core interns stripped text
+    # nested FW_() / FW_()G operands resolve, in FW_Seq row order, to the most recent
+    # prior brace targets (SeqParser.resolveNestedFwBrace)
+    resolved: dict = {}
+    targets: list = []
+    for sheet, entry in sorted(program.items(), key=lambda kv: (kv[1]["row"] is None, kv[1]["row"] or 0)):
+        dirs = entry["directives"]
+        if not dirs or not _BRACE_RE.fullmatch(_first_line(dirs[0]).strip()):
+            continue
+        fields = list(brace_fields(_first_line(dirs[0])))
+        idx = len(targets) - 1
+        for pos in (2, 4):
+            if fields[pos] in ("FW_()", "FW_()G"):
+                grouped = fields[pos] == "FW_()G"
+                fields[pos] = (targets[idx] + ("~FWG" if grouped else "")) if idx >= 0 else ""
+                idx -= 1
+        resolved[sheet] = "FW_(" + ",".join(fields) + ")"
+        targets.append(sheet)
+    done: dict = {}
+    busy: set = set()
+
+    def size_of(sheet: str) -> "ProgramSizing | None":
+        grouped = sheet.endswith("~FWG")
+        sheet = sheet[:-4] if grouped else sheet
+        if sheet in done:
+            s = done[sheet]
+        elif sheet in busy:
+            return None                                  # a cycle: the graph gate reports it
+        elif sheet in program and program[sheet]["directives"]:
+            busy.add(sheet)
+            dirs = list(program[sheet]["directives"])
+            if sheet in resolved:
+                dirs[0] = resolved[sheet]
+            s = _sheet_program_sizing(sheet, dirs, sizes.get(sheet, 0), sizes, size_of, texts)
+            busy.discard(sheet)
+            done[sheet] = s
+        else:
+            return None
+        if grouped:                                      # the whole result as ONE row (FW_()G)
+            return _grouped_operand_sizing(sheet, s)
+        return s
+
+    for sheet, entry in program.items():
+        if entry["directives"]:
+            size_of(sheet)
+    return done
+
+
+def _at_least_one(est: CardinalityEstimate) -> CardinalityEstimate:
+    """A sheet whose final table ends up EMPTY is dropped from fw_final by the Core
+    (a partial result, reported in core.log) — it multiplies the product by 1, not 0."""
+    if est.mode == CardinalityMode.UNKNOWN:
+        return est
+    lower = max(1, est.lower or 0)
+    upper = max(1, est.upper or 0)
+    value = max(1, est.value or 0)
+    if est.mode == CardinalityMode.EXACT:
+        return CardinalityEstimate.exact(value, formula=est.formula, assumptions=est.assumptions)
+    return CardinalityEstimate.bounded(lower=lower, upper=upper, value=value, formula=est.formula,
+                                       reasons=est.reasons, assumptions=est.assumptions)
+
+
+def program_optional_rows(spec: "Spec") -> "list[tuple[str, CardinalityEstimate]]":
+    """(sheet, final-row estimate) of every FW_Optional sheet the program runs."""
+    program = effective_program(spec)
+    sizings = program_sizings(spec)
+    return [(sheet, sizings[sheet].est) for sheet, e in program.items()
+            if e["directives"] and e["role"] == "optional" and sheet in sizings]
+
+
+def _program_cardinality_plan(spec: "Spec") -> "SpecCardinalityPlan":
+    """`spec_cardinality_plan` for a spec sized from its effective program."""
+    program = effective_program(spec)
+    sizings = program_sizings(spec)
+    raw_values = {s.sheet: len(s.values) for s in spec.slots}
+    per_slot = {sheet: sz.est for sheet, sz in sizings.items()}
+    mandatory_sheets = [sheet for sheet, e in program.items()
+                        if e["directives"] and e["role"] == "mandatory" and sheet in sizings]
+    mandatory = _combine_product(
+        [_at_least_one(per_slot[s]) for s in mandatory_sheets],
+        formula="Π rows(sheet) over the mandatory sheets of the effective FW_Seq program",
+        reasons=("sized from the program the Core runs (verb chains, FW_Group, FW_Separator, braces), "
+                 "not from each sheet's first verb",))
+    if not spec.constraints:
+        post_sieve = CardinalityEstimate(
+            mode=mandatory.mode, value=mandatory.value, lower=mandatory.lower, upper=mandatory.upper,
+            formula="= mandatory (no constraints declared -> sieve is a no-op)",
+            reasons=mandatory.reasons)
+    else:
+        # The sieve pre-count enumerates each mandatory slot from its own verb, so it is
+        # exact here only when every mandatory sheet's program IS that verb (plus the dual).
+        simple = all(not getattr(s, "chain", ()) and not s.group_replace and not s.separator
+                     and program.get(s.sheet, {}).get("directives") == promote_directives([s.verb])
+                     for s in spec.slots if program.get(s.sheet, {}).get("role") == "mandatory")
+        exact_post = sieve_survival_cardinality(spec, mandatory) if simple else None
+        upper = mandatory.upper if mandatory.upper is not None else mandatory.value
+        post_sieve = exact_post if exact_post is not None else CardinalityEstimate.bounded(
+            lower=0, upper=upper if upper is not None else 0, value=upper,
+            formula="[0, mandatory] (sieve predicate selectivity not evaluated)",
+            reasons=(f"{len(spec.constraints)} constraint(s) declared",))
+    optional = program_optional_rows(spec)
+    if not optional:
+        optional_multiplier = CardinalityEstimate.exact(1, formula="no FW_Optional sheets -> factor 1")
+    else:
+        factors = []
+        for sheet, est in optional:
+            if est.mode == CardinalityMode.UNKNOWN:
+                factors.append(est)
+                continue
+            if est.mode == CardinalityMode.EXACT:
+                factors.append(CardinalityEstimate.exact((est.value or 0) + 1, formula=f"({est.value}+1 absent)[{sheet}]"))
+            else:
+                factors.append(CardinalityEstimate.bounded(
+                    lower=(est.lower or 0) + 1, upper=(est.upper or 0) + 1, value=(est.upper or 0) + 1,
+                    formula=f"(<= {est.upper}+1 absent)[{sheet}]", reasons=est.reasons))
+        optional_multiplier = _combine_product(
+            factors, formula=" × ".join(f.formula for f in factors),
+            reasons=("each FW_Optional sheet contributes any row of its result table, or absence",))
+    final = _combine_product((post_sieve, optional_multiplier), formula="post_sieve × optional_multiplier",
+                             reasons=("each FW_Optional sheet independently multiplies the post-sieve space",))
+    return SpecCardinalityPlan(raw_values=raw_values, per_slot=per_slot, mandatory=mandatory,
+                               post_sieve=post_sieve, optional_multiplier=optional_multiplier,
+                               final=final, coverage=None)
+
+
+# ---------------------------------------------------------------------------
+# Legacy XLSX workbook input — the Framework's original format
+# ---------------------------------------------------------------------------
+_FW_VAR_EXIT_RE = re.compile(r"(?s).*?\s+?FW_VAR\s*?=\s*?FW_EXIT_CODE.*?|^\s*FW_VAR\s*?=\s*?FW_EXIT_CODE.*?")
+
+
+def _workbook_cell_text(value) -> "str | None":
+    """A cell as the Core's DataFormatter renders it (integers without a fraction)."""
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return "TRUE" if value else "FALSE"
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
+
+def _workbook_sheet_values(ws) -> "list[str]":
+    """A data sheet's values in the Core's reading order (WorkbookParser): every
+    non-empty cell row by row; FW_EMPTY_STRING is an empty value, FW_File= the file's
+    content, a FW_VAR=FW_EXIT_CODE cell a value; any other FW_ cell modifies a value
+    or names a data source and is not a value itself."""
+    out: list = []
+    for row in ws.iter_rows(values_only=True):
+        for cell in row:
+            text = _workbook_cell_text(cell)
+            if text is None:
+                continue
+            if text.startswith("=") and isinstance(cell, str):
+                text = text[1:]                              # the Core stores a formula's text
+            if text.startswith("FW_"):
+                if "FW_VAR" in text and "FW_EXIT_CODE" in text and _FW_VAR_EXIT_RE.match(text):
+                    out.append(text)
+                elif text.startswith("FW_EMPTY_STRING"):
+                    out.append("")
+                elif text.startswith("FW_File="):
+                    try:
+                        out.append(Path(text[len("FW_File="):]).read_text(encoding="utf-8"))
+                    except OSError:
+                        out.append(text)
+                continue
+            out.append(text)
+    return out
+
+
+def load_workbook_spec(path: "str | Path") -> Spec:
+    """Read a legacy XLSX workbook as a Spec — the Framework's ORIGINAL input format,
+    processed by the Bundle alongside TOML specs.
+
+    The workbook itself is what the Core runs (`workbook_path`, handed over
+    unchanged); this Spec exists so planning, the optional-table contract and the
+    handshake predictions see the same sheets and FW_Seq program the Core will. Slots
+    are the sheets the FW_Seq program runs, with their values verbatim (`raw`); data
+    sheets without an FW_Seq row are kept as `passive_sheets`."""
+    path = Path(path)
+    wb = openpyxl.load_workbook(path, read_only=True, data_only=False)
+    try:
+        names = [str(n) for n in wb.sheetnames]
+        data = [n for n in names if not n.startswith("FW_")]
+        values = {n: _workbook_sheet_values(wb[n]) for n in data}
+        seq_rows = ([[_workbook_cell_text(c) for c in row] for row in wb["FW_Seq"].iter_rows(values_only=True)]
+                    if "FW_Seq" in names else [])
+        program = parse_fw_seq_rows(seq_rows, data)
+        wrappers: dict = {}
+        if "FW_SheetNames" in names:
+            for row in wb["FW_SheetNames"].iter_rows(values_only=True):
+                cells = [_workbook_cell_text(c) for c in row] + [None, None, None]
+                if cells[0]:
+                    pre, end = cells[1] or "", cells[2] or ""
+                    wrappers[cells[0]] = ("" if pre.startswith("FW_EMPTY_STRING") else pre,
+                                          "" if end.startswith("FW_EMPTY_STRING") else end)
+        custom_vars: list = []
+        if "FW_CUSTOM_VAR" in names:
+            for row in wb["FW_CUSTOM_VAR"].iter_rows(values_only=True):
+                cells = [_workbook_cell_text(c) for c in row] + [None, None]
+                if cells[0] is not None and str(cells[0]).strip().lstrip("-").isdigit():
+                    custom_vars.append(CustomVar(int(cells[0]), str(cells[1] or "")))
+        args: list = []
+        if "FW_Arguments" in names:
+            args = [t for row in wb["FW_Arguments"].iter_rows(values_only=True)
+                    for t in (_workbook_cell_text(c) for c in row) if t]
+        runme = ""
+        if "FW_RunMeFirstOnce" in names:
+            first = next(wb["FW_RunMeFirstOnce"].iter_rows(values_only=True), ())
+            runme = _workbook_cell_text(first[0]) if first else ""
+    finally:
+        wb.close()
+    slots: list = []
+    for sheet, entry in sorted(program.items(), key=lambda kv: (kv[1]["row"] is None, kv[1]["row"] or 0)):
+        if not entry["directives"] or sheet not in values:
+            continue
+        role = entry["role"]
+        flags = tuple(f for f in entry["flags"]
+                      if not (f == "FW_Optional" and role != "optional")
+                      and not (f in ("FW_Exclude", "FW_Heading") and role != "excluded"))
+        if entry["concat"] is not None:
+            flags += (f"FW_Concatenator={entry['concat']}",)
+        pre, end = wrappers.get(sheet, ("", ""))
+        slots.append(Slot(sheet=sheet, key=sheet, values=list(values[sheet]), verb=entry["directives"][0],
+                          flags=flags, raw=True, prefix=pre, ending=end))
+    active = {s.sheet for s in slots}
+    passive = {n: values[n] for n in data if n not in active}
+    return Spec(name=path.stem, title=f"{path.name} (legacy XLSX workbook)", slots=slots, goals=[],
+                custom_vars=custom_vars or [CustomVar(2, "candidate failed verdict (nonzero FW_CUSTOM_VAR)")],
+                args=args or ["noargs"], note="legacy XLSX workbook input — the Core runs it unchanged",
+                runme=runme or _default_runme(path.stem), spec_version="legacy",
+                source_format="xlsx", workbook_path=str(path.resolve()), program=program,
+                passive_sheets=passive)
+
+
 @dataclass(frozen=True)
 class Slot:
     sheet: str            # data-sheet name (must NOT start with FW_)
@@ -1309,6 +2130,8 @@ class Slot:
                                # (a modifier on this slot's verb; cardinality-preserving)
     group_replace: tuple = ()  # FW_Group: ((pattern, replacement), ...) FW_ReplaceRE rewrites applied to
                                # this slot's produced rows (2nd-order: re-combine/rewrite; see ZEN doc)
+    chain: tuple = ()          # directives written after `verb` in the same FW_Seq row (set by an alias,
+                               # e.g. permute(k) -> verb FW_Combi(k), chain ("FW_Permut()",))
     alias: str = ""            # STEP 36: the domain-level authoring alias this slot was compiled FROM
                                # (e.g. "choose_k(2)"); "" = authored with a raw verb. Provenance only —
                                # `verb`/`flags` above are already the compiled (advanced) representation.
@@ -1418,6 +2241,19 @@ class Spec:
     # format, unchanged); `"1"` is the same internal model with the contract
     # made explicit — see bundle-spec-v1.schema.json.
     spec_version: str = "legacy"
+    # Legacy XLSX workbook input — the Framework's ORIGINAL input format, processed by
+    # the Bundle alongside TOML specs (`load_workbook_spec`). "toml" for every spec
+    # parsed from TOML/JSON/YAML; "xlsx" when this Spec was read from a workbook, in
+    # which case `workbook_path` is handed to the Core unchanged (no regeneration).
+    source_format: str = "toml"
+    workbook_path: str = ""
+    # The effective FW_Seq program of an XLSX spec, read with the Core's own rules
+    # (`parse_fw_seq_rows`): {sheet: {"directives": [...], "flags": [...], "row": i}}.
+    # Empty for TOML specs — theirs is derived on demand (`effective_program`).
+    program: dict = field(default_factory=dict)
+    # Data sheets with no FW_Seq row: passive resources (separator / relation / start /
+    # end / placeholder tokens, FW_Cartes operands, FW_ReplaceRE "+ SHEET +" sources).
+    passive_sheets: dict = field(default_factory=dict)
 
     @property
     def baseline(self) -> tuple[str, ...]:
@@ -1629,6 +2465,7 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
         # records the provenance for the normalized artifact.
         alias_token = str(s.get("alias", "")).strip()
         alias_flags: tuple[str, ...] = ()
+        chain: tuple[str, ...] = ()
         if alias_token:
             if "verb" in s:
                 raise ValueError(f"slot '{sheet}' sets BOTH alias {alias_token!r} and raw verb "
@@ -1636,6 +2473,7 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
                                  f"verb; it cannot also carry an explicit verb)")
             try:
                 verb, alias_flags = compile_alias(alias_token)
+                chain = alias_chain(alias_token)
             except ValueError as e:
                 raise ValueError(f"slot '{sheet}': {e}")
         else:
@@ -1665,7 +2503,8 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
                           key=s.get("key", sheet.lower()),
                           values=exp_vals, verb=verb, flags=flags,
                           raw=is_raw, prefix=str(s.get("prefix", "")), ending=str(s.get("ending", "")),
-                          separator=separator, group_replace=group_replace, alias=alias_token))
+                          separator=separator, group_replace=group_replace, alias=alias_token,
+                          chain=chain))
     if not slots:
         raise ValueError(f"spec '{name}' has no slots")
 
@@ -1851,6 +2690,9 @@ def normalized_spec_dict(spec: Spec) -> dict:
         out["args"] = list(spec.args)
     if spec.seq_extra:
         out["seq_extra"] = [list(r) for r in spec.seq_extra]
+    chained = [[s.sheet, s.verb, *s.chain] for s in spec.slots if s.chain]
+    if chained:                                  # the expert form of an alias chain: the Core's
+        out["seq_extra"] = chained + out.get("seq_extra", [])   # last directive row for the sheet
     if params_rows:
         out["params"] = params_rows
     if spec.constraints:
@@ -1875,6 +2717,8 @@ def emit_normalized_spec(spec: Spec, path: str | Path) -> dict:
 
 def load_spec(path: str | Path, *, strict: bool = False) -> Spec:
     path = Path(path)
+    if path.suffix.lower() in _WORKBOOK_SUFFIXES:
+        return load_workbook_spec(path)          # legacy XLSX workbook: the Framework's original input
     return parse_spec(_load_raw(path), path.stem, strict=strict)
 
 
@@ -2157,6 +3001,35 @@ def _group_directive(replaces) -> str:
     return "\n".join(lines)
 
 
+def _reuse_flag_cell(flags) -> str:
+    """The reuse flag the compact builders write in column B of a slot's FW_Seq row.
+
+    FW_Reuse by default (a no-op on a plain slot; on a brace operand it keeps the
+    generated data for later calls of the sheet). An explicit FW_ReuseTableOnly is
+    honoured instead of being silently overridden — the Core lets FW_Reuse win when
+    both are present, so writing FW_Reuse unconditionally would make "keep only the
+    table" impossible to express from a TOML spec.
+    """
+    flags = tuple(flags or ())
+    if "FW_ReuseTableOnly" in flags and "FW_Reuse" not in flags:
+        return "FW_ReuseTableOnly"
+    return "FW_Reuse"
+
+
+def operand_keeps_rows(flags, *, compact_default: bool = True) -> bool:
+    """Does a brace operand keep the rows it generated after a join?
+
+    FW_Reuse keeps them (and wins over FW_ReuseTableOnly). A TOML slot compiled by
+    the compact builders carries FW_Reuse unless it asks for FW_ReuseTableOnly
+    (`compact_default=True`); a legacy XLSX row keeps its rows only when the
+    author wrote FW_Reuse on it (`compact_default=False`).
+    """
+    flags = tuple(flags or ())
+    if "FW_Reuse" in flags:
+        return True
+    return compact_default and "FW_ReuseTableOnly" not in flags
+
+
 def _gate_seq_graph(spec: Spec) -> None:
     """STEP 37: build the FW_Seq dependency graph and reject the spec BEFORE any
     workbook is emitted if it has an error-level issue (cycle / missing operand /
@@ -2183,14 +3056,17 @@ def build_compact(spec: Spec, fw_info: str = "dup",
     row = 1
     for s in spec.slots:
         seq.cell(row, 1, s.sheet)
-        seq.cell(row, 2, "FW_Reuse")                       # no-op for a plain slot; lets it also serve as a brace operand (table kept through join cleanup)
+        reuse = _reuse_flag_cell(s.flags)
+        seq.cell(row, 2, reuse)                            # FW_Reuse: no-op for a plain slot; a brace operand keeps its data for later calls
         col = 3
         for f in s.flags:
-            if f != "FW_Reuse":
+            if f != reuse:
                 seq.cell(row, col, f); col += 1            # extra routing flags (Optional/Exclude/…)
         vcol = max(col, 4)
         seq.cell(row, vcol, cell_for_xlsx(s.verb))         # the combination verb (col D+)
         mcol = vcol + 1                                     # modifiers/2nd-order directives follow the verb
+        for d in s.chain:                                   # an alias's later-pass directives
+            seq.cell(row, mcol, cell_for_xlsx(d)); mcol += 1
         if s.separator:
             seq.cell(row, mcol, f"FW_Separator({s.separator})"); mcol += 1
         if s.group_replace:
@@ -2229,15 +3105,18 @@ def build_compact_core_json(spec: Spec, fw_info: str = "skip") -> dict:
 
     seq_rows: list[list] = []
     for s in spec.slots:
-        cells = {1: s.sheet, 2: "FW_Reuse"}
+        reuse = _reuse_flag_cell(s.flags)
+        cells = {1: s.sheet, 2: reuse}
         col = 3
         for f in s.flags:
-            if f != "FW_Reuse":
+            if f != reuse:
                 cells[col] = f
                 col += 1
         vcol = max(col, 4)
         cells[vcol] = cell_for_xlsx(s.verb)                 # verb in col D+ (0-idx 3+)
         mcol = vcol + 1
+        for d in s.chain:
+            cells[mcol] = cell_for_xlsx(d); mcol += 1
         if s.separator:
             cells[mcol] = f"FW_Separator({s.separator})"; mcol += 1
         if s.group_replace:

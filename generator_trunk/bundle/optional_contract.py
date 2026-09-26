@@ -100,6 +100,12 @@ class OptionalTableContract:
     consumed_sizes: "tuple[int, ...]"        # R
     mode: str
     sources: "Mapping[str, str]"             # value -> the layer that decided it
+    # False when an optional sheet's row count is only an upper bound — its program is
+    # a verb chain / FW_Group / brace (legacy XLSX, or a TOML slot re-declared in
+    # seq_extra). The run then measures the multiplier from the fw_opt tables Core
+    # built instead of trusting `expected_multiplier` (kept out of `to_dict`, so
+    # recorded contracts of earlier runs still compare equal on resume).
+    exact: bool = True
 
     # ---------------------------------------------------------------- counts --
     @property
@@ -227,6 +233,26 @@ def contract_from_spec(spec, *, consumed_override=None,
     """
     slots = [s for s in spec.slots if "FW_Optional" in (getattr(s, "flags", ()) or ())]
     counts = tuple(_optional_slot_rows(s) for s in slots)
+    exact = True
+    try:
+        import fwgen as fg
+    except ImportError:          # the contract stays usable without the generator on sys.path
+        fg = None
+    if fg is not None and fg.uses_program_sizing(spec):
+        # The program the Core runs decides an optional sheet's rows (verb chains,
+        # FW_Group, braces): use its size — an upper bound when not provably exact.
+        estimates = dict(fg.program_optional_rows(spec))
+        sized = []
+        for s, fallback in zip(slots, counts):
+            est = estimates.get(s.sheet)
+            if est is None or est.mode == fg.CardinalityMode.UNKNOWN:
+                sized.append(fallback)
+                exact = False
+                continue
+            bound = est.upper if est.upper is not None else est.value
+            sized.append(int(bound or 0))
+            exact = exact and est.mode == fg.CardinalityMode.EXACT
+        counts = tuple(sized)
     n = len(slots)
     produced = tuple(range(1, n + 1))
     sources = {"optional_sheet_count": f"{source}: FW_Optional slots in the specification",
@@ -242,7 +268,7 @@ def contract_from_spec(spec, *, consumed_override=None,
 
     contract = OptionalTableContract(
         optional_sheet_count=n, slot_value_counts=counts, produced_sizes=produced,
-        consumed_sizes=consumed, mode=mode, sources=sources)
+        consumed_sizes=consumed, mode=mode, sources=sources, exact=exact)
     validate_contract(contract)
     return contract
 

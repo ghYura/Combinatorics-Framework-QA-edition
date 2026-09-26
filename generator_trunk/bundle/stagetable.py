@@ -78,6 +78,10 @@ class StageTable:
     component_artifacts: Callable[..., Any]
     optional_tables: Callable[..., Any]
     record_handoff_manifest: Callable[..., Any]
+    # rows Core wrote into fw_opt<size>, summed over the consumed sizes — how a run
+    # measures the optional multiplier when the spec can only bound it (verb chains,
+    # FW_Group, braces in optional sheets: legacy XLSX input, re-declared TOML slots)
+    optional_table_rows: "Callable[..., Any] | None" = None
 
     def with_(self, **overrides: Callable[..., Any]) -> "StageTable":
         """Return a copy with the named collaborators replaced.

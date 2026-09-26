@@ -365,6 +365,35 @@ def _optional_tables(cfg, main_port, db) -> "list[str]":
     return [line.strip() for line in out.splitlines() if line.strip()]
 
 
+def _optional_table_rows(cfg, main_port, db, sizes) -> int:
+    """Rows Core wrote into `fw_opt<size>`, summed over `sizes` — exactly the optional
+    branches the Reader joins onto every fw_final row."""
+    total = 0
+    for size in sizes:
+        out, rc = psql(main_port, db, f"select count(*) from fw_opt{int(size)};",
+                       host=cfg.main_db_host, user=cfg.main_db_user, password=cfg.main_db_password)
+        text = (out or "").strip()
+        if rc != 0 or not text.isdigit():
+            raise StageError(f"could not count fw_opt{int(size)} in {db}: {text}")
+        total += int(text)
+    return total
+
+
+def _measured_optional_factor(st, cfg, main_port, db, optional_contract, predicted):
+    """The optional multiplier the Reader will realise: 1 + Σ|fw_opt<size>| over the
+    consumed sizes, measured after Core, whenever the spec can only BOUND it (an
+    optional sheet runs a verb chain / FW_Group / brace — legacy XLSX input or a
+    re-declared TOML slot). An exact prediction is kept as is."""
+    if not optional_contract.active or getattr(optional_contract, "exact", True):
+        return predicted
+    counter = getattr(st, "optional_table_rows", None) or _optional_table_rows
+    measured = 1 + int(counter(cfg, main_port, db, optional_contract.consumed_sizes))
+    sizes = ",".join(str(x) for x in optional_contract.consumed_sizes)
+    ok(f"optional multiplier measured from Core: 1 + Σ|fw_opt{{{sizes}}}| = {measured} "
+       f"(the spec only bounds it: ≤ ×{predicted})")
+    return measured
+
+
 def _create_run_directory(a, spec, toml_path, scratch, budget_intent=None, execution_policy=None,
                           authorization=None, optional_contract=None):
     """Create the run directory + run.json/state.json before stage 1 (STEP 4).
@@ -503,6 +532,7 @@ def default_stage_table() -> StageTable:
         component_artifacts=_stage_component_artifacts,
         optional_tables=_optional_tables,
         record_handoff_manifest=_record_handoff_manifest,
+        optional_table_rows=_optional_table_rows,
     )
 
 
@@ -644,7 +674,10 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
                 verify_materialized(optional_contract, st.optional_tables(cfg, a.main_port, a.db))
             except OptionalContractError as exc:
                 raise StageError(str(exc))
-            rec.count("optional_multiplier", actual=optional_contract.expected_multiplier())
+            optional_factor = _measured_optional_factor(st, cfg, a.main_port, a.db,
+                                                        optional_contract, optional_factor)
+            rec.count("optional_multiplier", actual=optional_factor,
+                      expected=optional_contract.expected_multiplier())
         _record_artifacts(rec, file_artifact("input.workbook", xlsx),
                           *st.component_artifacts("core", cfg))
         rec.invariant(invariants.core_count_positive(fw_final))
@@ -970,7 +1003,7 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
         ok(f"resume: reusing 'gen' -> {xlsx.name}")
     else:
         with journal.stage("gen", log_path=work / "gen.log") as rec:
-            xlsx = st.gen(str(Path(toml_path).parent), work)
+            xlsx = st.gen(str(toml_path), work)
             _record_artifacts(rec, file_artifact("input.spec", toml_path),
                               file_artifact("output.workbook", xlsx),
                               *st.component_artifacts("gen", cfg))
@@ -1017,6 +1050,8 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
                                         f"(prior stage SUCCEEDED, live row count unchanged)",
                            carry_counts=core_prior.counts)
         ok(f"resume: reusing 'core' -> fw_final={fw_final}")
+        optional_factor = _measured_optional_factor(st, cfg, main_port, db, optional_contract,
+                                                    optional_factor)
     else:
         with journal.stage("core", log_path=work / "core.log") as rec:
             fw_final = st.core(spec, xlsx, work, db, main_port, n_opt, cfg,
@@ -1027,7 +1062,10 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
                     verify_materialized(optional_contract, st.optional_tables(cfg, main_port, db))
                 except OptionalContractError as exc:
                     raise StageError(str(exc))
-                rec.count("optional_multiplier", actual=optional_factor)
+                optional_factor = _measured_optional_factor(st, cfg, main_port, db,
+                                                            optional_contract, optional_factor)
+                rec.count("optional_multiplier", actual=optional_factor,
+                          expected=optional_contract.expected_multiplier())
             _record_artifacts(rec, file_artifact("input.workbook", xlsx),
                               *st.component_artifacts("core", cfg))
             rec.invariant(invariants.core_count_positive(fw_final))

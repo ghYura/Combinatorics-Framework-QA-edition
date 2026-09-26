@@ -132,7 +132,7 @@ def cmd_resume(a, *, stages: 'StageTable | None' = None) -> None:
             f"sensitive load and produces no deterministic, reusable per-stage output to resume "
             f"from. Start a fresh stress run instead.")
     reconcile_interrupted(layout)
-    spec, toml_path = _load_one_spec(Path(manifest.spec_path).parent)
+    spec, toml_path = _load_one_spec(Path(manifest.spec_path))
     current_sha = file_sha256(toml_path)
     spec_changed = current_sha != manifest.spec_sha256
     if spec_changed:
