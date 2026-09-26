@@ -63,11 +63,29 @@ def _plan_warnings(spec, plan) -> list:
     warnings = []
     if spec.spec_version == "legacy":
         warnings.append("spec has no 'spec_version' — interpreted as legacy (bundle-spec-v1 not declared)")
+    program_sized = fg.uses_program_sizing(spec)
     brace_rows = sum(1 for cells in spec.seq_extra for c in cells
                      if fg._BRACE_RE.fullmatch(str(c).strip().splitlines()[0].strip()))
-    if brace_rows:
+    if brace_rows and not program_sized:
         warnings.append(f"{brace_rows} seq_extra brace joiner row(s): their joined-result-table row "
                         f"count is UNKNOWN until Core runs (see cardinality.mandatory.reasons)")
+    if program_sized:
+        # a sheet whose program provably ends with no rows (a 1:1/M:M brace over operands of
+        # different lengths, a verb chain that runs out of rows before FW_Group, ...)
+        program = fg.effective_program(spec)
+        empty: dict = {}
+        for sheet, sizing in fg.program_sizings(spec).items():
+            if sizing.est.mode == M.EXACT and not sizing.est.value:
+                empty.setdefault(program[sheet]["role"], []).append(sheet)
+        if empty.get("mandatory"):
+            warnings.append(f"mandatory sheet(s) {', '.join(empty['mandatory'])} end EMPTY (EXACT 0): the Core "
+                            f"drops them from fw_final — a PARTIAL result without their combos column")
+        if empty.get("optional"):
+            warnings.append(f"FW_Optional sheet(s) {', '.join(empty['optional'])} end EMPTY (EXACT 0): they only "
+                            f"ever contribute their absent branch")
+        if empty.get("excluded"):
+            warnings.append(f"brace operand sheet(s) {', '.join(empty['excluded'])} end EMPTY (EXACT 0): a join "
+                            f"reading them has nothing to pair")
     if plan.mandatory.mode != M.EXACT:
         warnings.append(f"mandatory Core product is {plan.mandatory.mode.value}, not EXACT — "
                         f"{plan.mandatory.formula}")

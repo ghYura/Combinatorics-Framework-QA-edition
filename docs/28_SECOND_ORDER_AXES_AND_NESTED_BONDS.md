@@ -47,7 +47,8 @@ What the source actually does (`BraceOperationHandler.execute`, lines 48–213):
   `resolveSourceTableForInner`: prefer `fw2_<k>`, else fall back to `fw_<k>`. They **must carry
   `FW_Exclude`** so `SeqParser` moves them out of the mandatory Cartesian and into the exclude map
   (`SeqParser.java:141-157`), and the brace consumes them; `cleanupExcludedTables` (lines 627-655)
-  drops them afterwards unless `FW_Reuse`/`FW_ReuseTableOnly` keep the table/rows.
+  deletes their rows and drops their tables afterwards, unless `FW_Reuse` keeps table and rows (for a
+  later call of the sheet) or `FW_ReuseTableOnly` keeps just the emptied table.
 - `mult ∈ {1:1, 1:N, M:1, M:M, M:N}` selects the join cardinality:
   - `1:1` / `M:M` pair operand rows **of equal cardinality** (`readWithCardinality(a.length)`);
   - `1:N` / `M:1` fan one side across the whole other side;

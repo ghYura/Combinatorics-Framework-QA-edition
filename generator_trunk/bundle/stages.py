@@ -34,6 +34,7 @@ import sys
 import tempfile
 import threading
 import time
+import zipfile
 from pathlib import Path
 
 from .cancel import forget_process, record_process
@@ -336,11 +337,12 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
                 f"PostgreSQL not accepting on {host}:{port}. Start it, e.g.:\n"
                 f"      sudo pg_ctlcluster 18 main start   (and ... my_second_instance start)")
         ok(f"PostgreSQL {host}:{port} up")
-    tomls = sorted(Path(args.spec_dir).glob("*.toml"))
-    if len(tomls) != 1:
-        raise PreflightError(f"expected exactly one .toml in {args.spec_dir}, found {len(tomls)}")
-    spec = fg.load_spec(tomls[0])
-    ok(f"spec '{spec.name}' ({len(spec.slots)} slots)")
+    spec, spec_input = load_spec_input(args.spec_dir)
+    if getattr(spec, "source_format", "toml") == "xlsx":
+        ok(f"spec '{spec.name}' — legacy XLSX workbook, run by the Core unchanged "
+           f"({len(spec.slots)} FW_Seq sheets, {len(spec.passive_sheets)} passive)")
+    else:
+        ok(f"spec '{spec.name}' ({len(spec.slots)} slots)")
     # A t-wise request is applied by the sieve stage after Core. Refuse the specs it
     # cannot be applied to faithfully before Core spends time on the full product.
     if fg.coverage_requested(spec):
@@ -356,7 +358,42 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
     scratch = cfg.scratch_for(args.db)
     scratch.mkdir(parents=True, exist_ok=True)
     ok(f"scratch {scratch}")
-    return spec, tomls[0], scratch
+    return spec, spec_input, scratch
+
+
+def resolve_spec_input(spec_path) -> Path:
+    """The single spec input of a run: a TOML spec, or a legacy XLSX workbook — the
+    Framework's ORIGINAL input format, which the Bundle processes alongside TOML (the
+    Core runs the workbook unchanged). `spec_path` is that file itself, or a directory
+    holding exactly one of them (the historical `<spec-dir>` form)."""
+    p = Path(spec_path)
+    if p.is_file():
+        if p.suffix.lower() == ".toml" or p.suffix.lower() in fg._WORKBOOK_SUFFIXES:
+            return p
+        raise PreflightError(f"spec input {p} is neither a .toml spec nor an .xlsx workbook")
+    if not p.is_dir():
+        raise PreflightError(f"spec input {p} does not exist")
+    tomls = sorted(p.glob("*.toml"))
+    books = sorted(q for q in p.iterdir()
+                   if q.is_file() and q.suffix.lower() in fg._WORKBOOK_SUFFIXES
+                   and not q.name.startswith("~$"))                  # ~$…: an Office lock file
+    if len(tomls) + len(books) != 1:
+        raise PreflightError(
+            f"expected exactly one spec input in {p} — a .toml spec or an .xlsx workbook — "
+            f"found {len(tomls)} .toml and {len(books)} workbook(s); pass the file itself to choose")
+    return (tomls or books)[0]
+
+
+def load_spec_input(spec_path):
+    """`(spec, path)` for the run's spec input — see `resolve_spec_input`. An invalid
+    spec or an unreadable workbook is a PreflightError, never a mid-command crash."""
+    path = resolve_spec_input(spec_path)
+    try:
+        return fg.load_spec(path), path
+    except ValueError as exc:
+        raise PreflightError(f"spec {path.name} is invalid: {exc}") from exc
+    except (OSError, KeyError, zipfile.BadZipFile) as exc:
+        raise PreflightError(f"workbook {path.name} could not be read: {exc}") from exc
 
 
 def _check_prop_value(key: str, value) -> str:
@@ -408,9 +445,33 @@ def _props(template: Path, edits: dict, out: Path):
 
 # ----------------------------------- stages --------------------------------- #
 def stage_gen(spec_dir, scratch):
-    print("\n[1/5] GENERATE workbook (fwgen)")
+    spec_input = resolve_spec_input(spec_dir)
     out = scratch / "wb"
-    r = run([sys.executable, str(HERE / "fwgen_cli.py"), "gen", "--specs", str(spec_dir), "--out", str(out)])
+    if spec_input.suffix.lower() in fg._WORKBOOK_SUFFIXES:
+        # Legacy XLSX input — the Framework's original format: the Core runs the author's
+        # workbook exactly as written (long FW_Seq rows, FW_Group between verbs, flags in
+        # any column, FW_Info legend). Copied into the run so the run stays self-contained;
+        # never regenerated, never edited.
+        print("\n[1/5] GENERATE workbook — legacy XLSX input (used unchanged, no regeneration)")
+        out.mkdir(parents=True, exist_ok=True)
+        dst = out / spec_input.name
+        shutil.copy2(spec_input, dst)
+        problems = fg.validate_workbook(dst)
+        if problems:
+            for problem in problems:
+                print(f"    ✗ {problem}")
+            raise StageError(f"workbook {spec_input.name} is invalid ({len(problems)} problem(s))")
+        ok(f"workbook -> {dst.name}")
+        return dst
+    print("\n[1/5] GENERATE workbook (fwgen)")
+    specs_dir = spec_input.parent
+    if Path(spec_dir).is_file():
+        # a spec FILE picked out of a directory that may hold others: generate from it alone
+        specs_dir = scratch / "spec_input"
+        shutil.rmtree(specs_dir, ignore_errors=True)
+        specs_dir.mkdir(parents=True)
+        shutil.copy2(spec_input, specs_dir / spec_input.name)
+    r = run([sys.executable, str(HERE / "fwgen_cli.py"), "gen", "--specs", str(specs_dir), "--out", str(out)])
     xlsx = sorted(out.glob("*.xlsx"))
     if r.returncode != 0 or not xlsx:
         print(r.stdout, r.stderr)

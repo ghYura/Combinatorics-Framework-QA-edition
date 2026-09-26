@@ -201,12 +201,17 @@ class FwSeqGraph:
             if e.kind in {"brace_operand", "brace_nested_operand"}:
                 consumers.setdefault(e.dst, []).append(e.src)
         for slot, braces in sorted(consumers.items()):
-            if len(braces) > 1:
+            node = self.nodes.get(slot)
+            # FW_Reuse keeps the operand's generated rows after a join precisely so
+            # that later FW_Seq rows can consume them again (author's semantics); only
+            # an operand whose rows are cleaned after the first join cannot feed two.
+            keeps_rows = bool(node is not None and node.attrs.get("keeps_rows"))
+            if len(braces) > 1 and not keeps_rows:
                 out.append(GraphIssue(ERROR, "consumed_result_ambiguity",
                                       f"result of {slot!r} is consumed by {len(braces)} braces "
-                                      f"({', '.join(sorted(braces))}); a brace operand result is "
-                                      f"consumed-and-cleaned, so it cannot feed two joins", (slot,)))
-            node = self.nodes.get(slot)
+                                      f"({', '.join(sorted(braces))}) but its rows are cleaned after "
+                                      f"the first join (no FW_Reuse), so the later joins would read "
+                                      f"an empty operand — mark it FW_Reuse to reuse its data", (slot,)))
             nested = any(
                 edge.dst == slot and edge.kind == "brace_nested_operand"
                 for edge in self.edges
@@ -258,24 +263,48 @@ def build_graph(spec: "fg.Spec") -> FwSeqGraph:
             "heading": "FW_Heading" in s.flags,
             "group": bool(s.group_replace),
             "separator": s.separator or None,
+            "chain": list(getattr(s, "chain", ())) or None,
+            "keeps_rows": fg.operand_keeps_rows(
+                s.flags, compact_default=getattr(spec, "source_format", "toml") != "xlsx"),
         })
 
     for s in spec.slots:
         slot_node(s)
 
-    # cartes / separator dependencies declared on the slot verb + separator field
+    # A legacy XLSX spec: data sheets without an FW_Seq row are passive resources (tokens,
+    # separators, Cartes operands) and are real nodes; every directive of a sheet's row
+    # may reference one, and its braces live in the workbook program, in row order.
+    xlsx = getattr(spec, "source_format", "toml") == "xlsx"
+    program = fg.effective_program(spec) if xlsx else {}
+    if xlsx:
+        for name, values in (getattr(spec, "passive_sheets", {}) or {}).items():
+            nodes[name] = GraphNode(name, "slot", {
+                "verb": None, "n": len(values), "optional": False, "excluded": False,
+                "heading": False, "group": False, "separator": None, "keeps_rows": False,
+                "passive": True,
+            })
+
+    # cartes / separator dependencies declared on the slot verb(s) + separator field
     for s in spec.slots:
-        for op in re.findall(r"FW_Cartes(?:_first)?\(([A-Za-z0-9_]+)\)", fg._first_line(s.verb)):
-            edges.append(GraphEdge(s.sheet, op, "cartes"))
-        for op in re.findall(r"FW_Separator\(([A-Za-z0-9_]+)\)", fg._first_line(s.verb)):
-            edges.append(GraphEdge(s.sheet, op, "separator"))
+        directives = (program.get(s.sheet, {}).get("directives") or [s.verb]) if xlsx else [s.verb]
+        for d in directives:
+            for op in re.findall(r"FW_Cartes(?:(?i:_first))?\(([A-Za-z0-9_]+)\)", fg._first_line(d)):
+                edges.append(GraphEdge(s.sheet, op, "cartes"))
+            for op in re.findall(r"FW_Separator\(([A-Za-z0-9_]+)\)", fg._first_line(d)):
+                edges.append(GraphEdge(s.sheet, op, "separator"))
         if s.separator:
             edges.append(GraphEdge(s.sheet, s.separator, "separator"))
 
     # seq_extra brace joiners: a brace consumes prior RESULT tables. Core's
     # FW_()/FW_()G markers resolve from a stack of the most-recent brace targets.
     prior_brace_targets: list[str] = []
-    for ri, row in enumerate(spec.seq_extra):
+    if xlsx:
+        brace_rows = [[sheet, entry["directives"][0]] for sheet, entry in
+                      sorted(program.items(), key=lambda kv: (kv[1]["row"] is None, kv[1]["row"] or 0))
+                      if entry["directives"] and _brace_fields(entry["directives"][0]) is not None]
+    else:
+        brace_rows = list(spec.seq_extra)
+    for ri, row in enumerate(brace_rows):
         target = row[0] if row else ""
         for ci, cell in enumerate(row):
             fields = _brace_fields(cell)

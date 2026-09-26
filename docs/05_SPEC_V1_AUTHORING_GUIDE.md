@@ -49,7 +49,7 @@ Each `[[slots]]` has `sheet`, `key`, `verb`, optional `flags`, `raw`, `values`, 
 | k of n (unordered) | `FW_Combi(k)` | `C(n,k)` |
 | any subset | `FW_Subsets` (`2ⁿ`) / `FW_Combi(all)` (`2ⁿ−1`) | subsets |
 | k of n with repetition | `FW_CombiR(k)` | `C(n+k−1,k)` |
-| an ordering | `FW_Permut` / `FW_Permut(k)` | `n!` / `P(n,k)` |
+| an ordering | `FW_Permut` (also `()`, `(all)`, `(full)`) | `n!` (no k-permutation form; a `(k)` argument is ignored — alias `permute(k)` compiles to `FW_Combi(k)` then `FW_Permut()`: P(n,k)) |
 | sequence with repetition | `FW_PermutR(k)` | `nᵏ` |
 | size-bounded subsets | `FW_Subsets_EXACT/RANGE/BEFORE/AFTER/GIVEN(…)` | bounded ΣC(n,k) |
 | cross another sheet | `FW_Cartes(OTHER)` | `n·\|OTHER\|` |

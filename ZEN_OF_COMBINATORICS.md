@@ -19,7 +19,7 @@ of freedom is this?* — and the verb is forced:
 | **k of n**, order irrelevant | `FW_Combi(k)` | `C(n,k)` | choose 2 resources to touch |
 | **any subset** (incl. none) | `FW_Combi(all)` | `2ⁿ−1` (non-empty) / `FW_Subsets` `2ⁿ` | feature flags |
 | **k of n with repetition** | `FW_CombiR(k)` | `C(n+k−1,k)` | multiset of statuses |
-| **an ordering** (order *is* the variable) | `FW_Permut` / `FW_Permut(k)` | `n!` / `P(n,k)` | pipeline stage order |
+| **an ordering** (order *is* the variable) | `FW_Permut` (also `()`, `(all)`, `(full)`) | `n!` — there is no k-permutation form; a `(k)` argument is ignored (for P(n,k) chain `FW_Combi(k)` then `FW_Permut()` in one row — the `permute(k)` alias) | pipeline stage order |
 | **a sequence with repetition** | `FW_PermutR(k)` | `nᵏ` | k-length code over an alphabet |
 | **size-bounded subsets** | `FW_Subsets_EXACT/RANGE/BEFORE/AFTER/GIVEN(…)` | bounded sums of `C(n,k)` | "1 to 3 add-ons" |
 | **cross another sheet** | `FW_Cartes(OTHER)` | `n·|OTHER|` | matrix of A×B |
@@ -189,9 +189,9 @@ dataflow algebra**: build atoms → group/join them → rewrite the token stream
 | flag | effect (Core) |
 |---|---|
 | `FW_Exclude` / `FW_Heading` | move a sheet OUT of the mandatory cartesian into the exclude map (sheet-level, **not** a per-combination filter) — required for brace operands |
-| `FW_Reuse` | through brace cleanup, **keep the operand TABLE** (skip `dropTable`) |
-| `FW_ReuseTableOnly` | through brace cleanup, **keep its ROWS** (skip `deleteRows`) |
-| (both) | preserve table **and** rows for reuse by a later join (nested operands need both) |
+| `FW_Reuse` | through brace cleanup, **keep the operand table AND its generated rows**, so a later `FW_Seq` row calling this sheet (e.g. another brace) reuses the data |
+| `FW_ReuseTableOnly` | through brace cleanup, **keep only the table** — its rows are deleted |
+| (both) | `FW_Reuse` wins: table and rows are kept (nested operands carry both) |
 | `FW_Concatenator=X` | set the per-sheet concatenator |
 | `FW_Optional` | route to the optional path (sudden actions, above) — **not** a brace operand |
 

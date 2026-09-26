@@ -74,9 +74,6 @@ _EQUIV_CASES = [
     ("permute",
      {"sheet": "S", "values": _VALUES, "alias": "permute"},
      {"sheet": "S", "values": _VALUES, "verb": "FW_Permut"}),
-    ("permute(2)",
-     {"sheet": "S", "values": _VALUES, "alias": "permute(2)"},
-     {"sheet": "S", "values": _VALUES, "verb": "FW_Permut(2)"}),
     ("feature_subset",
      {"sheet": "S", "values": _VALUES, "alias": "feature_subset"},
      {"sheet": "S", "values": _VALUES, "verb": "FW_Subsets"}),
@@ -134,7 +131,9 @@ def test_compile_alias_unit_mapping():
     assert fg.compile_alias("choose_one") == ("FW_Combi(1)", ())
     assert fg.compile_alias("choose_k(3)") == ("FW_Combi(3)", ())
     assert fg.compile_alias("permute") == ("FW_Permut", ())
-    assert fg.compile_alias("permute(2)") == ("FW_Permut(2)", ())
+    assert fg.compile_alias("permute(2)") == ("FW_Combi(2)", ())      # + the chain below
+    assert fg.alias_chain("permute(2)") == ("FW_Permut()",)
+    assert fg.alias_chain("permute") == () and fg.alias_chain("choose_k(2)") == ()
     assert fg.compile_alias("feature_subset") == ("FW_Subsets", ())
     assert fg.compile_alias("feature_subset(2)") == ("FW_Subsets(2)", ())
     assert fg.compile_alias("optional_action") == ("FW_Combi(1)", ("FW_Optional",))
@@ -268,3 +267,23 @@ def test_schema_accepts_normalized_artifact_block():
 
 if __name__ == "__main__":
     raise SystemExit(pytest.main([__file__, "-q"]))
+
+
+def test_permute_k_is_a_real_k_permutation_chain():
+    """permute(k) = FW_Combi(k) then FW_Permut() in one FW_Seq row (the combinatoricslib3
+    recipe): P(n,k) rows. FW_Permut itself has no k form (the author's legacy Core printed
+    "Unsupported!" for FW_Permut(k)). Its expert equivalent is a seq_extra row re-declaring
+    the sheet with the same two directives, and the normalized artifact uses exactly that."""
+    a = fg.parse_spec(_base([{"sheet": "S", "values": _VALUES, "alias": "permute(2)"}]), "alias")
+    assert (a.slots[0].verb, a.slots[0].chain) == ("FW_Combi(2)", ("FW_Permut()",))
+    assert fg.effective_program(a)["S"]["directives"] == ["FW_Combi(2)", "FW_Permut()"]
+    plan = fg.spec_cardinality_plan(a)
+    assert (plan.mandatory.mode, plan.mandatory.value) == (fg.CardinalityMode.EXACT, 12)   # P(4,2)
+    row = next(r for r in fg.build_compact_core_json(a)["sheets"]["FW_Seq"] if r and r[0] == "S")
+    cells = [c for c in row if c]
+    assert cells[-2:] == ["FW_Combi(2)", "FW_Permut()"]
+    expert = fg.parse_spec(_base([{"sheet": "S", "values": _VALUES, "verb": "FW_Combi(2)"}])
+                           | {"seq_extra": [["S", "FW_Combi(2)", "FW_Permut()"]]}, "expert")
+    assert fg.spec_cardinality_plan(expert).mandatory.value == 12
+    normalized = fg.normalized_spec_dict(a)
+    assert ["S", "FW_Combi(2)", "FW_Permut()"] in normalized["seq_extra"]

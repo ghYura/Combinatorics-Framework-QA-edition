@@ -61,6 +61,18 @@ were changed (sampleAndSkip / distinctifyJavaSide), or (c) a
 regression was introduced.  Investigate immediately.
 
 
+ERRATUM (2026-09-26) — fw_opt4 predates the grouped FW_Cartes fix
+──────────────────────────────────────────────────────────────────
+The fixture's optional sheets M (FW_Cartes(B1), FW_Group, FW_Cartes(B2))
+and N (the _first variant) use FW_Cartes after FW_Group. The author's
+intended semantics is "grouped rows x B2"; the Core used to pair the
+grouped rows with themselves. Under the corrected semantics M and N hold
+8 rows each instead of 16, so fw_opt4 = 33,674,483 no longer applies and
+the new value has not been measured. fw_final = 4,644,864 is unaffected
+(M and N are FW_Optional). This file was produced by earlier AI-assisted
+work: read its numbers as a regression reference, not as the author's spec.
+
+
 HISTORICAL NOTE — Why "34,368,597" appears in older logs
 ────────────────────────────────────────────────────────
 The legacy pre-Iter2 codebase (Architect 4.6 baseline) reported

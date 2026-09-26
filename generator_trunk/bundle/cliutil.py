@@ -41,7 +41,7 @@ from .policy import (
     with_env_allowlist,
     with_network_allowlist,
 )
-from .stages import fg
+from .stages import fg, load_spec_input, resolve_spec_input
 
 
 # Sentinel meaning "this argparse flag was not given on the command line" —
@@ -165,21 +165,18 @@ def _resolve_bundle_config(a):
 
 def _with_db(a):
     if not a.db:
-        tomls = sorted(Path(a.spec_dir).glob("*.toml"))
-        a.db = tomls[0].stem if tomls else "bundle_run"
+        try:
+            a.db = resolve_spec_input(a.spec_dir).stem        # a .toml spec or an .xlsx workbook
+        except PreflightError:
+            a.db = "bundle_run"                                # preflight reports the real problem
     return a
 
 
 def _load_one_spec(spec_dir):
-    tomls = sorted(Path(spec_dir).glob("*.toml"))
-    if len(tomls) != 1:
-        raise PreflightError(f"expected exactly one .toml in {spec_dir}, found {len(tomls)}")
-    try:
-        return fg.load_spec(tomls[0]), tomls[0]
-    except ValueError as exc:
-        # invalid spec (e.g. a missing operand / undeclared sheet caught by parse_spec)
-        # rejects gracefully — never let it crash mid-command or write a partial artifact.
-        raise PreflightError(f"spec {tomls[0].name} is invalid: {exc}") from exc
+    """`(spec, path)` of the one spec input under `spec_dir` — a TOML spec or a legacy
+    XLSX workbook (the Framework's original input) — or of that file itself. An invalid
+    spec rejects gracefully: never a mid-command crash or a partial artifact."""
+    return load_spec_input(spec_dir)
 
 
 def _budget_limits_from_config(cfg: BundleConfig) -> BudgetLimits:

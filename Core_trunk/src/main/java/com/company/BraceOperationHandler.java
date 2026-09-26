@@ -659,29 +659,40 @@ private void cleanupExcludedTables(Short keyExcl1, Short keyExcl2,
 Set<Short> reuseSet,
 Set<Short> reuseTableOnlySet,
 Map<String, ArrayList<short[]>> mapTable2combs) {
-if (keyExcl1 != null) {
-if (!reuseTableOnlySet.contains(keyExcl1)) {
-store.deleteRows(keyExcl1, true);
-store.deleteRows(keyExcl1, false);
+cleanupOperand(keyExcl1, reuseSet, reuseTableOnlySet, mapTable2combs);
+cleanupOperand(keyExcl2, reuseSet, reuseTableOnlySet, mapTable2combs);
 }
-if (!reuseSet.contains(keyExcl1)) {
-store.dropTable(keyExcl1, true);
-store.dropTable(keyExcl1, false);
+
+/**
+ * Post-join cleanup of one brace operand, by the flags on its FW_Seq row (author's semantics):
+ * <ul>
+ *   <li>{@code FW_Reuse} — keep the operand's table AND the rows it generated, so another call
+ *       of this sheet in a later FW_Seq row (another brace, a nested {@code FW_()}) reuses them;</li>
+ *   <li>{@code FW_ReuseTableOnly} — keep just the table, emptied of rows;</li>
+ *   <li>neither — delete the rows and drop the table.</li>
+ * </ul>
+ * {@code FW_Reuse} wins when both are present: nested operands are marked with both
+ * (SeqParser.resolveNestedFwBrace) and must keep their rows for the enclosing join.
+ * (These two flags used to act inverted: Reuse kept only an empty table and
+ * ReuseTableOnly kept rows that the following drop discarded anyway.)
+ * Package-private for {@link BraceReuseVerify}.
+ */
+void cleanupOperand(Short key,
+Set<Short> reuseSet,
+Set<Short> reuseTableOnlySet,
+Map<String, ArrayList<short[]>> mapTable2combs) {
+if (key == null) return;
+final boolean keepRows  = reuseSet.contains(key);
+final boolean keepTable = keepRows || reuseTableOnlySet.contains(key);
+if (!keepRows) {
+store.deleteRows(key, true);
+store.deleteRows(key, false);
 }
-mapTable2combs.remove("fw2_" + keyExcl1);
-mapTable2combs.remove("fw_" + keyExcl1);
+if (!keepTable) {
+store.dropTable(key, true);
+store.dropTable(key, false);
 }
-if (keyExcl2 != null) {
-if (!reuseTableOnlySet.contains(keyExcl2)) {
-store.deleteRows(keyExcl2, true);
-store.deleteRows(keyExcl2, false);
-}
-if (!reuseSet.contains(keyExcl2)) {
-store.dropTable(keyExcl2, true);
-store.dropTable(keyExcl2, false);
-}
-mapTable2combs.remove("fw2_" + keyExcl2);
-mapTable2combs.remove("fw_" + keyExcl2);
-}
+mapTable2combs.remove("fw2_" + key);
+mapTable2combs.remove("fw_" + key);
 }
 }

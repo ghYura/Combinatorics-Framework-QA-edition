@@ -1038,7 +1038,11 @@ return true;
 
 
 
-int groupSize = (int) maxId;
+// The group is the set of rows actually present. maxCombiId is NOT that count: DISTINCT keeps
+// each surviving row's original id, so after a de-duplicating pass the ids have gaps and
+// maxId exceeds the row count — (size) then asked for C(rows, maxId) and silently produced
+// nothing (the sheet was dropped from fw_final while the run stayed green).
+int groupSize = inListFWasList.size();
 List<Integer> mValues = new ArrayList<>();
 if (mParam == -1) {
 mValues.add(groupSize);
@@ -1080,9 +1084,30 @@ break;
 case "FW_Subsets":
 gStream = new com.company.combinatorics.SubsetsG(inListFWasList).getDistinctCombinations();
 break;
-case "FW_Cartes":
-gStream = new com.company.combinatorics.CartesianProductG(inListFWasList, inListFWasList).getCartesianProduct();
+case "FW_Cartes": {
+// FW_Group mode pairs the GROUPED rows with the operand sheet, exactly as the per-row pass
+// pairs a row's elements with it: FW_Cartes(X) = rows x X, FW_Cartes_first(X) = X x rows
+// (author's intent, 2026-09-26; this used to pair the rows with themselves and ignore X).
+// Each X value becomes a one-code atom, so FW_ReplaceRE sees the same nested
+// "[[row codes], [x code]]" shape it sees for any other grouped verb.
+final List<Short> operandValues = (spec.keyShort2 != null && allSourceDataSnapshot != null)
+? allSourceDataSnapshot.get(spec.keyShort2)
+: null;
+if (operandValues == null || operandValues.isEmpty()) {
+log.warn("FW_Group: FW_Cartes operand of key={} is missing or empty — the grouped pass emits no rows", key);
+continue;
+}
+final List<FW> operandAtoms = new ArrayList<>(operandValues.size());
+for (Short code : operandValues) {
+FW atom = new FW();
+atom.setCombo(new int[]{ code });
+operandAtoms.add(atom);
+}
+gStream = spec.isCartesFirst
+? new com.company.combinatorics.CartesianProductG(operandAtoms, inListFWasList).getCartesianProduct()
+: new com.company.combinatorics.CartesianProductG(inListFWasList, operandAtoms).getCartesianProduct();
 break;
+}
 default:
 log.warn("FW_Group: unsupported algo type '{}', skipping", spec.algoType);
 continue;
