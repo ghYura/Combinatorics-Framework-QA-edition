@@ -576,8 +576,10 @@ def test_face2_all_link_variations_through_real_bundle():
                             v = code2val.get(s, {}).get(int(code))
                             if v is not None:
                                 row.append({"sheet": s, "value": v, "pos": pos})
-                    elif s in baseline:
-                        row.append({"sheet": s, "value": baseline[s], "pos": pos})
+                    elif s in baseline:               # an empty cell inherits EVERY base-row value
+                        base = baseline[s]
+                        for v in (base if isinstance(base, (list, tuple)) else [base]):
+                            row.append({"sheet": s, "value": v, "pos": pos})
                 rows.append(row)
             cur.close()
             return rows
@@ -622,9 +624,14 @@ def test_face2_all_link_variations_through_real_bundle():
             ("when predicate over params",
              {"id": "wp", "polarity": "forbid", "sheets": ["A", "C"],
               "when": "A.n + C.n > 4", "gate": {}}, params, 3 * P),
+            # K = FW_Combi(2) over k1..k3 -> rows {k1,k2} {k1,k3} {k2,k3}: every value sits in 2 of 3,
+            # so each rule removes 1/3 (A=a1) x 2/3 of N = 2P, including rows that inherit K's base.
             ("match a value inside a multi-value FW_Combi(2) slot (K)",
              {"id": "kmv", "polarity": "forbid", "sheets": ["A", "K"],
-              "pairs": [{"A": "a1", "K": "k1"}], "gate": {}}, None, None),
+              "pairs": [{"A": "a1", "K": "k1"}], "gate": {}}, None, 2 * P),
+            ("match the base row's SECOND value of the multi-value slot (K)",
+             {"id": "kmv2", "polarity": "forbid", "sheets": ["A", "K"],
+              "pairs": [{"A": "a1", "K": "k2"}], "gate": {}}, None, 2 * P),
         ]
 
         for label, cons, p, cf in cases:
