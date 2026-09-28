@@ -38,6 +38,32 @@ A row matching `when` (here: strict mode **and** a Unicode payload) is removed. 
 analogy (value parameters + a formula + adjacency) maps to ordinary terms: value attributes,
 predicates, compatibility rules, pre-execution pruning.
 
+### XLSX workbook input: the companion `<stem>.constraints.json`
+
+A legacy XLSX workbook given to the Bundle as its spec input has no `[[constraints]]` of its own.
+Its bond layer lives in **one reserved file beside it**:
+
+- **Name.** `demo.xlsx` reads `demo.constraints.json`, with the same directory and stem, and
+  nothing else. A generic `sidecar.json`, another workbook's companion and a neighbouring TOML
+  are never consulted.
+- **No companion.** The workbook stays unconstrained, as before.
+- **Content.** The sieve's v1 sidecar, exactly as `fwgen.emit_sidecar` writes it:
+  `{"version": 1, "params": {sheet: {value: {attr: …}}}, "constraints": [...], "orders": {...}}`.
+  `orders` is optional. Values are compared verbatim, so write the exact, whitespace-stripped
+  cell values.
+- **Validation.** The companion is checked when the workbook is loaded, so `plan`,
+  `constraints explain`, the run and resume all see the same rules. The load fails, naming the
+  file, on malformed JSON, a wrong envelope or version, an unknown key, a sheet the `FW_Seq`
+  program does not run, or a rule the sieve would skip. An authored rule is never dropped.
+- **Provenance.** `plan` prints the companion's path and SHA-256 (`constraints_source` in
+  `plan.json`). A run copies it byte for byte beside the workbook in `wb/`, and records its hash
+  in `run.json` (`constraints_sidecar_sha256`) and as the gen artifact
+  `input.constraints_sidecar`. Editing the companion alone is a spec change for `resume`.
+- **Generation.** `fwgen gen` writes `<base>.constraints.json` beside every compact workbook of
+  a constrained spec, and removes a stale one when the spec has none. Materialized workbooks
+  (ablation, n-wise, `--materialize`) get no companion: their rows are assembled candidates, not
+  the spec's factors. If you rename a generated workbook, rename its companion to the same stem.
+
 ## explain — list rules + quantitative effect (non-destructive)
 
 ```bash

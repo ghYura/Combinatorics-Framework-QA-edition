@@ -277,7 +277,9 @@ LAYERS: "tuple[LayerSpec, ...]" = (
         may_import=(
             ENGINE_CORE, ENGINE_CONTROL_PLANE, ENGINE_DEMONSTRATION, DOMAIN_APPLICATION,
             PRESENTATION, REFERENCE_APPLICATION, TESTS),
-        roots=(),                      # matched by filename convention, see classify_path
+        # Matched by filename convention (see classify_path), plus test-only support modules
+        # that tests import but that are not tests themselves.
+        roots=("generator_trunk/live_db_guard.py",),
     ),
 )
 

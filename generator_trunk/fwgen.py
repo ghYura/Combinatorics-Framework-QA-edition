@@ -2072,6 +2072,86 @@ def _open_workbook(path, **kw):
     return openpyxl.load_workbook(buf, **kw)
 
 
+# ---- XLSX constraint companion ------------------------------------------------------------
+# A workbook carries no bond layer of its own, so its constraint sidecar lives beside it under
+# one reserved name: `<stem>.constraints.json` (e.g. demo.xlsx -> demo.constraints.json). That
+# file and no other is loaded — never a generic `sidecar.json`, another workbook's companion or
+# a neighbouring TOML. No companion = an unconstrained workbook, exactly as before. The content
+# is the sieve's own v1 sidecar, as `emit_sidecar` writes it; see constraints/sidecar_schema.md.
+WORKBOOK_SIDECAR_SUFFIX = ".constraints.json"
+_WORKBOOK_SIDECAR_KEYS = frozenset({"version", "params", "constraints", "orders"})
+
+
+def workbook_sidecar_path(workbook: "str | Path") -> Path:
+    """The only constraint sidecar `workbook` consumes: `<dir>/<stem>.constraints.json`."""
+    return Path(workbook).with_suffix(WORKBOOK_SIDECAR_SUFFIX)
+
+
+def load_workbook_sidecar(workbook: "str | Path", sheet_names) -> "dict | None":
+    """Read and validate `workbook`'s companion sidecar; None when there is none.
+
+    Fails closed (ValueError naming the file) on unreadable or malformed JSON, a wrong
+    envelope, an unknown top-level key, or any rule the TOML validator or the sieve's strict
+    validator would not run as written — an authored rule is never silently dropped. Values are
+    kept verbatim (no whitespace normalisation) and rule order is preserved."""
+    import hashlib
+    path = workbook_sidecar_path(workbook)
+    if not path.exists():
+        return None
+    where = path.name
+    try:
+        data = path.read_bytes()
+        raw = json.loads(data.decode("utf-8"))
+    except (OSError, UnicodeDecodeError, ValueError) as exc:
+        raise ValueError(f"constraint sidecar {where}: cannot read it as UTF-8 JSON ({exc})") from exc
+    if not isinstance(raw, dict):
+        raise ValueError(f"constraint sidecar {where}: top level must be a JSON object")
+    unknown = sorted(set(raw) - _WORKBOOK_SIDECAR_KEYS)
+    if unknown:
+        raise ValueError(f"constraint sidecar {where}: unsupported top-level key(s) {unknown}; "
+                         f"allowed: {sorted(_WORKBOOK_SIDECAR_KEYS)}")
+    version = raw.get("version")
+    if type(version) is not int or version != 1:
+        raise ValueError(f"constraint sidecar {where}: 'version' must be the integer 1, got {version!r}")
+    constraints, params, orders = raw.get("constraints", []), raw.get("params", {}), raw.get("orders", {})
+    if not isinstance(constraints, list) or not all(isinstance(c, dict) for c in constraints):
+        raise ValueError(f"constraint sidecar {where}: 'constraints' must be a list of objects")
+    if not isinstance(orders, dict):
+        raise ValueError(f"constraint sidecar {where}: 'orders' must be an object")
+    if not isinstance(params, dict) or not all(
+            isinstance(vals, dict) and all(isinstance(attrs, dict) for attrs in vals.values())
+            for vals in params.values()):
+        raise ValueError(f"constraint sidecar {where}: 'params' must map sheet -> value -> {{attr: value}}")
+    sheets = set(sheet_names)
+    for sh in params:
+        if sh not in sheets:
+            raise ValueError(f"spec '{where}' params reference undeclared sheet '{sh}'")
+    constraints = _validated_constraints(constraints, sheets, where, strict=True)
+    orders = _validated_orders(orders, sheets, where)
+    sidecar = {"version": 1, "params": params, "constraints": constraints}
+    if orders:
+        sidecar["orders"] = orders
+    report = _import_sieve().validate_sidecar(sidecar, strict=False)
+    rejected = report["unsupported_constraints"] + report["invalid_constraints"]
+    if rejected:                      # the sieve would skip these; an authored rule must not vanish
+        detail = "; ".join(f"{r['id']}: {r['reason']}" for r in rejected)
+        raise ValueError(f"constraint sidecar {where}: rule(s) the sieve cannot run as written — {detail}")
+    return {"path": str(path.resolve()), "sha256": hashlib.sha256(data).hexdigest(),
+            "params": params, "constraints": constraints, "orders": orders}
+
+
+def emit_workbook_sidecar(spec: "Spec", workbook: "str | Path") -> "Path | None":
+    """Write `spec`'s bond layer as `workbook`'s companion, or remove a stale companion when the
+    spec has none, so a regenerated workbook never inherits another spec's rules."""
+    path = workbook_sidecar_path(workbook)
+    if spec.constraints or spec.params or spec.orders:
+        emit_sidecar(spec, path)
+        return path
+    if path.is_file():
+        path.unlink()
+    return None
+
+
 def load_workbook_spec(path: "str | Path") -> Spec:
     """Read a legacy XLSX workbook as a Spec — the Framework's ORIGINAL input format,
     processed by the Bundle alongside TOML specs.
@@ -2129,12 +2209,16 @@ def load_workbook_spec(path: "str | Path") -> Spec:
                           flags=flags, raw=True, prefix=pre, ending=end))
     active = {s.sheet for s in slots}
     passive = {n: values[n] for n in data if n not in active}
+    # The bond layer: only the sheets the FW_Seq program runs can be bonded (the sieve sees them).
+    side = load_workbook_sidecar(path, active) or {}
     return Spec(name=path.stem, title=f"{path.name} (legacy XLSX workbook)", slots=slots, goals=[],
                 custom_vars=custom_vars or [CustomVar(2, "candidate failed verdict (nonzero FW_CUSTOM_VAR)")],
                 args=args or ["noargs"], note="legacy XLSX workbook input — the Core runs it unchanged",
                 runme=runme or _default_runme(path.stem), spec_version="legacy",
                 source_format="xlsx", workbook_path=str(path.resolve()), program=program,
-                passive_sheets=passive)
+                passive_sheets=passive, params=side.get("params", {}),
+                constraints=side.get("constraints", []), orders=side.get("orders", {}),
+                sidecar_path=side.get("path", ""), sidecar_sha256=side.get("sha256", ""))
 
 
 @dataclass(frozen=True)
@@ -2276,6 +2360,11 @@ class Spec:
     # Data sheets with no FW_Seq row: passive resources (separator / relation / start /
     # end / placeholder tokens, FW_Cartes operands, FW_ReplaceRE "+ SHEET +" sources).
     passive_sheets: dict = field(default_factory=dict)
+    # XLSX only: the companion `<stem>.constraints.json` the bond layer above came from (absolute
+    # path + raw-byte SHA-256), "" when the workbook has none. Recorded because the companion
+    # changes a run's meaning even when the workbook bytes are identical.
+    sidecar_path: str = ""
+    sidecar_sha256: str = ""
 
     @property
     def baseline(self) -> tuple[str, ...]:
@@ -2449,6 +2538,128 @@ def _load_raw(path: Path) -> dict:
     raise ValueError(f"Unsupported spec format: {path.name} (use .toml/.json/.yaml)")
 
 
+_CONSTRAINT_BODIES = ("pairs", "sets", "when", "mapping", "assert")
+_SCALAR_VALUE = (str, int, float, bool)
+
+
+def _constraint_shape_error(c) -> "str | None":
+    """The supported shape of one bond, checked BEFORE anything traverses it (constraints/
+    sidecar_schema.md): exactly one body, and each field of the type the sieve evaluates. The
+    sieve would otherwise crash on a wrong type, or silently read a string as a value set or
+    use only the first of two bodies. Values are type-checked, never normalised."""
+    if not isinstance(c, dict):
+        return "must be an object"
+    bodies = [k for k in _CONSTRAINT_BODIES if k in c]
+    if len(bodies) != 1:
+        return (f"needs exactly one body of {list(_CONSTRAINT_BODIES)}, got {bodies}" if bodies else
+                "needs 'pairs', 'sets', 'when', 'mapping', or 'assert'")
+    if "id" in c and not (isinstance(c["id"], str) and c["id"]):
+        return "'id' must be a non-empty string"
+    if "desc" in c and not isinstance(c["desc"], str):
+        return "'desc' must be a string"
+    if "sheets" in c:
+        sh = c["sheets"]
+        if not (isinstance(sh, list) and sh and all(isinstance(x, str) and x for x in sh)):
+            return "'sheets' must be a non-empty list of sheet names"
+        if len(set(sh)) != len(sh):
+            return "'sheets' names a sheet twice"
+    if "gate" in c:
+        g = c["gate"]
+        if not isinstance(g, dict) or set(g) - {"adjacent", "within"}:
+            return "'gate' must be an object with only 'adjacent' and/or 'within'"
+        if "adjacent" in g and not isinstance(g["adjacent"], bool):
+            return "'gate.adjacent' must be true or false"
+        if "within" in g and (isinstance(g["within"], bool) or not isinstance(g["within"], int) or g["within"] < 0):
+            return "'gate.within' must be a non-negative integer"
+    body = bodies[0]
+    if body == "pairs":
+        pr = c["pairs"]
+        if not (isinstance(pr, list) and pr):
+            return "'pairs' must be a non-empty list of {sheet: value} objects"
+        for entry in pr:
+            if not (isinstance(entry, dict) and entry and all(isinstance(k, str) and k for k in entry)):
+                return "each 'pairs' entry must be a non-empty {sheet: value} object"
+            if not all(isinstance(v, _SCALAR_VALUE) for v in entry.values()):
+                return "'pairs' values must be single values (string/number/boolean), not lists or objects"
+    elif body == "sets":
+        st = c["sets"]
+        if not (isinstance(st, dict) and st and all(isinstance(k, str) and k for k in st)):
+            return "'sets' must be a non-empty {sheet: [values]} object"
+        for sheet, vals in st.items():
+            if not (isinstance(vals, list) and vals):
+                return f"'sets.{sheet}' must be a non-empty list of values"
+            if not all(isinstance(v, _SCALAR_VALUE) for v in vals):
+                return f"'sets.{sheet}' values must be single values (string/number/boolean)"
+    elif body == "when":
+        if not (isinstance(c["when"], str) and c["when"].strip()):
+            return "'when' must be a non-empty predicate string"
+        if "sheets" not in c:
+            return "a 'when' bond needs 'sheets' (the sheets its predicate ranges over)"
+    return None
+
+
+def _validated_constraints(raw_constraints, sheet_names, name: str, *, strict: bool) -> list:
+    """Validate authored bonds against the declared sheets; shared by TOML specs and the XLSX
+    constraint companion so both inputs give one loaded meaning. Returns the bonds in order."""
+    constraints: list = []
+    for c in raw_constraints:
+        shape_err = _constraint_shape_error(c)
+        if shape_err:
+            cid = c.get("id") if isinstance(c, dict) else None
+            raise ValueError(f"spec '{name}' constraint {cid!r} has an invalid shape: {shape_err}")
+        if "polarity" in c and c["polarity"] not in ("forbid", "require"):
+            # The sieve reads every non-"forbid" polarity as "require". Strict loading (and every
+            # XLSX companion) rejects it; compatibility mode keeps legacy TOML loadable and says so.
+            msg = f"constraint {c.get('id')!r} polarity {c['polarity']!r} is neither 'forbid' nor 'require'"
+            if strict:
+                raise ValueError(f"spec '{name}' {msg} (strict mode)")
+            print(f"  ⚠ spec '{name}': {msg}; the sieve treats it as 'require' (compatibility mode)")
+        _check_unknown_keys(c, SPEC_V1_CONSTRAINT_KNOWN_KEYS,
+                            where=f"constraint '{c.get('id', '?')}'", name=name, strict=strict)
+        cond_err = _condition_error(c.get("condition"))
+        if cond_err:
+            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid condition: {cond_err}")
+        asrt_err = _condition_error(c.get("assert"), "assert") if c.get("assert") is not None else None
+        if asrt_err:
+            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid assert: {asrt_err}")
+        mp_raw = c.get("mapping")
+        map_err = _mapping_error(mp_raw)
+        if map_err:
+            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid mapping: {map_err}")
+        mp = mp_raw or {}
+        cs = (c.get("sheets") or list(c.get("sets", {}).keys())
+              or ([mp["source"], mp["target"]] if mp else [])
+              or sorted({k for e in c.get("pairs", []) for k in e}))
+        # validate EVERY referenced sheet is declared: the target sheets, the mapping's
+        # source/target, the `assert` body sheets, and the `condition` context sheets (a conditional
+        # bond touches all of them).
+        ref = set(cs)
+        if mp:
+            ref |= {mp.get("source"), mp.get("target")}
+        ref |= set(_condition_sheets(c.get("condition")))
+        ref |= set(_condition_sheets(c.get("assert")))
+        for sh in ref:
+            if sh and sh not in sheet_names:
+                raise ValueError(f"spec '{name}' constraint {c.get('id')!r} references undeclared sheet '{sh}'")
+        # `assert` (a condition-AST as the bond body) is a valid standalone bond family.
+        if not any(k in c for k in ("when", "pairs", "sets", "mapping", "assert")):
+            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} needs 'pairs', 'sets', 'when', 'mapping', or 'assert'")
+        constraints.append(c)
+    return constraints
+
+
+def _validated_orders(raw_orders, sheet_names, name: str) -> dict:
+    """Validate ordinal `orders` ({sheet: [v0,v1,…] | "numeric" | "date"}); shared like the above."""
+    orders: dict = {}
+    for sh, spec_ord in raw_orders.items():
+        if sh not in sheet_names:
+            raise ValueError(f"spec '{name}' orders reference undeclared sheet '{sh}'")
+        if not (isinstance(spec_ord, (list, tuple)) or spec_ord in ("numeric", "date")):
+            raise ValueError(f"spec '{name}' orders[{sh!r}] must be a list, 'numeric', or 'date'")
+        orders[sh] = list(spec_ord) if isinstance(spec_ord, (list, tuple)) else spec_ord
+    return orders
+
+
 def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
     """Turn a raw dict into a Spec, filling in everything the author left out
     (the 'smart picks the variants' part). The ONLY required field is `slots`.
@@ -2581,48 +2792,10 @@ def parse_spec(raw: dict, name: str, *, strict: bool = False) -> Spec:
         params.setdefault(sh, {})[val] = {k: v for k, v in row.items() if k not in ("sheet", "value")}
 
     # constraints: allowed/forbidden bonds (enforced by constraints/sieve.py between Core & Reader)
-    constraints: list = []
-    for c in raw.get("constraints", []):
-        _check_unknown_keys(c, SPEC_V1_CONSTRAINT_KNOWN_KEYS,
-                            where=f"constraint '{c.get('id', '?')}'", name=name, strict=strict)
-        cond_err = _condition_error(c.get("condition"))
-        if cond_err:
-            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid condition: {cond_err}")
-        asrt_err = _condition_error(c.get("assert"), "assert") if c.get("assert") is not None else None
-        if asrt_err:
-            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid assert: {asrt_err}")
-        mp_raw = c.get("mapping")
-        map_err = _mapping_error(mp_raw)
-        if map_err:
-            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} has invalid mapping: {map_err}")
-        mp = mp_raw or {}
-        cs = (c.get("sheets") or list(c.get("sets", {}).keys())
-              or ([mp["source"], mp["target"]] if mp else [])
-              or sorted({k for e in c.get("pairs", []) for k in e}))
-        # validate EVERY referenced sheet is declared: the target sheets, the mapping's
-        # source/target, the `assert` body sheets, and the `condition` context sheets (a conditional
-        # bond touches all of them).
-        ref = set(cs)
-        if mp:
-            ref |= {mp.get("source"), mp.get("target")}
-        ref |= set(_condition_sheets(c.get("condition")))
-        ref |= set(_condition_sheets(c.get("assert")))
-        for sh in ref:
-            if sh and sh not in sheet_names:
-                raise ValueError(f"spec '{name}' constraint {c.get('id')!r} references undeclared sheet '{sh}'")
-        # `assert` (a condition-AST as the bond body) is a valid standalone bond family.
-        if not any(k in c for k in ("when", "pairs", "sets", "mapping", "assert")):
-            raise ValueError(f"spec '{name}' constraint {c.get('id')!r} needs 'pairs', 'sets', 'when', 'mapping', or 'assert'")
-        constraints.append(c)
+    constraints = _validated_constraints(raw.get("constraints", []), sheet_names, name, strict=strict)
 
     # orders: {sheet: [v0,v1,…] | "numeric" | "date"} — ordinal ranks for the sieve's ordinal leaves.
-    orders: dict = {}
-    for sh, spec_ord in (raw.get("orders", {}) or {}).items():
-        if sh not in sheet_names:
-            raise ValueError(f"spec '{name}' orders reference undeclared sheet '{sh}'")
-        if not (isinstance(spec_ord, (list, tuple)) or spec_ord in ("numeric", "date")):
-            raise ValueError(f"spec '{name}' orders[{sh!r}] must be a list, 'numeric', or 'date'")
-        orders[sh] = list(spec_ord) if isinstance(spec_ord, (list, tuple)) else spec_ord
+    orders = _validated_orders(raw.get("orders", {}) or {}, sheet_names, name)
 
     # goals: accept ["f1","latency_ms"] (auto-direction) or [{key,dir}].
     goals: list[Goal] = []
@@ -2771,8 +2944,9 @@ def _is_bundle_artifact_json(path: Path) -> bool:
     them. Constraint-editor sidecars are also JSON and are often downloaded beside
     the spec while authoring; those must not be parsed as specs either. Detection is
     intentionally conservative: known artifact names, meta/ JSON convention,
-    *.graph.json / *.sidecar*.json files, stamped top-level bundle./analyzer.
-    schemas, and the exact v1 sidecar shape with no slots.
+    *.graph.json / *.sidecar*.json files, XLSX companions (*.constraints.json),
+    stamped top-level bundle./analyzer. schemas, and the exact v1 sidecar shape
+    (optionally with `orders`) with no slots.
     """
     if path.suffix.lower() != ".json":
         return False
@@ -2781,7 +2955,8 @@ def _is_bundle_artifact_json(path: Path) -> bool:
             or name in _BUNDLE_ARTIFACT_JSON_NAMES
             or name.endswith(".graph.json")
             or name == "sidecar.json"
-            or ".sidecar" in name):
+            or ".sidecar" in name
+            or name.endswith(WORKBOOK_SIDECAR_SUFFIX)):
         return True
     try:
         with path.open(encoding="utf-8") as f:
@@ -2793,7 +2968,7 @@ def _is_bundle_artifact_json(path: Path) -> bool:
     if ("slots" not in doc
             and doc.get("version") == 1
             and isinstance(doc.get("constraints"), list)
-            and set(doc).issubset({"version", "params", "constraints"})):
+            and set(doc).issubset({"version", "params", "constraints", "orders"})):
         return True
     schema = doc.get("schema")
     return isinstance(schema, str) and (schema.startswith("bundle.") or schema.startswith("analyzer."))

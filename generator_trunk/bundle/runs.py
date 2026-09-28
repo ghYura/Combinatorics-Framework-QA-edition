@@ -136,7 +136,9 @@ def create_run(*, runs_root: "Path | str", db_name: str, spec_path: "Path | str"
                settings: Mapping[str, object], run_id: Optional[str] = None,
                spec_version: Optional[str] = None,
                analysis: Optional[Mapping[str, object]] = None,
-               component_inventory: Optional[Mapping[str, object]] = None) -> RunLayout:
+               component_inventory: Optional[Mapping[str, object]] = None,
+               constraints_sidecar_path: Optional[str] = None,
+               constraints_sidecar_sha256: Optional[str] = None) -> RunLayout:
     """Create a fresh run directory with ``run.json``/``state.json`` before stage 1.
 
     Fails closed with :class:`RunCollisionError` if a directory for this run ID
@@ -171,6 +173,8 @@ def create_run(*, runs_root: "Path | str", db_name: str, spec_path: "Path | str"
         settings=dict(settings),
         analysis=dict(analysis or {}),
         component_inventory=dict(component_inventory or {}),
+        constraints_sidecar_path=constraints_sidecar_path or None,
+        constraints_sidecar_sha256=constraints_sidecar_sha256 or None,
     )
     write_json_atomic(layout.manifest_path, manifest)
     write_json_atomic(layout.state_path, {

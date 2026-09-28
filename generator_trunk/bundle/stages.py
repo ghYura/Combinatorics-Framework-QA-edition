@@ -341,6 +341,11 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
     if getattr(spec, "source_format", "toml") == "xlsx":
         ok(f"spec '{spec.name}' — legacy XLSX workbook, run by the Core unchanged "
            f"({len(spec.slots)} FW_Seq sheets, {len(spec.passive_sheets)} passive)")
+        if spec.sidecar_path:
+            ok(f"constraints: {len(spec.constraints)} rule(s) from {Path(spec.sidecar_path).name} "
+               f"(sha256 {spec.sidecar_sha256})")
+        else:
+            ok(f"constraints: none (no {fg.workbook_sidecar_path(spec_input).name} beside the workbook)")
     else:
         ok(f"spec '{spec.name}' ({len(spec.slots)} slots)")
     # A t-wise request is applied by the sieve stage after Core. Refuse the specs it
@@ -462,6 +467,18 @@ def stage_gen(spec_dir, scratch):
                 print(f"    ✗ {problem}")
             raise StageError(f"workbook {spec_input.name} is invalid ({len(problems)} problem(s))")
         ok(f"workbook -> {dst.name}")
+        # The companion constraint sidecar travels with it, byte for byte, so the run keeps the
+        # exact bond layer it was planned and sieved with (the spec loaded it at preflight). When
+        # the input has none, a copy left in this run's wb/ by an earlier gen (regeneration or
+        # resume after the companion was removed) is deleted: the archived workbook must never
+        # carry rules its input no longer has. Only the run's own copy is touched, never the input.
+        companion, copied = fg.workbook_sidecar_path(spec_input), fg.workbook_sidecar_path(dst)
+        if companion.is_file():
+            shutil.copy2(companion, copied)
+            ok(f"constraints companion -> {copied.name}")
+        elif copied.is_file() and copied.resolve() != companion.resolve():
+            copied.unlink()
+            ok(f"constraints companion: none in the input; removed the stale copy {copied.name}")
         return dst
     print("\n[1/5] GENERATE workbook (fwgen)")
     specs_dir = spec_input.parent

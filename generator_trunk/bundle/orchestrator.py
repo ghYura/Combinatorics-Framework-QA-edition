@@ -394,6 +394,16 @@ def _measured_optional_factor(st, cfg, main_port, db, optional_contract, predict
     return measured
 
 
+def _spec_input_artifacts(spec, toml_path):
+    """The run's spec inputs as artifacts: the spec file itself and, for an XLSX workbook, its
+    companion constraint sidecar -- a changed companion changes the run even when the workbook
+    bytes do not, so resume must see it."""
+    refs = [file_artifact("input.spec", toml_path)]
+    if getattr(spec, "sidecar_path", ""):
+        refs.append(file_artifact("input.constraints_sidecar", spec.sidecar_path))
+    return tuple(refs)
+
+
 def _create_run_directory(a, spec, toml_path, scratch, budget_intent=None, execution_policy=None,
                           authorization=None, optional_contract=None):
     """Create the run directory + run.json/state.json before stage 1 (STEP 4).
@@ -425,6 +435,8 @@ def _create_run_directory(a, spec, toml_path, scratch, budget_intent=None, execu
         # STEP 42: record the component version/hash inventory (the exact build
         # artifacts this run was produced with) in the run manifest.
         component_inventory=_build_component_inventory(),
+        constraints_sidecar_path=getattr(spec, "sidecar_path", "") or None,
+        constraints_sidecar_sha256=getattr(spec, "sidecar_sha256", "") or None,
         settings={
             "lang": a.lang,
             "main_port": a.main_port,
@@ -659,7 +671,7 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
               f"×{optional_factor}; expected total = {full}")
     with journal.stage("gen", log_path=work / "gen.log") as rec:
         xlsx = st.gen(a.spec_dir, work)
-        _record_artifacts(rec, file_artifact("input.spec", toml_path),
+        _record_artifacts(rec, *_spec_input_artifacts(spec, toml_path),
                           file_artifact("output.workbook", xlsx),
                           *st.component_artifacts("gen", cfg))
     with journal.stage("core", log_path=work / "core.log") as rec:
@@ -982,7 +994,7 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
     gen_prior = read_stage(layout, "gen")
     xlsx_files = sorted((work / "wb").glob("*.xlsx"))
     xlsx = xlsx_files[0] if xlsx_files else work / "wb" / "missing.xlsx"
-    gen_artifacts = (file_artifact("input.spec", toml_path),
+    gen_artifacts = (*_spec_input_artifacts(spec, toml_path),
                      file_artifact("output.workbook", xlsx),
                      *st.component_artifacts("gen", cfg))
     # The workbook is an *intermediate* the Core stage rewrites in place (the Core
@@ -1004,7 +1016,7 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
     else:
         with journal.stage("gen", log_path=work / "gen.log") as rec:
             xlsx = st.gen(str(toml_path), work)
-            _record_artifacts(rec, file_artifact("input.spec", toml_path),
+            _record_artifacts(rec, *_spec_input_artifacts(spec, toml_path),
                               file_artifact("output.workbook", xlsx),
                               *st.component_artifacts("gen", cfg))
     trusted = reuse_gen

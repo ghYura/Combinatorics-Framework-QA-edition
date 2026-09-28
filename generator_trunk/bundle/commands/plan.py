@@ -171,6 +171,8 @@ def cmd_plan(a) -> None:
         flags = f" flags={s['flags']}" if s["flags"] else ""
         print(f"  {s['sheet']}: {s['verb']}  n={s['n']}{flags}")
     print(f"constraints present: {len(spec.constraints)}")
+    if getattr(spec, "sidecar_path", ""):
+        print(f"constraints source: {spec.sidecar_path}  (sha256 {spec.sidecar_sha256})")
     if plan_contract.active:
         print(f"optional table contract: {plan_contract.optional_sheet_count} FW_Optional sheet(s), "
               f"Core produces [{plan_contract.core_property_value()}], "
@@ -227,6 +229,9 @@ def cmd_plan(a) -> None:
         "slots": slots,
         "seq_extra_rows": len(spec.seq_extra),
         "constraints_present": len(spec.constraints),
+        # XLSX input: the companion `<stem>.constraints.json` the rules came from (None otherwise).
+        "constraints_source": ({"path": spec.sidecar_path, "sha256": spec.sidecar_sha256}
+                               if getattr(spec, "sidecar_path", "") else None),
         "cardinality": fg.cardinality_plan_to_dict(plan),
         "resources": resource_plan_to_dict(res_plan),
         "repeat_plan": cplan.to_dict(),                            # Plan-1 Phase 2 (docs/24 §3)
