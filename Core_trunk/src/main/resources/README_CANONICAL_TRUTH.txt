@@ -9,6 +9,79 @@
   a regression reference, not the author's specification.
 ════════════════════════════════════════════════════════════════════════════════
 
+UPDATE 2026-09-28 — THE fw_opt4 ISSUE: PREVIOUS vs CURRENT BEHAVIOUR
+──────────────────────────────────────────────────────────────────────
+What this file stated before (2026-05-24 .. 2026-09-26):
+
+  "the engine MUST produce fw_final = 4,644,864 rows, fw_opt4 = 33,674,483
+   rows ... invariant across storage, precompute mode, PostgreSQL version,
+   library version, parallelism, JDK ... any other fw_opt4 row count means
+   the input changed, a distinctify flag changed, or a regression."
+
+and, from 2026-09-26, an erratum: grouped FW_Cartes was fixed, "M and N hold
+8 rows each instead of 16, so fw_opt4 = 33,674,483 no longer applies and the
+new value has not been measured".
+
+What was measured on 2026-09-28 (same fixture, same method, both builds):
+
+   Count        previous build (e38766b)   current build (1468712)   change
+   sheet G              16                        8                  -8
+   sheet M              16                        8                  -8
+   sheet N              16                        8                  -8
+   sheet E              13                       13                   0
+   26 others        identical                identical                0
+   fw_final      4,644,864                 4,644,864                  0
+   fw_opt1             184                       160                 -24
+   fw_opt2          15,985                    12,145              -3,840
+   fw_opt3         873,020                   582,564            -290,456
+   fw_opt4      33,674,483                19,844,499         -13,829,984
+
+Previous behaviour (every build from the refactor up to ca8c646, which
+produced 33,674,483).  G, M and N run FW_Cartes(B1) -> FW_Group(S1 rewrites)
+-> FW_Cartes(B2) (N uses FW_Cartes_first).  In FW_Group mode the Core paired
+the grouped rows WITH THEMSELVES and ignored the operand X = B2 (and the
+_first order).  Sheet M, decoded from a reduced copy of the fixture (all
+sheets kept, so codes are identical):
+
+   16 rows, e.g.   m1 · s11 · ASC · m2 · s11 · DESC      (row paired with row;
+                                                         B2's up/down never
+                                                         appear)
+
+Those 16 rows are exactly what FW_Group -> FW_PermutR(2) produces, so the old
+behaviour duplicated another verb.
+
+Current behaviour (PR #24, Core source 1468712).  Grouped FW_Cartes(X) is
+"grouped rows x X" (X x rows for FW_Cartes_first): the author's stated rule,
+and what his original code does (Main.java, 27.08.2020).  Sheet M:
+
+    8 rows, e.g.   m1 · s11 · ASC · up
+
+Nothing is lost: FW_Group -> FW_PermutR(2) still yields the former 16 rows
+for anyone who wants them.
+
+Why the totals move exactly this far.  Only G, M and N changed (16 -> 8
+rows each), and fw_opt_k = e_k of the per-sheet counts (next sections): e.g.
+fw_opt1 falls by 3 x 8 = 24.  fw_final is untouched because G, M and N are
+FW_Optional.  Sheet E, the only order-sensitive sheet, is 13 in both builds.
+
+Which earlier statements in this file are superseded or corrected:
+- "MUST produce 33,674,483, invariant": superseded.  33,674,483 is a
+  faithful measurement of the pre-fix build — still reproducible on e38766b
+  — but it recorded the grouped-Cartes defect, not the author's semantics.
+  The numbers here hold for a named build, not across semantic changes.
+- The 2026-09-26 erratum named M and N; G runs the same chain and also went
+  from 16 to 8 rows.  The "not measured" value is now measured: 19,844,499.
+- "Step 10 locks in 33,674,483 as the future-proof answer": the content sort
+  makes SHEET E reproducible (13); the total also depends on G, M and N.
+- The old sheet-E walk-through counted 14 for the generation order; it is 13
+  (see the erratum in the sheet-E section).
+
+Known remaining difference from the author's original code (counts are
+equal): the original passes X's values as bare codes, the current Core as
+one-code rows, so with the S1-injecting rewrite the FW_Cartes_first rows of
+sheet N render as  up · ASC · s11 · n1  instead of  up · s11 · ASC · s11 · n1.
+Left as is pending the author's decision.
+
 MEASURED — test14042026.xlsx (2026-09-28)
 ─────────────────────────────────────────
 Build:    main after PR #24 — Core source as of 1468712 (2026-09-26,
@@ -33,7 +106,7 @@ measured the same day with the same method, gives:
    fw_opt3  =   873,020      fw_opt4 = 33,674,483
 
 So the number this file used to state is reproducible on its own build.  The
-change comes from one Core fix, not from drift (next section).
+change comes from one Core fix, not from drift (see the UPDATE section above).
 
 HOW THE TOTALS ARE BUILT — and how to localize a change
 ────────────────────────────────────────────────────────
@@ -45,19 +118,6 @@ registered, so 30 contribute.  Both builds above satisfy e_1..e_4 exactly.
 
 A changed total therefore reduces to changed per-sheet counts: compare the
 Core log's "[DIAG] Sheet <S> ... rows AFTER distinctify" lines between runs.
-
-WHAT CHANGED BETWEEN THE TWO BUILDS — three optional sheets
-───────────────────────────────────────────────────────────
-   Sheet     e38766b .. ca8c646     current     Why
-   G, M, N   16 rows each           8 each      grouped FW_Cartes(X)
-   E         13                     13          unchanged
-   (all other 26 contributing sheets are identical)
-
-G, M and N run FW_Cartes -> FW_Group -> FW_Cartes(X).  The author's rule, and
-his original code (Main.java, 2020), is "grouped rows x X" (X x rows for
-FW_Cartes_first).  The refactored code up to ca8c646 paired the grouped rows
-with themselves and ignored X; that behaviour duplicated
-FW_Group -> FW_PermutR(2), which still produces those 16 rows.
 
 SHEET E IS A CONVENTION, NOT A LAW
 ──────────────────────────────────
