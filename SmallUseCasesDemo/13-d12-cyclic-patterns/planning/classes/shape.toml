@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D12 sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["PATTERN", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "PATTERN"
+verb = "FW_Combi(1)"
+raw = true
+values = ["set_pattern(\"AAAAAA\")\n", "set_pattern(\"AAAAAB\")\n", "set_pattern(\"AAAAAC\")\n", "set_pattern(\"AAAABB\")\n", "set_pattern(\"AAAABC\")\n", "set_pattern(\"AAAACB\")\n", "set_pattern(\"AAAACC\")\n", "set_pattern(\"AAABAB\")\n", "set_pattern(\"AAABAC\")\n", "set_pattern(\"AAABBB\")\n", "set_pattern(\"AAABBC\")\n", "set_pattern(\"AAABCB\")\n", "set_pattern(\"AAABCC\")\n", "set_pattern(\"AAACAB\")\n", "set_pattern(\"AAACAC\")\n", "set_pattern(\"AAACBB\")\n", "set_pattern(\"AAACBC\")\n", "set_pattern(\"AAACCB\")\n", "set_pattern(\"AAACCC\")\n", "set_pattern(\"AABAAB\")\n", "set_pattern(\"AABAAC\")\n", "set_pattern(\"AABABB\")\n", "set_pattern(\"AABABC\")\n", "set_pattern(\"AABACB\")\n", "set_pattern(\"AABACC\")\n", "set_pattern(\"AABBAB\")\n", "set_pattern(\"AABBAC\")\n", "set_pattern(\"AABBBB\")\n", "set_pattern(\"AABBBC\")\n", "set_pattern(\"AABBCB\")\n", "set_pattern(\"AABBCC\")\n", "set_pattern(\"AABCAB\")\n", "set_pattern(\"AABCAC\")\n", "set_pattern(\"AABCBB\")\n", "set_pattern(\"AABCBC\")\n", "set_pattern(\"AABCCB\")\n", "set_pattern(\"AABCCC\")\n", "set_pattern(\"AACAAC\")\n", "set_pattern(\"AACABB\")\n", "set_pattern(\"AACABC\")\n", "set_pattern(\"AACACB\")\n", "set_pattern(\"AACACC\")\n", "set_pattern(\"AACBAB\")\n", "set_pattern(\"AACBAC\")\n", "set_pattern(\"AACBBB\")\n", "set_pattern(\"AACBBC\")\n", "set_pattern(\"AACBCB\")\n", "set_pattern(\"AACBCC\")\n", "set_pattern(\"AACCAB\")\n", "set_pattern(\"AACCAC\")\n", "set_pattern(\"AACCBB\")\n", "set_pattern(\"AACCBC\")\n", "set_pattern(\"AACCCB\")\n", "set_pattern(\"AACCCC\")\n", "set_pattern(\"ABABAB\")\n", "set_pattern(\"ABABAC\")\n", "set_pattern(\"ABABBB\")\n", "set_pattern(\"ABABBC\")\n", "set_pattern(\"ABABCB\")\n", "set_pattern(\"ABABCC\")\n", "set_pattern(\"ABACAC\")\n", "set_pattern(\"ABACBB\")\n", "set_pattern(\"ABACBC\")\n", "set_pattern(\"ABACCB\")\n", "set_pattern(\"ABACCC\")\n", "set_pattern(\"ABBABB\")\n", "set_pattern(\"ABBABC\")\n", "set_pattern(\"ABBACB\")\n", "set_pattern(\"ABBACC\")\n", "set_pattern(\"ABBBAC\")\n", "set_pattern(\"ABBBBB\")\n", "set_pattern(\"ABBBBC\")\n", "set_pattern(\"ABBBCB\")\n", "set_pattern(\"ABBBCC\")\n", "set_pattern(\"ABBCAC\")\n", "set_pattern(\"ABBCBB\")\n", "set_pattern(\"ABBCBC\")\n", "set_pattern(\"ABBCCB\")\n", "set_pattern(\"ABBCCC\")\n", "set_pattern(\"ABCABC\")\n", "set_pattern(\"ABCACB\")\n", "set_pattern(\"ABCACC\")\n", "set_pattern(\"ABCBAC\")\n", "set_pattern(\"ABCBBB\")\n", "set_pattern(\"ABCBBC\")\n", "set_pattern(\"ABCBCB\")\n", "set_pattern(\"ABCBCC\")\n", "set_pattern(\"ABCCAC\")\n", "set_pattern(\"ABCCBB\")\n", "set_pattern(\"ABCCBC\")\n", "set_pattern(\"ABCCCB\")\n", "set_pattern(\"ABCCCC\")\n", "set_pattern(\"ACACAC\")\n", "set_pattern(\"ACACBB\")\n", "set_pattern(\"ACACBC\")\n", "set_pattern(\"ACACCB\")\n", "set_pattern(\"ACACCC\")\n", "set_pattern(\"ACBACB\")\n", "set_pattern(\"ACBACC\")\n", "set_pattern(\"ACBBBB\")\n", "set_pattern(\"ACBBBC\")\n", "set_pattern(\"ACBBCB\")\n", "set_pattern(\"ACBBCC\")\n", "set_pattern(\"ACBCBB\")\n", "set_pattern(\"ACBCBC\")\n", "set_pattern(\"ACBCCB\")\n", "set_pattern(\"ACBCCC\")\n", "set_pattern(\"ACCACC\")\n", "set_pattern(\"ACCBBB\")\n", "set_pattern(\"ACCBBC\")\n", "set_pattern(\"ACCBCB\")\n", "set_pattern(\"ACCBCC\")\n", "set_pattern(\"ACCCBB\")\n", "set_pattern(\"ACCCBC\")\n", "set_pattern(\"ACCCCB\")\n", "set_pattern(\"ACCCCC\")\n", "set_pattern(\"BBBBBB\")\n", "set_pattern(\"BBBBBC\")\n", "set_pattern(\"BBBBCC\")\n", "set_pattern(\"BBBCBC\")\n", "set_pattern(\"BBBCCC\")\n", "set_pattern(\"BBCBBC\")\n", "set_pattern(\"BBCBCC\")\n", "set_pattern(\"BBCCBC\")\n", "set_pattern(\"BBCCCC\")\n", "set_pattern(\"BCBCBC\")\n", "set_pattern(\"BCBCCC\")\n", "set_pattern(\"BCCBCC\")\n", "set_pattern(\"BCCCCC\")\n", "set_pattern(\"CCCCCC\")\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

@@ -1,0 +1,47 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D13a sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["REPETITIONS", "FW_Combi(1)", "FW_Combi(size)"], ["READ_MODE", "FW_Combi(1)", "FW_Combi(size)"], ["REVOKE", "FW_Optional", "FW_Combi(1)", "FW_Combi(size)"], ["ORDER", "FW_Permut()", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "IMPL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["impl(\"guarded\")\n", "impl(\"sticky_approval\")\n", "impl(\"success_only_taint\")\n", "impl(\"no_dedup\")\n"]
+
+[[slots]]
+sheet = "REPETITIONS"
+verb = "FW_Combi(1)"
+raw = true
+values = ["repetitions(1)\n", "repetitions(2)\n"]
+
+[[slots]]
+sheet = "READ_MODE"
+verb = "FW_Combi(1)"
+raw = true
+values = ["fail_read(0)\n", "fail_read(1)\n"]
+
+[[slots]]
+sheet = "REVOKE"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Optional"]
+values = ["set_revoke(0)\n", "set_revoke(1)\n", "set_revoke(2)\n", "set_revoke(3)\n"]
+
+[[slots]]
+sheet = "ORDER"
+verb = "FW_Permut()"
+raw = true
+values = ["operation(\"A\")\n", "operation(\"R\")\n", "operation(\"S\")\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

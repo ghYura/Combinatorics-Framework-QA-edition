@@ -1,0 +1,57 @@
+spec_version = "1"
+title = "Illustrative robust contingency portfolio: module subsets across operating worlds"
+note = "Proposal only. Aggregate the 16 world costs by design before ranking; this payoff table is illustrative, not field data."
+args = ["study=robust_portfolio"]
+
+[[slots]]
+sheet = "HEAD"
+raw = true
+ending = "\n"
+values = ["D = set()\nMODULES = ('cache', 'quota', 'network_backup', 'disk_replica', 'staff_reserve', 'cross_region')"]
+
+[[slots]]
+sheet = "DESIGN"
+verb = "FW_Subsets"
+raw = true
+values = [
+  "D.add('cache')\n",
+  "D.add('quota')\n",
+  "D.add('network_backup')\n",
+  "D.add('disk_replica')\n",
+  "D.add('staff_reserve')\n",
+  "D.add('cross_region')\n",
+]
+
+[[slots]]
+sheet = "DEMAND"
+raw = true
+ending = "\n"
+values = ["demand = 0", "demand = 1", "demand = 2", "demand = 3"]
+
+[[slots]]
+sheet = "DISRUPTION"
+raw = true
+ending = "\n"
+values = ["disruption = 0", "disruption = 1", "disruption = 2", "disruption = 3"]
+
+[[slots]]
+sheet = "TAIL"
+raw = true
+ending = "\n"
+values = ['''_fixed_cost = sum({'cache': 3, 'quota': 2, 'network_backup': 5,
+    'disk_replica': 6, 'staff_reserve': 4, 'cross_region': 8}[m] for m in D)
+_loss = (4, 11, 22, 15)[demand] + (0, 14, 19, 9)[disruption]
+_loss -= (0, 3, 8, 6)[demand] if 'cache' in D else 0
+_loss -= (0, 2, 6, 7)[demand] if 'quota' in D else 0
+_loss -= 11 if 'network_backup' in D and disruption == 1 else 0
+_loss -= 14 if 'disk_replica' in D and disruption == 2 else 0
+_loss -= 6 if 'staff_reserve' in D and disruption == 3 else 0
+_loss -= 8 if 'cross_region' in D and disruption in (1, 2) else 0
+_total_cost = _fixed_cost + max(0, _loss)
+_design = ''.join('1' if m in D else '0' for m in MODULES)
+_world = str(demand) + str(disruption)
+_verdict = 0
+FW_VAR = _verdict
+FW_CUSTOM_VAR = _verdict
+print('app=robust_portfolio design=%s world=%s total_cost=%d fixed_cost=%d loss=%d FW_VAR=0' %
+      (_design, _world, _total_cost, _fixed_cost, max(0, _loss)))''']

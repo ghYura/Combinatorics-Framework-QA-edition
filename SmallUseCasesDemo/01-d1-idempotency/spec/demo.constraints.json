@@ -1,0 +1,57 @@
+{
+  "version": 1,
+  "params": {},
+  "constraints": [
+    {
+      "id": "canonical_identity",
+      "polarity": "forbid",
+      "desc": "Restricted-growth labels: delivery 3 cannot open class 2 unless delivery 2 opened class 1. Keeps exactly 000, 001, 010, 011, 012 (Bell(3) = 5 partitions).",
+      "sets": {
+        "L2": [
+          "L.append(0)"
+        ],
+        "L3": [
+          "L.append(2)"
+        ]
+      }
+    },
+    {
+      "id": "peer_baseline",
+      "polarity": "forbid",
+      "desc": "A peer control (CONTROL != none) is allowed only on labels=000 with no restart.",
+      "assert": {
+        "all": [
+          {
+            "sheet": "CONTROL",
+            "in": [
+              "CONTROL = \"retry_fresh_transport\"",
+              "CONTROL = \"new_order_equal_payload\"",
+              "CONTROL = \"new_operation_same_order\"",
+              "CONTROL = \"conflicting_retry\""
+            ]
+          },
+          {
+            "any": [
+              {
+                "sheet": "L2",
+                "ne": "L.append(0)"
+              },
+              {
+                "sheet": "L3",
+                "ne": "L.append(0)"
+              },
+              {
+                "sheet": "CUT1",
+                "ne": "CUT1 = 0"
+              },
+              {
+                "sheet": "CUT2",
+                "ne": "CUT2 = 0"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

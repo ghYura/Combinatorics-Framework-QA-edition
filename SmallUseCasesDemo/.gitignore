@@ -1,0 +1,13 @@
+# local environment and run artifacts of the demos (re-created by build_spec.py / run_demo.py)
+bundle_env.sh
+_work/
+**/evidence/*/
+**/archive/
+**/precheck/
+**/__pycache__/
+*.pyc
+# the repository-wide rules ignore evidence/ and *.log; the demos publish their results reports and sizing-plan logs
+!**/evidence/
+**/evidence/*/
+!**/evidence/results*.md
+!**/planning/**/*.log

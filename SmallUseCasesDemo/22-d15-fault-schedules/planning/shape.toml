@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version="1"
+title="D15 sizing only; never execute"
+seq_extra=[["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["FAIL", "FW_Subsets", "FW_Combi(size)"], ["CUT", "FW_Combi(1)", "FW_Combi(size)"], ["KIND", "FW_Combi(1)", "FW_Combi(size)"], ["RETRY", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet="HEAD"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[slots]]
+sheet="IMPL"
+verb="FW_Combi(1)"
+raw=true
+values=["impl(\"durable\");", "impl(\"volatile_ack\");", "impl(\"replay_twice\");"]
+
+[[slots]]
+sheet="FAIL"
+verb="FW_Subsets"
+raw=true
+values=["fail(0);", "fail(1);", "fail(2);"]
+
+[[slots]]
+sheet="CUT"
+verb="FW_Combi(1)"
+raw=true
+values=["cut(0);", "cut(1);", "cut(2);", "cut(3);"]
+
+[[slots]]
+sheet="KIND"
+verb="FW_Combi(1)"
+raw=true
+values=["fault(\"crash\");", "fault(\"partition\");"]
+
+[[slots]]
+sheet="RETRY"
+verb="FW_Combi(1)"
+raw=true
+values=["retry(\"stable\");", "retry(\"fresh\");"]
+
+[[slots]]
+sheet="TAIL"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[constraints]]
+id="nontrivial_partition"
+polarity="forbid"
+assert={all=[{sheet="KIND",eq='fault("partition");'},{sheet="FAIL",count=3}]}
+desc="A partition must leave a nonempty side reachable from the coordinator"
+
+[[custom_vars]]
+code=2
+msg="D15 recovery violates acknowledged exactly-once effects or convergence"

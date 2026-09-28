@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "params": {},
+  "constraints": [
+    {
+      "id": "nontrivial_partition",
+      "polarity": "forbid",
+      "assert": {
+        "all": [
+          {
+            "sheet": "KIND",
+            "eq": "fault(\"partition\");"
+          },
+          {
+            "sheet": "FAIL",
+            "count": 3
+          }
+        ]
+      },
+      "desc": "A partition must leave a nonempty side reachable from the coordinator"
+    }
+  ]
+}

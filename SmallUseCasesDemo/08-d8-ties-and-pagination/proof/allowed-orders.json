@@ -1,0 +1,2881 @@
+{
+  "schema": "d8a.allowed-orders/v1",
+  "summary": {
+    "alternatives": 150,
+    "valid": 150,
+    "stable_rejected": 102,
+    "stable_accepted": 48,
+    "rejected_exactly_the_tied": true
+  },
+  "example_0000_asc": {
+    "ranks": "0000",
+    "direction": "asc",
+    "stable": [
+      "A",
+      "B",
+      "C",
+      "D"
+    ],
+    "alternative": [
+      "D",
+      "C",
+      "B",
+      "A"
+    ],
+    "has_tie": true,
+    "valid_order": true,
+    "stable_order": false
+  },
+  "rows": [
+    {
+      "ranks": "0000",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0000",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0001",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0001",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0010",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0010",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0011",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0011",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0012",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0012",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0021",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0021",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0100",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0100",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0101",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0101",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0102",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0102",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0110",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0110",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0111",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0111",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0112",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0112",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0120",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0120",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0121",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0121",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0122",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0122",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0123",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0123",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0132",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0132",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0201",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0201",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0210",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0210",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0211",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0211",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0212",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0212",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0213",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0213",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0221",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0221",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "0231",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0231",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0312",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0312",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0321",
+      "direction": "asc",
+      "stable": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "0321",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1000",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1000",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1001",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1001",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1002",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1002",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1010",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1010",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1011",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1011",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1012",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1012",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1020",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1020",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1021",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1021",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1022",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1022",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1023",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1023",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1032",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1032",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1100",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1100",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1101",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1101",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1102",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1102",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1110",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1110",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1120",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1120",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1200",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1200",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1201",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1201",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1202",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1202",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1203",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1203",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1210",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1210",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1220",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1220",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "1230",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1230",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1302",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1302",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1320",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "1320",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2001",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2001",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2010",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2010",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2011",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2011",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2012",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2012",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2013",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "A",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2013",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "C",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2021",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2021",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2031",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "A",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2031",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "D",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2100",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2100",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2101",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2101",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2102",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2102",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2103",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "A",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2103",
+      "direction": "desc",
+      "stable": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "A",
+        "B",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2110",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2110",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2120",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2120",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2130",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "A",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2130",
+      "direction": "desc",
+      "stable": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "C",
+        "A",
+        "B",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2201",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2201",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2210",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2210",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "has_tie": true,
+      "valid_order": true,
+      "stable_order": false
+    },
+    {
+      "ranks": "2301",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "A",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2301",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "D",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2310",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "A",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "2310",
+      "direction": "desc",
+      "stable": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "B",
+        "A",
+        "C",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3012",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "C",
+        "D",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3012",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "C",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3021",
+      "direction": "asc",
+      "stable": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "B",
+        "D",
+        "C",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3021",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "D",
+        "B"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3102",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "B",
+        "D",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3102",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "D",
+        "B",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3120",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "B",
+        "C",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3120",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "C",
+        "B",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3201",
+      "direction": "asc",
+      "stable": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "C",
+        "D",
+        "B",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3201",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "D",
+        "C"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3210",
+      "direction": "asc",
+      "stable": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "alternative": [
+        "D",
+        "C",
+        "B",
+        "A"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    },
+    {
+      "ranks": "3210",
+      "direction": "desc",
+      "stable": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "alternative": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "has_tie": false,
+      "valid_order": true,
+      "stable_order": true
+    }
+  ]
+}

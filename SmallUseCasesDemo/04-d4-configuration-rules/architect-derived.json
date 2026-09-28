@@ -1,0 +1,2173 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived preregistration; no D4 campaign has run",
+  "axes": [
+    "env",
+    "mode",
+    "transport",
+    "features",
+    "workers",
+    "debug"
+  ],
+  "policies": [
+    "correct",
+    "drops_gzip",
+    "ignores_debug_rule"
+  ],
+  "mandatory_rule_order": [
+    "R1",
+    "R2",
+    "R3",
+    "R4",
+    "R5"
+  ],
+  "deferred_rules": [
+    "R6"
+  ],
+  "counts": {
+    "raw_mandatory": 144,
+    "raw_with_optional": 288,
+    "sequential_mandatory_survivors": [
+      144,
+      108,
+      72,
+      63,
+      51,
+      36
+    ],
+    "per_rule_raw_matches": {
+      "R1": 36,
+      "R2": 48,
+      "R3": 36,
+      "R4": 48,
+      "R5": 24
+    },
+    "post_mandatory_sieve": 36,
+    "reader_expanded": 72,
+    "reader_retained": 66,
+    "controls": 18
+  },
+  "outcomes": {
+    "main": {
+      "PASS": 48,
+      "DOMAIN_FAIL": 18
+    },
+    "controls": {
+      "PASS": 17,
+      "DOMAIN_FAIL": 1
+    }
+  },
+  "valid_configurations": [
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 1,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 1,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 1,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 1,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "cache",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "http",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "http",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    },
+    {
+      "env": "prod",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "prod",
+      "mode": "live",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    }
+  ],
+  "invalid_controls": [
+    {
+      "env": "prod",
+      "mode": "batch",
+      "transport": "http",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "https",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "live",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 1,
+      "debug": false
+    },
+    {
+      "env": "prod",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 2,
+      "debug": false
+    },
+    {
+      "env": "dev",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "cache"
+      ],
+      "workers": 1,
+      "debug": false
+    },
+    {
+      "env": "prod",
+      "mode": "batch",
+      "transport": "https",
+      "features": [
+        "audit",
+        "gzip"
+      ],
+      "workers": 2,
+      "debug": true
+    }
+  ],
+  "cases": [
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=batch|transport=http|features=cache+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "cache",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=live|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=1",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|correct|env=prod|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "correct",
+      "config": {
+        "env": "prod",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "main|drops_gzip|env=prod|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "prod",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "main|ignores_debug_rule|env=prod|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "phase": "main",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "prod",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [],
+      "expected_acceptance": true,
+      "predicted_acceptance": true,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=prod|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R1"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=prod|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R1"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=prod|mode=batch|transport=http|features=audit+gzip|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "http",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R1"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=dev|mode=live|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R2"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=dev|mode=live|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R2"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=dev|mode=live|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R2"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=dev|mode=live|transport=https|features=audit+gzip|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R3"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=dev|mode=live|transport=https|features=audit+gzip|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R3"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=dev|mode=live|transport=https|features=audit+gzip|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "live",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R3"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=prod|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R4"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=prod|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R4"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=prod|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 2,
+        "debug": false
+      },
+      "violations": [
+        "R4"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=dev|mode=batch|transport=https|features=audit+cache|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R5"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=dev|mode=batch|transport=https|features=audit+cache|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R5"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=dev|mode=batch|transport=https|features=audit+cache|workers=1|debug=0",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "dev",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "cache"
+        ],
+        "workers": 1,
+        "debug": false
+      },
+      "violations": [
+        "R5"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|correct|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "controls",
+      "policy": "correct",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [
+        "R6"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|drops_gzip|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "controls",
+      "policy": "drops_gzip",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [
+        "R6"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": false,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "controls|ignores_debug_rule|env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=1",
+      "phase": "controls",
+      "policy": "ignores_debug_rule",
+      "config": {
+        "env": "prod",
+        "mode": "batch",
+        "transport": "https",
+        "features": [
+          "audit",
+          "gzip"
+        ],
+        "workers": 2,
+        "debug": true
+      },
+      "violations": [
+        "R6"
+      ],
+      "expected_acceptance": false,
+      "predicted_acceptance": true,
+      "predicted_outcome": "DOMAIN_FAIL"
+    }
+  ],
+  "pairwise": {
+    "scope": "Feasible pairs across six categorical axes; features is one unordered-pair level",
+    "obligations": [
+      "env=dev|debug=0",
+      "env=dev|debug=1",
+      "env=dev|features=audit+cache",
+      "env=dev|features=audit+gzip",
+      "env=dev|features=cache+gzip",
+      "env=dev|mode=batch",
+      "env=dev|mode=live",
+      "env=dev|transport=http",
+      "env=dev|transport=https",
+      "env=dev|workers=1",
+      "env=dev|workers=2",
+      "env=prod|debug=0",
+      "env=prod|features=audit+gzip",
+      "env=prod|mode=batch",
+      "env=prod|mode=live",
+      "env=prod|transport=https",
+      "env=prod|workers=2",
+      "features=audit+cache|debug=0",
+      "features=audit+cache|debug=1",
+      "features=audit+cache|workers=2",
+      "features=audit+gzip|debug=0",
+      "features=audit+gzip|debug=1",
+      "features=audit+gzip|workers=2",
+      "features=cache+gzip|debug=0",
+      "features=cache+gzip|debug=1",
+      "features=cache+gzip|workers=1",
+      "features=cache+gzip|workers=2",
+      "mode=batch|debug=0",
+      "mode=batch|debug=1",
+      "mode=batch|features=audit+cache",
+      "mode=batch|features=audit+gzip",
+      "mode=batch|features=cache+gzip",
+      "mode=batch|transport=http",
+      "mode=batch|transport=https",
+      "mode=batch|workers=1",
+      "mode=batch|workers=2",
+      "mode=live|debug=0",
+      "mode=live|debug=1",
+      "mode=live|features=audit+gzip",
+      "mode=live|transport=http",
+      "mode=live|transport=https",
+      "mode=live|workers=2",
+      "transport=https|debug=0",
+      "transport=https|debug=1",
+      "transport=https|features=audit+cache",
+      "transport=https|features=audit+gzip",
+      "transport=https|features=cache+gzip",
+      "transport=https|workers=1",
+      "transport=https|workers=2",
+      "transport=http|debug=0",
+      "transport=http|debug=1",
+      "transport=http|features=audit+cache",
+      "transport=http|features=audit+gzip",
+      "transport=http|features=cache+gzip",
+      "transport=http|workers=1",
+      "transport=http|workers=2",
+      "workers=1|debug=0",
+      "workers=1|debug=1",
+      "workers=2|debug=0",
+      "workers=2|debug=1"
+    ],
+    "rows": [
+      "env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=0",
+      "env=dev|mode=batch|transport=http|features=cache+gzip|workers=1|debug=1",
+      "env=prod|mode=live|transport=https|features=audit+gzip|workers=2|debug=0",
+      "env=dev|mode=live|transport=http|features=audit+gzip|workers=2|debug=1",
+      "env=dev|mode=batch|transport=https|features=cache+gzip|workers=1|debug=0",
+      "env=dev|mode=batch|transport=https|features=audit+cache|workers=2|debug=1",
+      "env=dev|mode=batch|transport=http|features=audit+cache|workers=2|debug=0",
+      "env=prod|mode=batch|transport=https|features=audit+gzip|workers=2|debug=0",
+      "env=dev|mode=batch|transport=https|features=cache+gzip|workers=2|debug=0"
+    ],
+    "selection": "Greedy maximum uncovered gain; ties by configuration key; no optimality claim"
+  },
+  "wrong_sieve": {
+    "rule": "forbid gzip for both modes",
+    "removed_legal_candidates": 54,
+    "remaining_candidates": 12,
+    "remaining_domain_fail": 0
+  }
+}

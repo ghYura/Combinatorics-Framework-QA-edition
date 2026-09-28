@@ -404,3 +404,32 @@ from `LICENSE`, `LICENSE` governs. The licence text has not yet had qualified le
 ---
 
 P.S.: Quick workaround to use the Bundle freely: wear a role of QA-Engineer/student (or hire them for real - preferably) and Godspeed! =Ъ
+
+## Small use-case demos
+
+Twenty-two small, self-contained examples, each with a frozen contract, an independent oracle, an offline
+verifier and one recorded campaign — see [SmallUseCasesDemo/README.md](SmallUseCasesDemo/README.md) for how
+they are organised and run.
+
+- Idempotency keys for retried payments across transport retries, restarts and business repeats -> [01-d1-idempotency](SmallUseCasesDemo/01-d1-idempotency/)
+- Streaming decoder results under every chunk split and EOF position -> [02-d2-stream-boundaries](SmallUseCasesDemo/02-d2-stream-boundaries/)
+- Workflow steps reordered, repeated or interrupted by sudden actions -> [03-d3-workflow-order](SmallUseCasesDemo/03-d3-workflow-order/)
+- Configuration legality rules and feature interactions through the constraint sieve -> [04-d4-configuration-rules](SmallUseCasesDemo/04-d4-configuration-rules/)
+- Higher-order composition of record transforms and queries -> [05-d5-nested-pipelines](SmallUseCasesDemo/05-d5-nested-pipelines/)
+- Lost updates and producer/consumer bugs in bounded thread interleavings -> [06-d6-concurrency-schedules](SmallUseCasesDemo/06-d6-concurrency-schedules/)
+- Floating-point sums that depend on the reduction-tree bracketing -> [07-d7-reduction-trees](SmallUseCasesDemo/07-d7-reduction-trees/)
+- Sorting with ties and pagination: duplicated or skipped records between pages -> [08-d8-ties-and-pagination](SmallUseCasesDemo/08-d8-ties-and-pagination/)
+- Incremental recomputation over a dependency DAG: stale results after a change -> [09-d8-dependency-dags](SmallUseCasesDemo/09-d8-dependency-dags/)
+- A contingency portfolio that must stay robust in every scenario -> [10-d9-robust-portfolios](SmallUseCasesDemo/10-d9-robust-portfolios/)
+- Sensor subsets that can distinguish every fault hypothesis -> [11-d10-diagnostic-sensors](SmallUseCasesDemo/11-d10-diagnostic-sensors/)
+- Fair value sharing with exact Shapley values on a small coalition game -> [12-d11-coalition-value](SmallUseCasesDemo/12-d11-coalition-value/)
+- Cyclic designs counted up to rotation instead of every labelled copy -> [13-d12-cyclic-patterns](SmallUseCasesDemo/13-d12-cyclic-patterns/)
+- An AI agent's tool-call policy under every approve/read/send order -> [14-d13-tool-call-order](SmallUseCasesDemo/14-d13-tool-call-order/)
+- Untrusted content nested in structured carriers must keep its origin -> [15-d13-composed-carriers](SmallUseCasesDemo/15-d13-composed-carriers/)
+- Two agents reserving one resource: interleavings that double-book it -> [16-d13-agent-message-order](SmallUseCasesDemo/16-d13-agent-message-order/)
+- Agent memory leaking across users, sessions and resets -> [17-d13-session-memory](SmallUseCasesDemo/17-d13-session-memory/)
+- Context order: a covering suite that misses a position-specific defect; noisy judges -> [18-d13-context-position](SmallUseCasesDemo/18-d13-context-position/)
+- A tiny compiler checked against an interpreter and a dead-code metamorphic relation -> [19-d14-language-processors](SmallUseCasesDemo/19-d14-language-processors/)
+- SQL three-valued (NULL) partitioning on a real PostgreSQL fixture; sets hide bag errors -> [20-d14-sql-partitioning](SmallUseCasesDemo/20-d14-sql-partitioning/)
+- A small auction solver: feasibility, exact optimum, ties and heuristic gaps -> [21-d14-solver-relations](SmallUseCasesDemo/21-d14-solver-relations/)
+- Crash and partition faults on three replica processes with real WAL files -> [22-d15-fault-schedules](SmallUseCasesDemo/22-d15-fault-schedules/)

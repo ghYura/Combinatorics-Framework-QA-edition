@@ -260,6 +260,8 @@ LAYERS: "tuple[LayerSpec, ...]" = (
             "generator_trunk/generated_tests", "generator_trunk/generated_tests_fintech",
             "generator_trunk/testgen_api.py", "generator_trunk/testgen_fintech.py",
             "generator_trunk/run_4instance_bundle.py", "generator_trunk/run_full_pairwise_bundle.py",
+            # Small, self-contained worked use cases (contracts, SUTs, oracles, launchers).
+            "SmallUseCasesDemo",
         ),
     ),
     LayerSpec(

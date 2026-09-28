@@ -1,0 +1,117 @@
+{
+  "version": 1,
+  "params": {
+    "PAYLOAD": {
+      "PAYLOAD = \"ascii\"": {
+        "n": 3
+      },
+      "PAYLOAD = \"euro\"": {
+        "n": 5
+      },
+      "PAYLOAD = \"emoji\"": {
+        "n": 4
+      },
+      "PAYLOAD = \"truncated_utf8\"": {
+        "n": 3
+      },
+      "PAYLOAD = \"bom_utf16\"": {
+        "n": 6
+      },
+      "PAYLOAD = \"truncated_utf16\"": {
+        "n": 5
+      }
+    },
+    "CUT1": {
+      "CUT1 = 0": {
+        "bit": 0
+      },
+      "CUT1 = 1": {
+        "bit": 1
+      }
+    },
+    "CUT2": {
+      "CUT2 = 0": {
+        "bit": 0
+      },
+      "CUT2 = 1": {
+        "bit": 1
+      }
+    },
+    "CUT3": {
+      "CUT3 = 0": {
+        "bit": 0
+      },
+      "CUT3 = 1": {
+        "bit": 1
+      }
+    },
+    "CUT4": {
+      "CUT4 = 0": {
+        "bit": 0
+      },
+      "CUT4 = 1": {
+        "bit": 1
+      }
+    },
+    "CUT5": {
+      "CUT5 = 0": {
+        "bit": 0
+      },
+      "CUT5 = 1": {
+        "bit": 1
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "real_boundary_1",
+      "polarity": "require",
+      "sheets": [
+        "PAYLOAD",
+        "CUT1"
+      ],
+      "when": "CUT1.bit == 0 or PAYLOAD.n > 1",
+      "desc": "CUT1=1 (a cut after byte 1) only when the payload has more than 1 bytes"
+    },
+    {
+      "id": "real_boundary_2",
+      "polarity": "require",
+      "sheets": [
+        "PAYLOAD",
+        "CUT2"
+      ],
+      "when": "CUT2.bit == 0 or PAYLOAD.n > 2",
+      "desc": "CUT2=1 (a cut after byte 2) only when the payload has more than 2 bytes"
+    },
+    {
+      "id": "real_boundary_3",
+      "polarity": "require",
+      "sheets": [
+        "PAYLOAD",
+        "CUT3"
+      ],
+      "when": "CUT3.bit == 0 or PAYLOAD.n > 3",
+      "desc": "CUT3=1 (a cut after byte 3) only when the payload has more than 3 bytes"
+    },
+    {
+      "id": "real_boundary_4",
+      "polarity": "require",
+      "sheets": [
+        "PAYLOAD",
+        "CUT4"
+      ],
+      "when": "CUT4.bit == 0 or PAYLOAD.n > 4",
+      "desc": "CUT4=1 (a cut after byte 4) only when the payload has more than 4 bytes"
+    },
+    {
+      "id": "real_boundary_5",
+      "polarity": "require",
+      "sheets": [
+        "PAYLOAD",
+        "CUT5"
+      ],
+      "when": "CUT5.bit == 0 or PAYLOAD.n > 5",
+      "desc": "CUT5=1 (a cut after byte 5) only when the payload has more than 5 bytes"
+    }
+  ]
+}

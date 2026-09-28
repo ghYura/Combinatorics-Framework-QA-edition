@@ -1,0 +1,108 @@
+  ⚠ spec 'shape' slot 'CHUNKS': verb FW_Cartes(LEAF_END) places up to 2 values in one row and the sheet has no FW_Concatenator, so raw value(s) at index [0, 1] — which end in neither a newline nor a statement terminator — will be concatenated onto a SINGLE line. End each value with a newline (or ';'), or set FW_Concatenator=.
+spec 'shape'  (15-d13-composed-carriers/planning/shape.toml)
+  spec_version=1  sha256=a83e83d9d28462d9170ec6e9ef7ea477206f788e226ffcc302ec1c0a6939822c
+  slots: 16   seq_extra rows: 16
+operator table:
+  HEAD: FW_Combi(1)  n=1
+  IMPL: FW_Combi(1)  n=3
+  ENCODING: FW_Combi(1)  n=3
+  MARKER: FW_Combi(1)  n=3
+  PREFIX: FW_Combi(1)  n=2 flags=['FW_Exclude', 'FW_Reuse']
+  LEAF_END: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  CHUNKS: FW_Cartes(LEAF_END)  n=2 flags=['FW_Exclude', 'FW_Reuse']
+  LIST_OPEN: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  LIST_END: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  NOTE: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  CONTEXT_OPEN: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  COMMA: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  CONTEXT_CLOSE: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  INNER: FW_Combi(1)  n=1 flags=['FW_Exclude', 'FW_Reuse']
+  ROOT: FW_Combi(1)  n=1
+  TAIL: FW_Combi(1)  n=1
+constraints present: 0
+
+raw values (declared per-slot sizes):
+  HEAD: 1
+  IMPL: 3
+  ENCODING: 3
+  MARKER: 3
+  PREFIX: 2
+  LEAF_END: 1
+  CHUNKS: 2
+  LIST_OPEN: 1
+  LIST_END: 1
+  NOTE: 1
+  CONTEXT_OPEN: 1
+  COMMA: 1
+  CONTEXT_CLOSE: 1
+  INNER: 1
+  ROOT: 1
+  TAIL: 1
+per-slot Core rows:
+  HEAD: 1  (EXACT — HEAD: FW_Combi(1)(n=1) -> FW_Combi(size))
+  IMPL: 3  (EXACT — IMPL: FW_Combi(1)(n=3) -> FW_Combi(size))
+  ENCODING: 3  (EXACT — ENCODING: FW_Combi(1)(n=3) -> FW_Combi(size))
+  MARKER: 3  (EXACT — MARKER: FW_Combi(1)(n=3) -> FW_Combi(size))
+  PREFIX: 2  (EXACT — PREFIX: FW_Combi(1)(n=2) -> FW_Combi(size))
+  LEAF_END: 1  (EXACT — LEAF_END: FW_Combi(1)(n=1) -> FW_Combi(size))
+  CHUNKS: 2  (BOUNDED [0, 2] — CHUNKS: FW_Cartes(LEAF_END)(n=2) -> FW_Group->FW_Permut()(rows<=2) -> FW_Combi(size))
+      reason: DISTINCT after a pass that is not provably injective can only remove rows: the rows emitted are an upper bound; the Core measures the true count
+  LIST_OPEN: 1  (EXACT — LIST_OPEN: FW_Combi(1)(n=1) -> FW_Combi(size))
+  LIST_END: 1  (EXACT — LIST_END: FW_Combi(1)(n=1) -> FW_Combi(size))
+  NOTE: 1  (EXACT — NOTE: FW_Combi(1)(n=1) -> FW_Combi(size))
+  CONTEXT_OPEN: 1  (EXACT — CONTEXT_OPEN: FW_Combi(1)(n=1) -> FW_Combi(size))
+  COMMA: 1  (EXACT — COMMA: FW_Combi(1)(n=1) -> FW_Combi(size))
+  CONTEXT_CLOSE: 1  (EXACT — CONTEXT_CLOSE: FW_Combi(1)(n=1) -> FW_Combi(size))
+  INNER: 4  (BOUNDED [0, 4] — INNER: FW_(,,PREFIX,LIST_OPEN,CHUNKS,,LIST_END,,M:N))
+      reason: DISTINCT after a pass that is not provably injective can only remove rows: the rows emitted are an upper bound; the Core measures the true count
+  ROOT: 4  (BOUNDED [0, 4] — ROOT: FW_(CONTEXT_OPEN,,INNER,COMMA,NOTE,,CONTEXT_CLOSE,,M:N))
+      reason: DISTINCT after a pass that is not provably injective can only remove rows: the rows emitted are an upper bound; the Core measures the true count
+  TAIL: 1  (EXACT — TAIL: FW_Combi(1)(n=1) -> FW_Combi(size))
+mandatory Core product: 108  (BOUNDED [27, 108] — Π rows(sheet) over the mandatory sheets of the effective FW_Seq program)
+    reason: sized from the program the Core runs (verb chains, FW_Group, FW_Separator, braces), not from each sheet's first verb
+    reason: product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)
+estimated post-sieve: 108  (BOUNDED [27, 108] — = mandatory (no constraints declared -> sieve is a no-op))
+    reason: sized from the program the Core runs (verb chains, FW_Group, FW_Separator, braces), not from each sheet's first verb
+    reason: product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)
+optional multiplier: 1  (EXACT — no FW_Optional sheets -> factor 1)
+final candidate count: 108  (BOUNDED [27, 108] — post_sieve × optional_multiplier)
+    reason: each FW_Optional sheet independently multiplies the post-sieve space
+    reason: product includes BOUNDED factor(s); range multiplies componentwise (lower×lower, upper×upper)
+
+summary: mandatory=108 (BOUNDED, before sieve)  post-sieve=108 (BOUNDED, after-sieve estimate)  optional×1 (EXACT)  final=108 (BOUNDED)
+
+run class: S  (final candidate count = 108)
+Core DB bytes: ~118800  [5400, 216000]  (ESTIMATED — Core DB bytes ≈ Core rows count [27, 108] × 200-2000 per unit)
+    assumption: per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+Results DB bytes: ~89100  [4050, 162000]  (ESTIMATED — Results DB bytes ≈ verdict rows (V) count [27, 108] × 150-1500 per unit)
+    assumption: per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+candidate source bytes: ~297000  [13500, 540000]  (ESTIMATED — candidate source bytes ≈ final candidates count [27, 108] × 500-5000 per unit)
+    assumption: no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate
+    assumption: per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+loose-file inode count: ~108  [27, 108]  (ESTIMATED — loose-file inode count ≈ final candidates count [27, 108] × 1 per unit)
+    assumption: one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+external request count: ~108  [27, 108]  (ESTIMATED — external request count ≈ measurement opportunities (I) count [27, 108] × 1 per unit)
+    assumption: one execution request per candidate invocation; I = V + metric-only repeats (docs/24 §3.3)
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+execution duration (s): ~110  [1, 216]  (ESTIMATED — execution duration (seconds) ≈ measurement opportunities (I) count [27, 108] × 0.05-2 per unit)
+    assumption: per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)
+    assumption: with repeats active, duration ≈ I × per-candidate cost — the CONSERVATIVE assumption t_m == t_v (a metric-only re-measure costs as much as a full verdict); the split V·t_v + metric_only·t_m awaits Phase 4's measured t_m
+    assumption: per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+dominant resource: candidate source bytes  (largest assumed point estimate (297000) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking)
+
+repeat plan: K=1 — repeat topology inactive (A=V=I=C); legacy single-run path
+
+budget evaluation (analysis-only; the run path is the enforcement point):
+  [OK] mandatory Core rows ~108 within budget (limit 2e+06)
+  [OK] final candidates ~108 within budget (limit 2e+06)
+  [OK] estimated disk bytes (Core+Results+sources) ~918000 within budget (limit 2.14748e+10)
+  [OK] estimated loose-file inodes ~108 within budget (limit 2e+06)
+  [OK] estimated wall time (s) ~216 within budget (limit 86400)
+  [OK] estimated external requests ~108 within budget (limit 2e+06)
+  [OK] estimated monetary cost: no limit configured
+
+warnings (2):
+  ! mandatory Core product is BOUNDED, not EXACT — Π rows(sheet) over the mandatory sheets of the effective FW_Seq program
+  ! final candidate count is BOUNDED [27, 108], not an exact prediction — treat 108 as an upper-bound planning figure
+  ✓ plan -> 15-d13-composed-carriers/planning/plan/plan.json  (FW_Seq graph sha256:92ba8158c92c7e406a5d2fb50fb7db261c87a80248d714d2f65c6124eac86fa1)

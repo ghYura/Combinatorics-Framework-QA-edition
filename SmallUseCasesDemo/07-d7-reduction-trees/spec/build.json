@@ -1,0 +1,32 @@
+{
+  "head_chars": 12916,
+  "head_sha256": "61c43347a69f0d938586f48de2426c132202d9322f223cd17db0c9bdc9437ee5",
+  "module_sha256": {
+    "sut": "1468c726416722d56f785702a7983abeedefb7383410d3b736a49754bc3edf92",
+    "oracle": "73b3ca22207b0f19b558f71057d3a99915b0e7dd86fcda057928639e5ce5f7a6",
+    "runtime": "2c2842f99fbe2ead73c405f09c33ad1fe98969da78025f1184566967ec69e49e"
+  },
+  "files": {
+    "spec.toml": "732e62e044568a7c4228c1b7e17cdc65158b0e2ba9115b1726e6f687c625159f",
+    "demo.xlsx": "c79bf52b60651caf4af03f1b3de34ca9ed2eef8216d80d63127ee4fdd9769f03"
+  },
+  "schema": "d7.build/v1",
+  "contract": "v1",
+  "trees": [
+    "((((0,1),2),3),4)",
+    "(((0,(1,2)),3),4)",
+    "(((0,1),(2,3)),4)",
+    "(((0,1),2),(3,4))",
+    "((0,((1,2),3)),4)",
+    "((0,(1,(2,3))),4)",
+    "((0,(1,2)),(3,4))",
+    "((0,1),((2,3),4))",
+    "((0,1),(2,(3,4)))",
+    "(0,(((1,2),3),4))",
+    "(0,((1,(2,3)),4))",
+    "(0,((1,2),(3,4)))",
+    "(0,(1,((2,3),4)))",
+    "(0,(1,(2,(3,4))))"
+  ],
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

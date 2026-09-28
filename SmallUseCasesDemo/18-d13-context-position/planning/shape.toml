@@ -1,0 +1,38 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version="1"
+title="D13e sizing only; never execute"
+seq_extra=[["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["TASK", "FW_Combi(1)", "FW_Combi(size)"], ["ORDER", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet="HEAD"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[slots]]
+sheet="IMPL"
+verb="FW_Combi(1)"
+raw=true
+values=["impl(\"stable\");", "impl(\"last_marker\");", "impl(\"third_position\");"]
+
+[[slots]]
+sheet="TASK"
+verb="FW_Combi(1)"
+raw=true
+values=["task(\"public\");", "task(\"secret\");"]
+
+[[slots]]
+sheet="ORDER"
+verb="FW_Combi(1)"
+raw=true
+values=["set_order(\"ABCDEG\");", "set_order(\"CBAGED\");", "set_order(\"DCBEGA\");", "set_order(\"DGEBCA\");", "set_order(\"EACGDB\");", "set_order(\"EBDAGC\");", "set_order(\"GABEDC\");", "set_order(\"GCDAEB\");", "set_order(\"ABGCDE\");"]
+
+[[slots]]
+sheet="TAIL"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[custom_vars]]
+code=2
+msg="D13e mechanical decision violates task truth"

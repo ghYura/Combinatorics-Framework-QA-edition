@@ -1,0 +1,32 @@
+{
+  "head_chars": 16835,
+  "head_sha256": "21068f93f88c8ec82008ca42419c1821fa46ca6c788a63a45d92f6bb01e17c28",
+  "module_sha256": {
+    "sut": "eb45683159a40bb8dd426cff6556a706c77de0fde8d057a70d2e7d9d74c0eb15",
+    "oracle": "97c9291212c9c79b88e9c7d2306a0543b5fe345f4407902514fd87d97e4faf6b",
+    "runtime": "3360b501ecd8d158cdcfde4f13a003311958eaa173e7ca12c38fdb6ca3c2dfeb"
+  },
+  "loader_warnings": {
+    "messages": [
+      "\u26a0 spec 'spec' slot 'CHUNKS': verb FW_Cartes(LEAF_END) places up to 2 values in one row and the sheet has no FW_Concatenator, so raw value(s) at index [0, 1] \u2014 which end in neither a newline nor a statement terminator \u2014 will be concatenated onto a SINGLE line. End each value with a newline (or ';'), or set FW_Concatenator=."
+    ],
+    "why_accepted": "CHUNKS fragments are deliberately unterminated code pieces; the group and braces concatenate them into one Python expression"
+  },
+  "files": {
+    "spec.toml": "222c71b8a541fb850fda8164ab41b9752789e66d4b5cf9ebc2766162a6baf7e4",
+    "demo.xlsx": "5581ccee8423c72d2643545447e06bd64c2f60fa41c5fcb72352f831ed12c4ac"
+  },
+  "core_props": {
+    "template": "<repo>/generator_trunk/config/core.fw.properties",
+    "template_sha256": "304a41bb1f94990fba0a5c4efa07d00f8d8afeaff1829b1f2ce01ade2ac4e007",
+    "edits": {
+      "core.replace.patternPolicy": "warn",
+      "core.replace.diagnostics": "summary"
+    },
+    "sha256": "5b18cf99056b3b913e0c62ad32c2f28ef8e5d7cb5a3b75b623560a3ef754b2be"
+  },
+  "schema": "d13b.build/v1",
+  "contract": "v1",
+  "core_props_diff": "--- template\n+++ core-d13b.fw.properties\n@@ -539,7 +539,7 @@\n # structure (\\d, ^, $, |, ...) is stripped before the check, so structural\n # patterns stay acceptable -- only literal text that cannot appear among codes\n # is rejected.\n-core.replace.patternPolicy=permissive\n+core.replace.patternPolicy=warn\n \n # ignore = say nothing when a pattern matches no row (historical behaviour)\n # warn   = log a WARNING naming the patterns that changed nothing\n@@ -563,4 +563,4 @@\n # summary = one INFO line per grouped sheet: rows seen / rewritten / dropped,\n #           and how many rows each pattern changed. Changes no outcome; makes\n #           a silent no-op visible.\n-core.replace.diagnostics=off\n+core.replace.diagnostics=summary\n",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

@@ -1,0 +1,32 @@
+{
+  "head_chars": 15549,
+  "head_sha256": "a673ee56c283e21f663caf15aa9b124072bf107dce464dd2ffd312f06e70835b",
+  "module_sha256": {
+    "sut": "e1f4b5c65d427bb76a4f3b11679d9317157f1c487650d94aa677b434637efdeb",
+    "oracle": "b06ea2cd2c583de49e792e39558ad44a2ee6b741200a54396c95a30fc7fe1063",
+    "runtime": "f4a9f8fe6e7dee5373436c34e73b8f15788a91a82aea695c777d13cb766d0d08"
+  },
+  "campaigns": {
+    "B1": {
+      "spec.toml": "3fa7966c5d58c5c4dc743dd0f678faca32ded607c3334b4fe171a45afd258777",
+      "demo.xlsx": "abb17cee0eebdf496fbde6b8aab39d010d5c36685ee80c53a83079642b1e81fb"
+    },
+    "B2": {
+      "spec.toml": "d72cf2559b99b4393498ec74ee57a26159113a15ccecbf05784f69838b7edf46",
+      "demo.xlsx": "ef69f12946172db9252c05de86e6a05d6e2f397893ad3169a4a8f2d4d468d081"
+    }
+  },
+  "core_props": {
+    "template": "<repo>/generator_trunk/config/core.fw.properties",
+    "template_sha256": "304a41bb1f94990fba0a5c4efa07d00f8d8afeaff1829b1f2ce01ade2ac4e007",
+    "edits": {
+      "core.replace.patternPolicy": "warn",
+      "core.replace.diagnostics": "summary"
+    },
+    "sha256": "5b18cf99056b3b913e0c62ad32c2f28ef8e5d7cb5a3b75b623560a3ef754b2be"
+  },
+  "schema": "d5b.build/v1",
+  "contract": "B",
+  "core_props_diff": "--- template\n+++ core-b.fw.properties\n@@ -539,7 +539,7 @@\n # structure (\\d, ^, $, |, ...) is stripped before the check, so structural\n # patterns stay acceptable -- only literal text that cannot appear among codes\n # is rejected.\n-core.replace.patternPolicy=permissive\n+core.replace.patternPolicy=warn\n \n # ignore = say nothing when a pattern matches no row (historical behaviour)\n # warn   = log a WARNING naming the patterns that changed nothing\n@@ -563,4 +563,4 @@\n # summary = one INFO line per grouped sheet: rows seen / rewritten / dropped,\n #           and how many rows each pattern changed. Changes no outcome; makes\n #           a silent no-op visible.\n-core.replace.diagnostics=off\n+core.replace.diagnostics=summary\n",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

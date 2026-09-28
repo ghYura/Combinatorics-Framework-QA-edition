@@ -1,0 +1,34 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D9 architecture sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["DESIGN", "FW_Subsets", "FW_Subsets"], ["DEMAND", "FW_Combi(1)", "FW_Combi(size)"], ["DISRUPTION", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "DESIGN"
+verb = "FW_Subsets"
+raw = true
+values = ["enable('cache')\n", "enable('quota')\n", "enable('network_backup')\n", "enable('disk_replica')\n", "enable('staff_reserve')\n", "enable('cross_region')\n"]
+
+[[slots]]
+sheet = "DEMAND"
+verb = "FW_Combi(1)"
+raw = true
+values = ["demand(0)\n", "demand(1)\n", "demand(2)\n", "demand(3)\n"]
+
+[[slots]]
+sheet = "DISRUPTION"
+verb = "FW_Combi(1)"
+raw = true
+values = ["disruption(0)\n", "disruption(1)\n", "disruption(2)\n", "disruption(3)\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

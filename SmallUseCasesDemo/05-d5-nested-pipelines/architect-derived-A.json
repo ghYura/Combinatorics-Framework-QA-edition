@@ -1,0 +1,1472 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived predictions; no D5 execution evidence",
+  "input_record": {
+    "x": 2,
+    "y": 5
+  },
+  "counts": {
+    "Combi2": 6,
+    "Permut": 12,
+    "grouped_Cartes": 24,
+    "cases": 72
+  },
+  "outcomes": {
+    "PASS": 32,
+    "DOMAIN_FAIL": 40
+  },
+  "by_policy": {
+    "correct": {
+      "PASS": 24
+    },
+    "reverse_pair": {
+      "DOMAIN_FAIL": 16,
+      "PASS": 8
+    },
+    "wrong_field": {
+      "DOMAIN_FAIL": 24
+    }
+  },
+  "cases": [
+    {
+      "id": "A|correct|OPS=AM|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AM|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=AM|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=AM|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AM|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=AM|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=AS|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AS|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=AS|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=AS|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AS|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=AS|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=AN|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AN|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=AN|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=AN|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=AN|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=AN|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "A",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MA|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MA|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=MA|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MA|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MA|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted": {
+        "x": 2,
+        "y": 12
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=MA|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 11
+      },
+      "predicted": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MS|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MS|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=MS|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MS|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MS|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=MS|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MN|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MN|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=MN|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=MN|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=MN|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=MN|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "M",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SA|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SA|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=SA|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SA|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SA|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=SA|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 3
+      },
+      "predicted": {
+        "x": 0,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SM|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SM|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=SM|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SM|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SM|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted": {
+        "x": 2,
+        "y": 7
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=SM|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": 4
+      },
+      "predicted": {
+        "x": -2,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SN|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SN|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=SN|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=SN|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=SN|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=SN|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "S",
+          "N"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NA|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NA|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted": {
+        "x": -3,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=NA|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NA|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NA|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=NA|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "A"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -4
+      },
+      "predicted": {
+        "x": -1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NM|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NM|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=NM|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NM|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NM|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|wrong_field|OPS=NM|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "M"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": -4,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NS|FIELD=x",
+      "policy": "correct",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NS|FIELD=x",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted": {
+        "x": 1,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=NS|FIELD=x",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "x",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|correct|OPS=NS|FIELD=y",
+      "policy": "correct",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "A|reverse_pair|OPS=NS|FIELD=y",
+      "policy": "reverse_pair",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted": {
+        "x": 2,
+        "y": -2
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "A|wrong_field|OPS=NS|FIELD=y",
+      "policy": "wrong_field",
+      "tree": {
+        "field": "y",
+        "ops": [
+          "N",
+          "S"
+        ]
+      },
+      "expected": {
+        "x": 2,
+        "y": -8
+      },
+      "predicted": {
+        "x": -5,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    }
+  ]
+}

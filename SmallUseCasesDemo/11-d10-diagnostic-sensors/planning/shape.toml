@@ -1,0 +1,28 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D10 architecture sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["SENSORS", "FW_Subsets", "FW_Subsets"], ["FAULT", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "SENSORS"
+verb = "FW_Subsets"
+raw = true
+values = ["select(0)\n", "select(1)\n", "select(2)\n", "select(3)\n", "select(4)\n", "select(5)\n", "select(6)\n", "select(7)\n"]
+
+[[slots]]
+sheet = "FAULT"
+verb = "FW_Combi(1)"
+raw = true
+values = ["fault(\"F01\")\n", "fault(\"F02\")\n", "fault(\"F03\")\n", "fault(\"F04\")\n", "fault(\"F05\")\n", "fault(\"F06\")\n", "fault(\"F07\")\n", "fault(\"F08\")\n", "fault(\"F09\")\n", "fault(\"F10\")\n", "fault(\"F11\")\n", "fault(\"F12\")\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

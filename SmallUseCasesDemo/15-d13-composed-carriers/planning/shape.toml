@@ -1,0 +1,110 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D13b sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["ENCODING", "FW_Combi(1)", "FW_Combi(size)"], ["MARKER", "FW_Combi(1)", "FW_Combi(size)"], ["PREFIX", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["LEAF_END", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["CHUNKS", "FW_Exclude", "FW_Reuse", "FW_Cartes(LEAF_END)", "FW_Group\nFW_ReplaceRE(\"\\[\", \"\")\nFW_ReplaceRE(\"\\]\", \"\")", "FW_Permut()", "FW_Combi(size)"], ["LIST_OPEN", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["LIST_END", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["NOTE", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["CONTEXT_OPEN", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["COMMA", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["CONTEXT_CLOSE", "FW_Exclude", "FW_Reuse", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"], ["INNER", "FW_Exclude", "FW_Reuse", "FW_(,,PREFIX,LIST_OPEN,CHUNKS,,LIST_END,,M:N)"], ["ROOT", "FW_(CONTEXT_OPEN,,FW_(),COMMA,NOTE,,CONTEXT_CLOSE,,M:N)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "IMPL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["impl(\"preserve_origin\")\n", "impl(\"wrapper_trust\")\n", "impl(\"decode_trust\")\n"]
+
+[[slots]]
+sheet = "ENCODING"
+verb = "FW_Combi(1)"
+raw = true
+values = ["encoding(\"plain\")\n", "encoding(\"json\")\n", "encoding(\"base64\")\n"]
+
+[[slots]]
+sheet = "MARKER"
+verb = "FW_Combi(1)"
+raw = true
+values = ["marker(\"reference\")\n", "marker(\"emit_canary\")\n", "marker(\"set_flag\")\n"]
+
+[[slots]]
+sheet = "PREFIX"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["retrieved_page(", "tool_result("]
+
+[[slots]]
+sheet = "LEAF_END"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["),\n"]
+
+[[slots]]
+sheet = "CHUNKS"
+verb = "FW_Cartes(LEAF_END)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["source_item(\"marker\"", "source_item(\"filler\""]
+
+[[slots]]
+sheet = "LIST_OPEN"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["["]
+
+[[slots]]
+sheet = "LIST_END"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["])"]
+
+[[slots]]
+sheet = "NOTE"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["trusted_note()"]
+
+[[slots]]
+sheet = "CONTEXT_OPEN"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["consume(context([trusted_task(),"]
+
+[[slots]]
+sheet = "COMMA"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = [","]
+
+[[slots]]
+sheet = "CONTEXT_CLOSE"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["]))\n"]
+
+[[slots]]
+sheet = "INNER"
+verb = "FW_Combi(1)"
+raw = true
+flags = ["FW_Exclude", "FW_Reuse"]
+values = ["# placeholder\n"]
+
+[[slots]]
+sheet = "ROOT"
+verb = "FW_Combi(1)"
+raw = true
+values = ["# placeholder\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

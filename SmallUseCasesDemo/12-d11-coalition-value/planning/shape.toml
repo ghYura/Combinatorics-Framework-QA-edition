@@ -1,0 +1,22 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D11 architecture sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["COALITION", "FW_Subsets", "FW_Subsets"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "COALITION"
+verb = "FW_Subsets"
+raw = true
+values = ["enable(\"A\")\n", "enable(\"B\")\n", "enable(\"C\")\n", "enable(\"D\")\n", "enable(\"E\")\n", "enable(\"F\")\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

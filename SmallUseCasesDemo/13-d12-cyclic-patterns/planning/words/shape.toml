@@ -1,0 +1,52 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D12 sizing probe; never execute"
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["P0", "FW_Combi(1)", "FW_Combi(size)"], ["P1", "FW_Combi(1)", "FW_Combi(size)"], ["P2", "FW_Combi(1)", "FW_Combi(size)"], ["P3", "FW_Combi(1)", "FW_Combi(size)"], ["P4", "FW_Combi(1)", "FW_Combi(size)"], ["P5", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["begin()\n"]
+
+[[slots]]
+sheet = "P0"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(0,\"A\")\n", "put(0,\"B\")\n", "put(0,\"C\")\n"]
+
+[[slots]]
+sheet = "P1"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(1,\"A\")\n", "put(1,\"B\")\n", "put(1,\"C\")\n"]
+
+[[slots]]
+sheet = "P2"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(2,\"A\")\n", "put(2,\"B\")\n", "put(2,\"C\")\n"]
+
+[[slots]]
+sheet = "P3"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(3,\"A\")\n", "put(3,\"B\")\n", "put(3,\"C\")\n"]
+
+[[slots]]
+sheet = "P4"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(4,\"A\")\n", "put(4,\"B\")\n", "put(4,\"C\")\n"]
+
+[[slots]]
+sheet = "P5"
+verb = "FW_Combi(1)"
+raw = true
+values = ["put(5,\"A\")\n", "put(5,\"B\")\n", "put(5,\"C\")\n"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["finish()\n"]

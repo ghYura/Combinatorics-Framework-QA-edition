@@ -1,0 +1,146 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D13c architecture sizing probe; never execute"
+args = ["noargs"]
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["MODE", "FW_Combi(1)", "FW_Combi(size)"], ["CAP", "FW_Combi(1)", "FW_Combi(size)"], ["S1", "FW_Combi(1)", "FW_Combi(size)"], ["S2", "FW_Combi(1)", "FW_Combi(size)"], ["S3", "FW_Combi(1)", "FW_Combi(size)"], ["S4", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "IMPL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["impl(\"compare_version\");", "impl(\"trust_offer\");", "impl(\"overwrite_owner\");"]
+
+[[slots]]
+sheet = "MODE"
+verb = "FW_Combi(1)"
+raw = true
+values = ["mode(\"independent\");", "mode(\"after_A_offer\");"]
+
+[[slots]]
+sheet = "CAP"
+verb = "FW_Combi(1)"
+raw = true
+values = ["cap(0);", "cap(1);", "cap(2);"]
+
+[[slots]]
+sheet = "S1"
+verb = "FW_Combi(1)"
+raw = true
+values = ["set_step(1,\"A\");", "set_step(1,\"B\");"]
+
+[[slots]]
+sheet = "S2"
+verb = "FW_Combi(1)"
+raw = true
+values = ["set_step(2,\"A\");", "set_step(2,\"B\");"]
+
+[[slots]]
+sheet = "S3"
+verb = "FW_Combi(1)"
+raw = true
+values = ["set_step(3,\"A\");", "set_step(3,\"B\");"]
+
+[[slots]]
+sheet = "S4"
+verb = "FW_Combi(1)"
+raw = true
+values = ["set_step(4,\"A\");", "set_step(4,\"B\");"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[params]]
+sheet = "MODE"
+value = "mode(\"independent\");"
+wait = 0
+
+[[params]]
+sheet = "MODE"
+value = "mode(\"after_A_offer\");"
+wait = 1
+
+[[params]]
+sheet = "CAP"
+value = "cap(0);"
+n = 0
+
+[[params]]
+sheet = "CAP"
+value = "cap(1);"
+n = 1
+
+[[params]]
+sheet = "CAP"
+value = "cap(2);"
+n = 2
+
+[[params]]
+sheet = "S1"
+value = "set_step(1,\"A\");"
+a = 1
+
+[[params]]
+sheet = "S1"
+value = "set_step(1,\"B\");"
+a = 0
+
+[[params]]
+sheet = "S2"
+value = "set_step(2,\"A\");"
+a = 1
+
+[[params]]
+sheet = "S2"
+value = "set_step(2,\"B\");"
+a = 0
+
+[[params]]
+sheet = "S3"
+value = "set_step(3,\"A\");"
+a = 1
+
+[[params]]
+sheet = "S3"
+value = "set_step(3,\"B\");"
+a = 0
+
+[[params]]
+sheet = "S4"
+value = "set_step(4,\"A\");"
+a = 1
+
+[[params]]
+sheet = "S4"
+value = "set_step(4,\"B\");"
+a = 0
+
+[[constraints]]
+id = "two_each"
+polarity = "require"
+sheets = ["S1", "S2", "S3", "S4"]
+when = "S1.a + S2.a + S3.a + S4.a == 2"
+
+[[constraints]]
+id = "causal_ready"
+polarity = "require"
+sheets = ["MODE", "S1"]
+when = "MODE.wait == 0 or S1.a == 1"
+
+[[constraints]]
+id = "preemption_cap"
+polarity = "require"
+sheets = ["CAP", "S1", "S2", "S3", "S4"]
+when = "int(S1.a != S2.a) + int(S2.a != S3.a and S1.a != S2.a) + int(S3.a != S4.a and S1.a != S3.a and S2.a != S3.a) <= CAP.n"
+
+[[custom_vars]]
+code = 2
+msg = "D13c resource or message contract violation; inspect the trace"

@@ -1,0 +1,44 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version="1"
+title="D14c sizing only; never execute"
+seq_extra=[["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["INSTANCE", "FW_Combi(1)", "FW_Combi(size)"], ["RELABEL", "FW_Permut()", "FW_Combi(size)"], ["EDIT", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet="HEAD"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[slots]]
+sheet="IMPL"
+verb="FW_Combi(1)"
+raw=true
+values=["impl(\"exact_dp\");", "impl(\"greedy_value\");", "impl(\"min_only_dp\");"]
+
+[[slots]]
+sheet="INSTANCE"
+verb="FW_Combi(1)"
+raw=true
+values=["instance(\"bundle_trap\");", "instance(\"tie\");", "instance(\"disjoint\");", "instance(\"overlap\");"]
+
+[[slots]]
+sheet="RELABEL"
+verb="FW_Combi(1)"
+raw=true
+values=["label(0);", "label(1);", "label(2);"]
+
+[[slots]]
+sheet="EDIT"
+verb="FW_Combi(1)"
+raw=true
+values=["edit(\"none\");", "edit(\"dominated\");"]
+
+[[slots]]
+sheet="TAIL"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[custom_vars]]
+code=2
+msg="D14c allocation feasibility, exact optimum or relation failure"
