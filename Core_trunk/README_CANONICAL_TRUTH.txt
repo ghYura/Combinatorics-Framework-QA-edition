@@ -36,41 +36,96 @@ What was measured on 2026-09-28 (same fixture, same method, both builds):
    fw_opt3         873,020                   582,564            -290,456
    fw_opt4      33,674,483                19,844,499         -13,829,984
 
-Previous behaviour (every build from the refactor up to ca8c646, which
-produced 33,674,483).  G, M and N run FW_Cartes(B1) -> FW_Group(S1 rewrites)
--> FW_Cartes(B2) (N uses FW_Cartes_first).  In FW_Group mode the Core paired
-the grouped rows WITH THEMSELVES and ignored the operand X = B2 (and the
-_first order).  Sheet M, decoded from a reduced copy of the fixture (all
-sheets kept, so codes are identical):
+WHY THE NUMBER CHANGED — the explanation, step by step
+──────────────────────────────────────────────────────
 
-   16 rows, e.g.   m1 · s11 · ASC · m2 · s11 · DESC      (row paired with row;
-                                                         B2's up/down never
-                                                         appear)
+1. The cause is one Core code path: FW_Cartes(X) inside FW_Group mode.
+   Previous build, SheetWorker.java (e38766b, line 1043), FW_Group branch:
 
-Those 16 rows are exactly what FW_Group -> FW_PermutR(2) produces, so the old
-behaviour duplicated another verb.
+      case "FW_Cartes":
+      gStream = new CartesianProductG(inListFWasList, inListFWasList)...
 
-Current behaviour (PR #24, Core source 1468712).  Grouped FW_Cartes(X) is
-"grouped rows x X" (X x rows for FW_Cartes_first): the author's stated rule,
-and what his original code does (Main.java, 27.08.2020).  Sheet M:
+   The grouped rows were crossed WITH THEMSELVES.  The operand X (the sheet
+   named inside FW_Cartes(...)) and the FW_Cartes_first order were never
+   read — although the ungrouped per-row path of the same verb (buildGenerator)
+   did use X.  The defect entered during the refactor (it is absent from the
+   author's legacy Main.java of 2023-03-29 and present in every snapshot from
+   2026-05-29 up to ca8c646).
 
-    8 rows, e.g.   m1 · s11 · ASC · up
+2. The fix restores the author's rule, "grouped rows x X" (X x rows for
+   FW_Cartes_first), which is also what his original code does
+   (Main.java:2333, 27.08.2020).  Current build, 1468712 (2026-09-26):
 
-Nothing is lost: FW_Group -> FW_PermutR(2) still yields the former 16 rows
-for anyone who wants them.
+      gStream = isCartesFirst
+          ? new CartesianProductG(operandAtoms, inListFWasList)...
+          : new CartesianProductG(inListFWasList, operandAtoms)...
 
-Why the totals move exactly this far.  Only G, M and N changed (16 -> 8
-rows each), and fw_opt_k = e_k of the per-sheet counts (next sections): e.g.
-fw_opt1 falls by 3 x 8 = 24.  fw_final is untouched because G, M and N are
-FW_Optional.  Sheet E, the only order-sensitive sheet, is 13 in both builds.
+   with each value of X as a one-code atom.
+
+3. Only three optional sheets run FW_Cartes after FW_Group, so only they move:
+
+      G: FW_Cartes_first(B1) -> FW_Group -> FW_Separator(S1) ->
+         FW_Cartes_first(B2)
+      M: FW_Cartes(B1) -> FW_Group -> FW_Cartes(B2)
+      N: FW_Cartes_first(B1) -> FW_Group -> FW_Cartes_first(B2)
+
+   Measured per pass in both builds' Core logs: the first pass gives
+   2 values x |B1| = 2 x 2 = 4 rows; then the grouped FW_Cartes gives
+
+      previous:  4 rows x 4 rows   = 16 rows  (row paired with row)
+      current:   4 rows x |B2| = 2 =  8 rows  (row paired with a B2 value)
+
+   Sheet M, decoded (reduced copy of the fixture, codes identical):
+      previous  m1 · s11 · ASC · m2 · s11 · DESC   (B2's up/down never appear)
+      current   m1 · s11 · ASC · up
+   The previous 16 rows are exactly FW_Group -> FW_PermutR(2), which still
+   produces them: nothing is lost, the operand of FW_Cartes just counts again.
+
+4. The totals move by exactly the amount those three sheets explain.  The
+   other 27 contributing optional sheets (R) are identical in both builds:
+
+      e_1(R) = 136   e_2(R) = 8,689   e_3(R) = 347,404   e_4(R) = 9,768,883
+
+   For three sheets of g rows each the factor is e(G,M,N) = 1, 3g, 3g^2, g^3,
+   and fw_opt_k = sum over i of e_i(G,M,N) x e_(k-i)(R).  For fw_opt4:
+
+      previous (g = 16):  9,768,883 + 48 x 347,404 + 768 x 8,689
+                          + 4,096 x 136 = 33,674,483
+      current  (g =  8):  9,768,883 + 24 x 347,404 + 192 x 8,689
+                          +   512 x 136 = 19,844,499
+
+   Likewise fw_opt1 = 136 + 3g (184 -> 160), fw_opt2 = 15,985 -> 12,145,
+   fw_opt3 = 873,020 -> 582,564: all four measured totals of BOTH builds
+   follow from the same R and g alone.
+
+5. fw_final did not move because G, M and N are FW_Optional: they enter only
+   the fw_opt<k> tables, never the mandatory product.
+
+6. Sheet E did not move (13 in both builds) because it uses no FW_Cartes; its
+   count depends only on the order of its grouped source rows, and that order
+   rule (Iter4 Step 10 content sort) is the same code in both builds.
+
+7. Why this file used to call 33,674,483 "invariant".  Its invariance tests
+   were about ORDERING — store backend, PostgreSQL plan and version, JVM
+   hashing, library version, parallelism — the causes that can change sheet
+   E.  The grouped-Cartes defect was deterministic, so every such variation
+   reproduced it and the number looked invariant.  Invariance under those
+   conditions is not correctness of the semantics: the number was a faithful
+   measurement of the defective rule.
+
+8. The older 34,368,597 fits the same picture with E = 14 (the pre-Step-10
+   code took PostgreSQL's DISTINCT order; PostgreSQL 18.6's HashAggregate
+   order gives 14) and G, M, N = 16.  That is a consistent, plausible
+   mechanism, not a proof: other per-sheet changes can reach the same total.
 
 Which earlier statements in this file are superseded or corrected:
 - "MUST produce 33,674,483, invariant": superseded.  33,674,483 is a
   faithful measurement of the pre-fix build — still reproducible on e38766b
   — but it recorded the grouped-Cartes defect, not the author's semantics.
   The numbers here hold for a named build, not across semantic changes.
-- The 2026-09-26 erratum named M and N; G runs the same chain and also went
-  from 16 to 8 rows.  The "not measured" value is now measured: 19,844,499.
+- The 2026-09-26 erratum named M and N; G also runs FW_Cartes after FW_Group
+  (step 3) and also went from 16 to 8 rows.  The "not measured" value is
+  now measured: 19,844,499.
 - "Step 10 locks in 33,674,483 as the future-proof answer": the content sort
   makes SHEET E reproducible (13); the total also depends on G, M and N.
 - The old sheet-E walk-through counted 14 for the generation order; it is 13
