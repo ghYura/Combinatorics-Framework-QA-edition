@@ -128,10 +128,25 @@ def generate_one(spec: fg.Spec, out: Path, strategy: str, n: int, optimal: bool,
             fg.write_json_sibling(path)
         paths = [str(path)]
         info["rows"] = spec.combos
+        # The compact workbook keeps the spec's factors as sheets, so its bond layer stays valid:
+        # write it as the workbook's companion (<base>.constraints.json) for XLSX-input runs.
+        side = fg.emit_workbook_sidecar(spec, path)
+        info["constraints_sidecar"] = str(side) if side else None
     else:                                              # materialized: chunk + parallel
         paths = fg.write_chunked(spec, rows, out, base, chunk_rows,
                                  fw_info, clone_path, workers, emit_json, autofit=autofit)
         info["rows"] = len(rows)
+        # A materialized workbook's sheets are assembled rows, not the spec's factors, so the
+        # factor-level bonds do not apply to it: no companion is written (and a stale one is
+        # removed). Constrain such a suite before materializing, or run the compact form.
+        for p in paths:
+            stale = fg.workbook_sidecar_path(p)
+            if stale.is_file():
+                stale.unlink()
+        info["constraints_sidecar"] = None
+        if spec.constraints:
+            info["constraints_note"] = (f"{len(spec.constraints)} constraint(s) not attached: materialized "
+                                        f"workbooks carry no factor-level companion")
 
     info["chunks"] = len(paths)
     info["base"] = base
@@ -187,6 +202,10 @@ def cmd_gen(a):
         results.append(r)
         status = "OK" if r["valid"] == "OK" else f"INVALID: {r['valid']}"
         print(f"{r['base']:<40} rows={r['rows']:<6} chunks={r['chunks']:<4} {r['mode']:<46} {status}")
+        if r.get("constraints_sidecar"):
+            print(f"  constraints companion -> {Path(r['constraints_sidecar']).name}")
+        if r.get("constraints_note"):
+            print(f"  ! {r['constraints_note']}")
     _write_readme(out, specs, results, a)
     bad = [r for r in results if r["valid"] != "OK"]
     print(f"\n{len(results)} workbooks → {out}    {'ALL VALID' if not bad else f'{len(bad)} INVALID'}")

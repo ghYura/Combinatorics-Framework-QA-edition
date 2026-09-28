@@ -307,3 +307,23 @@ def test_program_path_keeps_the_exact_sieve_precount():
         pytest.skip("proof_authz/e4_bonds not present")
     post = fg._program_cardinality_plan(fg.load_spec(path)).post_sieve
     assert (post.mode, post.value) == (fg.CardinalityMode.EXACT, 133)
+
+
+def test_legacy_workbook_quirks_are_accepted(tmp_path):
+    """Author workbooks: a shared-strings part declared but absent (Core's POI reader accepts it),
+    and Core's data-cell tokens (FW_EMPTY_STRING) are values, not verbs. Neither may be refused."""
+    import zipfile
+    good = _cartes_group_workbook(tmp_path)
+    ws = openpyxl.load_workbook(good)
+    ws["G"].cell(3, 1, "FW_EMPTY_STRING")
+    ws.save(good)
+    quirky = tmp_path / "quirky.xlsx"
+    with zipfile.ZipFile(good) as src, zipfile.ZipFile(quirky, "w") as dst:
+        for item in src.infolist():
+            if item.filename != "xl/sharedStrings.xml":
+                dst.writestr(item, src.read(item.filename))
+    before = quirky.read_bytes()
+    spec = fg.load_spec(quirky)
+    assert spec.source_format == "xlsx"
+    assert not [p for p in fg.validate_workbook(good) if "FW_EMPTY_STRING" in p]
+    assert quirky.read_bytes() == before                  # the input file is never modified

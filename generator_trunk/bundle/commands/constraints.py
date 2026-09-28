@@ -55,7 +55,11 @@ def cmd_constraints(a) -> None:
     if not getattr(spec, "constraints", None):
         print(f"constraints: spec {toml_path.name} declares no constraints — nothing to explain.")
         return
+    if getattr(spec, "sidecar_path", ""):
+        print(f"constraints source: {spec.sidecar_path}  (sha256 {spec.sidecar_sha256})")
     sidecar = {"version": 1, "params": spec.params, "constraints": spec.constraints}
+    if getattr(spec, "orders", None):
+        sidecar["orders"] = spec.orders
     try:
         sv.validate_sidecar(sidecar, strict=getattr(a, "strict", False))
     except ValueError as exc:

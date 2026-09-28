@@ -132,7 +132,7 @@ outcome set (`test_worker_pool`) and the same harvested metrics corpus
 | Bounded 288 secure end-to-end | **proven (measured)** | gate-final run; 288/150/138/0; container backend |
 | 10K / 100K / 1M per-stage **generation** throughput | **proven (measured)** | `bench_10k.json`, `bench_100k.json`, `bench_1M.json` (above) — Core 1M rows in 17 s |
 | Worker-pool execution speedup (~5.5× on 8 cores) | **proven (measured)** | `bench_wp.json` |
-| Core canonical invariants `fw_final=4,644,864`, `fw_opt4=33,674,483` | **source-confirmed fixture** | `Core_trunk/README_CANONICAL_TRUTH.txt`; **not re-run this session** |
+| Core canonical reference `fw_final=4,644,864`, `fw_opt4=19,844,499` (current build; 33,674,483 on e38766b, before the grouped-Cartes fix) | **proven (measured 2026-09-28)** | `Core_trunk/README_CANONICAL_TRUTH.txt` (build, command, per-sheet counts; sheet E = 13 is a convention) |
 | 10M / 100M / 1B per-stage throughput | **unverified** | not run (2012 host is the limit; the engine's limiter can be lifted with `unleash_initial_productivity_power`, but 10M+ needs the right hardware — see [06](06_PLANNING_BUDGETS_AND_COUNTS.md)) |
 | "billion candidate end-to-end execution" | **explicitly NOT claimed** | architecture-credible only; generation ≠ execution |
 

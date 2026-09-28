@@ -202,6 +202,11 @@ class RunManifest:
     # (bundle.inventory/v1 — toolchain + per-component declared version + artifact
     # sha256). Recorded so a run is reproducible/traceable to exact build artifacts.
     component_inventory: Mapping[str, Any] = field(default_factory=dict)
+    # XLSX input: the companion constraint sidecar (`<stem>.constraints.json`) loaded with the
+    # workbook. It changes the run's meaning independently of the workbook bytes in
+    # `spec_sha256`, so resume compares it too. None for TOML specs and bare workbooks.
+    constraints_sidecar_path: "str | None" = None
+    constraints_sidecar_sha256: "str | None" = None
 
 
 # ------------------------------- JSON (de)serialization ---------------------- #
@@ -257,6 +262,8 @@ def run_manifest_from_dict(data: Mapping[str, Any]) -> RunManifest:
         start=data.get("start"),
         scratch_root=data.get("scratch_root"),
         settings=dict(data.get("settings", {})),
+        constraints_sidecar_path=data.get("constraints_sidecar_path"),
+        constraints_sidecar_sha256=data.get("constraints_sidecar_sha256"),
         analysis=dict(data.get("analysis", {})),
         component_inventory=dict(data.get("component_inventory", {})),
     )

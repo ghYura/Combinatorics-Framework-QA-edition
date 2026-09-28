@@ -229,7 +229,8 @@ def _decode_arrays(arrays: tuple, *, want_optional: bool, code2val: dict, sheet_
                 if value is not None:
                     values.append(str(value).strip())
         elif (not is_optional) and sheet in baseline:
-            values.append(str(baseline[sheet]).strip())
+            base = baseline[sheet]                       # a multi-value slot's base is a tuple
+            values.extend(str(v).strip() for v in (base if isinstance(base, (list, tuple)) else [base]))
         if values:
             out[sheet] = tuple(values)
     return out

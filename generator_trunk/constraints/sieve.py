@@ -698,7 +698,7 @@ def sieve_fw_final(conn, table: str, sidecar: dict,
 
     code2val:   {sheet: {code:int -> value:str}}  (from NumberToValue1, split per sheet)
     combos_col: {sheet -> column name}            (case-sensitive, e.g. {"O1":"combos2_O1"})
-    baseline:   {sheet -> baseline value:str}     (the slot's FIRST value; empty cell => this)
+    baseline:   {sheet -> base value:str | tuple}  (the base row's value(s); empty cell => these)
     Returns {"scanned","violating","deleted"}.
     """
     baseline = baseline or {}
@@ -750,8 +750,9 @@ def sieve_fw_final(conn, table: str, sidecar: dict,
                     val = code2val.get(s, {}).get(int(code))
                     if val is not None:
                         row.append({"sheet": s, "value": val, "pos": pos})
-            elif s in baseline:                           # EMPTY => slot baseline (first value)
-                row.append({"sheet": s, "value": baseline[s], "pos": pos})
+            elif s in baseline:                           # EMPTY => the base row's value(s)
+                for bv in baseline_values(baseline, s):   # a multi-value slot inherits ALL of them
+                    row.append({"sheet": s, "value": bv, "pos": pos})
             pos += 1
         hits = row_violations(row, active)
         for h in hits:
@@ -798,6 +799,13 @@ def sieve_fw_final(conn, table: str, sidecar: dict,
     return report
 
 
+def baseline_values(baseline: dict, sheet: str) -> list:
+    """The value(s) an empty fw_final cell of `sheet` inherits: one for a single-value slot, every
+    base-row value for a multi-value slot (see build_maps_from_db)."""
+    v = baseline[sheet]
+    return list(v) if isinstance(v, (list, tuple)) else [v]
+
+
 # --------------------- build decode maps from a live DB ---------------------- #
 def build_maps_from_db(conn, table: str, slots) -> tuple:
     r"""Derive (code2val, baseline, combos_col, sheet_order) from a Core-filled DB.
@@ -840,7 +848,11 @@ def build_maps_from_db(conn, table: str, slots) -> tuple:
         if rec:
             for n, arr in zip(names, rec):
                 if arr:
-                    baseline[n] = gmap.get(int(arr[0]), "")
+                    # A multi-value slot (e.g. FW_Combi(2)) stores its base combination as several codes;
+                    # an empty fw_final cell inherits ALL of them, so keep every value (a tuple), not
+                    # just the first. A single-value cell stays a plain string (unchanged shape).
+                    vals = [gmap.get(int(c), "") for c in arr]
+                    baseline[n] = vals[0] if len(vals) == 1 else tuple(vals)
     for s in slots:                                           # fallback: spec first value
         if s.sheet in optional:                               # optional cell empty => ABSENT, not baseline
             continue
@@ -1032,7 +1044,8 @@ def decode_assembly(conn, table: str, code2val: dict, sheet_order: list, combos_
                     if v is not None:
                         place.append({"sheet": s, "value": v, "pos": pos})
             elif (not is_opt) and (s in baseline):
-                place.append({"sheet": s, "value": baseline[s], "pos": pos})
+                for bv in baseline_values(baseline, s):
+                    place.append({"sheet": s, "value": bv, "pos": pos})
         return place
 
     cur.execute(f'SELECT {cols} FROM "{table}";')

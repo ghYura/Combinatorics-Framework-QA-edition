@@ -38,6 +38,7 @@ from . import invariants, shards
 from .budgets import blocking_checks, evaluate_budgets, warning_checks
 from .cliutil import (
     _budget_limits_from_config,
+    _per_candidate_seconds,
     _resolve_bundle_config,
     _resolve_execution_policy,
     _with_db,
@@ -80,6 +81,7 @@ from .stages import (
     READER_PROPS,
     SRC,
     capability_gate,
+    deferred_assembly_expected,
     fg,
     normalize_language,
     preflight,
@@ -298,8 +300,9 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
     # estimate `evaluate_budgets` can compare against `--budget-monetary-cost`.
     # Without wiring it through here, a configured monetary ceiling could never
     # actually block a run — exactly the gap flagged in review.
+    per_candidate = _per_candidate_seconds(cfg)          # the range `plan` uses too
     resource_plan = estimate_resources(cardinality_plan, cost_per_candidate=a.cost_per_candidate,
-                                       count_plan=repeat_plan)
+                                       count_plan=repeat_plan, per_candidate_seconds=per_candidate)
     checks = evaluate_budgets(cardinality_plan, resource_plan, _budget_limits_from_config(cfg))
     blocking = blocking_checks(checks)
     for c in warning_checks(checks):
@@ -319,7 +322,7 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
                   f"allowed without --allow-extreme")
         return {"run_class": resource_plan.run_class.value, "allow_extreme": bool(a.allow_extreme),
                 "exceeded": [c.dimension for c in blocking], "override": False, "reason": None,
-                "unleash_initial_productivity_power": True}
+                "unleash_initial_productivity_power": True, "per_candidate_seconds": list(per_candidate)}
 
     if extreme and not a.allow_extreme:
         raise BudgetError(
@@ -330,7 +333,7 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
 
     intent = {"run_class": resource_plan.run_class.value, "allow_extreme": bool(a.allow_extreme),
               "exceeded": [c.dimension for c in blocking], "override": False, "reason": None,
-              "unleash_initial_productivity_power": False}
+              "unleash_initial_productivity_power": False, "per_candidate_seconds": list(per_candidate)}
     if not blocking:
         return intent
     if not (a.override_budget and a.override_budget.strip()):
@@ -379,6 +382,24 @@ def _optional_table_rows(cfg, main_port, db, sizes) -> int:
     return total
 
 
+def _expected_after_deferred_bonds(st, spec, work, db, main_port, cfg, optional_contract, fw_final,
+                                   optional_factor):
+    """(expected Reader emission, detail) after the sieve. Normally fw_final x the optional
+    multiplier; when the sieve deferred optional bonds to the Reader, the exact count of the
+    assembled candidates those bonds keep (detail = {"total", "removed", "kept"})."""
+    full = fw_final * optional_factor
+    fn = getattr(st, "deferred_assembly_expected", None)
+    if fn is None or optional_contract is None or not optional_contract.active:
+        return full, None
+    detail = fn(spec, work, db, main_port, cfg, optional_contract.consumed_sizes)
+    if detail is None:
+        return full, None
+    if detail["total"] != full:
+        raise StageError(f"deferred optional bonds: decoded assembled space {detail['total']} != post-sieve "
+                         f"fw_final x optional multiplier {full}")
+    return detail["kept"], detail
+
+
 def _measured_optional_factor(st, cfg, main_port, db, optional_contract, predicted):
     """The optional multiplier the Reader will realise: 1 + Σ|fw_opt<size>| over the
     consumed sizes, measured after Core, whenever the spec can only BOUND it (an
@@ -392,6 +413,16 @@ def _measured_optional_factor(st, cfg, main_port, db, optional_contract, predict
     ok(f"optional multiplier measured from Core: 1 + Σ|fw_opt{{{sizes}}}| = {measured} "
        f"(the spec only bounds it: ≤ ×{predicted})")
     return measured
+
+
+def _spec_input_artifacts(spec, toml_path):
+    """The run's spec inputs as artifacts: the spec file itself and, for an XLSX workbook, its
+    companion constraint sidecar -- a changed companion changes the run even when the workbook
+    bytes do not, so resume must see it."""
+    refs = [file_artifact("input.spec", toml_path)]
+    if getattr(spec, "sidecar_path", ""):
+        refs.append(file_artifact("input.constraints_sidecar", spec.sidecar_path))
+    return tuple(refs)
 
 
 def _create_run_directory(a, spec, toml_path, scratch, budget_intent=None, execution_policy=None,
@@ -425,6 +456,8 @@ def _create_run_directory(a, spec, toml_path, scratch, budget_intent=None, execu
         # STEP 42: record the component version/hash inventory (the exact build
         # artifacts this run was produced with) in the run manifest.
         component_inventory=_build_component_inventory(),
+        constraints_sidecar_path=getattr(spec, "sidecar_path", "") or None,
+        constraints_sidecar_sha256=getattr(spec, "sidecar_sha256", "") or None,
         settings={
             "lang": a.lang,
             "main_port": a.main_port,
@@ -533,6 +566,7 @@ def default_stage_table() -> StageTable:
         optional_tables=_optional_tables,
         record_handoff_manifest=_record_handoff_manifest,
         optional_table_rows=_optional_table_rows,
+        deferred_assembly_expected=deferred_assembly_expected,
     )
 
 
@@ -659,7 +693,7 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
               f"×{optional_factor}; expected total = {full}")
     with journal.stage("gen", log_path=work / "gen.log") as rec:
         xlsx = st.gen(a.spec_dir, work)
-        _record_artifacts(rec, file_artifact("input.spec", toml_path),
+        _record_artifacts(rec, *_spec_input_artifacts(spec, toml_path),
                           file_artifact("output.workbook", xlsx),
                           *st.component_artifacts("gen", cfg))
     with journal.stage("core", log_path=work / "core.log") as rec:
@@ -722,10 +756,15 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
         with journal.stage("sieve") as rec:
             fw_final = st.sieve(spec, work, a.db, a.main_port, fw_final, cfg)
             rec.count("post_sieve", actual=fw_final)
+            full, deferred = _expected_after_deferred_bonds(st, spec, work, a.db, a.main_port, cfg,
+                                                            optional_contract, fw_final, optional_factor)
+            if deferred:
+                rec.count("assembled_before_deferred_bonds", actual=deferred["total"])
+                rec.count("deferred_bond_removals", actual=deferred["removed"])
+                rec.count("reader_expected", actual=full)
             _record_artifacts(rec, *st.component_artifacts("sieve", cfg))
             rec.invariant(invariants.post_sieve_le_core(fw_final, pre_sieve))
             invariants.enforce(rec.invariants)
-        full = fw_final * optional_factor
     run_id = run_layout.run_id if run_layout else None
     manifest = None
     manifest_path = None
@@ -982,7 +1021,7 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
     gen_prior = read_stage(layout, "gen")
     xlsx_files = sorted((work / "wb").glob("*.xlsx"))
     xlsx = xlsx_files[0] if xlsx_files else work / "wb" / "missing.xlsx"
-    gen_artifacts = (file_artifact("input.spec", toml_path),
+    gen_artifacts = (*_spec_input_artifacts(spec, toml_path),
                      file_artifact("output.workbook", xlsx),
                      *st.component_artifacts("gen", cfg))
     # The workbook is an *intermediate* the Core stage rewrites in place (the Core
@@ -1004,7 +1043,7 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
     else:
         with journal.stage("gen", log_path=work / "gen.log") as rec:
             xlsx = st.gen(str(toml_path), work)
-            _record_artifacts(rec, file_artifact("input.spec", toml_path),
+            _record_artifacts(rec, *_spec_input_artifacts(spec, toml_path),
                               file_artifact("output.workbook", xlsx),
                               *st.component_artifacts("gen", cfg))
     trusted = reuse_gen
@@ -1105,7 +1144,8 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
                 _record_artifacts(rec, *st.component_artifacts("sieve", cfg))
                 rec.invariant(invariants.post_sieve_le_core(fw_final, pre_sieve))
                 invariants.enforce(rec.invariants)
-        full = fw_final * optional_factor
+        full, _deferred = _expected_after_deferred_bonds(st, spec, work, db, main_port, cfg,
+                                                         optional_contract, fw_final, optional_factor)
         trusted = trusted and reuse_sieve
 
     # ---- reader: reusable iff upstream trusted, prior SUCCEEDED, the same

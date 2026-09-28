@@ -341,6 +341,11 @@ def preflight(args, cfg: BundleConfig = BundleConfig()):
     if getattr(spec, "source_format", "toml") == "xlsx":
         ok(f"spec '{spec.name}' — legacy XLSX workbook, run by the Core unchanged "
            f"({len(spec.slots)} FW_Seq sheets, {len(spec.passive_sheets)} passive)")
+        if spec.sidecar_path:
+            ok(f"constraints: {len(spec.constraints)} rule(s) from {Path(spec.sidecar_path).name} "
+               f"(sha256 {spec.sidecar_sha256})")
+        else:
+            ok(f"constraints: none (no {fg.workbook_sidecar_path(spec_input).name} beside the workbook)")
     else:
         ok(f"spec '{spec.name}' ({len(spec.slots)} slots)")
     # A t-wise request is applied by the sieve stage after Core. Refuse the specs it
@@ -462,6 +467,18 @@ def stage_gen(spec_dir, scratch):
                 print(f"    ✗ {problem}")
             raise StageError(f"workbook {spec_input.name} is invalid ({len(problems)} problem(s))")
         ok(f"workbook -> {dst.name}")
+        # The companion constraint sidecar travels with it, byte for byte, so the run keeps the
+        # exact bond layer it was planned and sieved with (the spec loaded it at preflight). When
+        # the input has none, a copy left in this run's wb/ by an earlier gen (regeneration or
+        # resume after the companion was removed) is deleted: the archived workbook must never
+        # carry rules its input no longer has. Only the run's own copy is touched, never the input.
+        companion, copied = fg.workbook_sidecar_path(spec_input), fg.workbook_sidecar_path(dst)
+        if companion.is_file():
+            shutil.copy2(companion, copied)
+            ok(f"constraints companion -> {copied.name}")
+        elif copied.is_file() and copied.resolve() != companion.resolve():
+            copied.unlink()
+            ok(f"constraints companion: none in the input; removed the stale copy {copied.name}")
         return dst
     print("\n[1/5] GENERATE workbook (fwgen)")
     specs_dir = spec_input.parent
@@ -693,6 +710,45 @@ def stage_sieve(spec, scratch, db, main_port, fw_final, cfg: BundleConfig = Bund
     ok(f"sieve: scanned {rep['scanned']}, unique removals {rep['unique_removals']} "
        f"(overlap {rep['overlap']}) → fw_final now {kept}")
     return kept
+
+
+def deferred_assembly_expected(spec, scratch, db, main_port, cfg: BundleConfig = BundleConfig(),
+                               consumed_sizes=()):
+    """Exact Reader emission when the sieve deferred optional bonds to assembly, or None.
+
+    The Reader enforces compiled optional bonds per assembled candidate, so it legitimately emits
+    fewer than fw_final x the optional multiplier. This counts the same assembled space (post-sieve
+    fw_final x {absent, each consumed fw_opt<size> combo}) with the sieve's own engine
+    (`decode_assembly` + `impact_over_rows`, as the exact-impact editor does), so the run keeps an
+    EXACT expected count instead of loosening its Reader invariant. Returns
+    {"total", "removed", "kept"}; raises StageError if the space is too large to count exactly."""
+    if not (Path(scratch) / "optional_bonds.txt").is_file():
+        return None
+    import pg8000.dbapi
+    sys.path.insert(0, str(HERE / "constraints"))
+    import sieve as sv
+    optional_sheets = {s.sheet for s in spec.slots if "FW_Optional" in s.flags}
+    deferred = [c for c in spec.constraints if optional_sheets & set(sv._referenced_sheets(c))]
+    if not deferred:
+        return None
+    sidecar = {"version": 1, "params": spec.params, "constraints": deferred}
+    if getattr(spec, "orders", None):
+        sidecar["orders"] = spec.orders
+    conn = pg8000.dbapi.connect(host=cfg.main_db_host, port=main_port, user=cfg.main_db_user,
+                                password=cfg.main_db_password, database=db)
+    try:
+        code2val, baseline, combos_col, order = sv.build_maps_from_db(conn, "fw_final", spec.slots)
+        finals, opts = sv.decode_assembly(conn, "fw_final", code2val, order, combos_col, baseline,
+                                          optional_sheets, [f"fw_opt{size}" for size in consumed_sizes])
+    finally:
+        conn.close()
+    res = sv.impact_over_rows(finals, opts, sidecar, optional_sheets)
+    if not res["exact"]:
+        raise StageError("deferred optional bonds: the assembled space is too large to count the Reader's "
+                         "exact expected emission; refusing to run with an unchecked candidate count")
+    ok(f"deferred optional bonds: Reader assembles {res['total']}, enforces {len(deferred)} bond(s) → "
+       f"expects {res['kept']} candidate(s) ({res['removed']} filtered at assembly)")
+    return {"total": res["total"], "removed": res["removed"], "kept": res["kept"]}
 
 
 def _constraint_key(c: dict) -> str:

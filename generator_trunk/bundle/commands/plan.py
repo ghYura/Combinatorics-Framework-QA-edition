@@ -31,7 +31,7 @@ import fwseq_graph as _seq_graph
 from pathlib import Path
 from ..budgets import blocking_checks, budget_check_to_dict, evaluate_budgets
 from ..cliargs import _add_budget_ceiling_args, _add_repeat_args
-from ..cliutil import _budget_limits_from_config, _load_one_spec, _resolve_bundle_config
+from ..cliutil import _UNSET, _budget_limits_from_config, _load_one_spec, _per_candidate_seconds, _resolve_bundle_config
 from ..counts import count_plan
 from ..errors import BundleError, PreflightError, ok, report_and_exit
 from ..jsonio import write_json_atomic
@@ -150,7 +150,7 @@ def cmd_plan(a) -> None:
         thresholds=ResourceThresholds(smoke_max=a.class_smoke_max, bounded_max=a.class_bounded_max,
                                        large_max=a.class_large_max),
         template_sample_bytes=a.template_sample_bytes if a.template_sample_bytes else None,
-        per_candidate_seconds=(a.per_candidate_seconds_min, a.per_candidate_seconds_max),
+        per_candidate_seconds=_per_candidate_seconds(cfg),   # the range the run's budget gate uses
         cost_per_candidate=a.cost_per_candidate if a.cost_per_candidate is not None else None,
         count_plan=cplan,
     )
@@ -171,6 +171,8 @@ def cmd_plan(a) -> None:
         flags = f" flags={s['flags']}" if s["flags"] else ""
         print(f"  {s['sheet']}: {s['verb']}  n={s['n']}{flags}")
     print(f"constraints present: {len(spec.constraints)}")
+    if getattr(spec, "sidecar_path", ""):
+        print(f"constraints source: {spec.sidecar_path}  (sha256 {spec.sidecar_sha256})")
     if plan_contract.active:
         print(f"optional table contract: {plan_contract.optional_sheet_count} FW_Optional sheet(s), "
               f"Core produces [{plan_contract.core_property_value()}], "
@@ -227,6 +229,9 @@ def cmd_plan(a) -> None:
         "slots": slots,
         "seq_extra_rows": len(spec.seq_extra),
         "constraints_present": len(spec.constraints),
+        # XLSX input: the companion `<stem>.constraints.json` the rules came from (None otherwise).
+        "constraints_source": ({"path": spec.sidecar_path, "sha256": spec.sidecar_sha256}
+                               if getattr(spec, "sidecar_path", "") else None),
         "cardinality": fg.cardinality_plan_to_dict(plan),
         "resources": resource_plan_to_dict(res_plan),
         "repeat_plan": cplan.to_dict(),                            # Plan-1 Phase 2 (docs/24 §3)
@@ -267,12 +272,12 @@ def _main_plan(argv):
     ap.add_argument("--template-sample-bytes", type=int, default=0,
                     help="size in bytes of a real candidate-source template sample, "
                          "for a sound 'candidate source bytes' estimate (default: generic placeholder range)")
-    ap.add_argument("--per-candidate-seconds-min", type=float, default=DEFAULT_PER_CANDIDATE_SECONDS[0],
+    ap.add_argument("--per-candidate-seconds-min", type=float, default=_UNSET,
                     help="lower bound of the assumed per-candidate execution cost in seconds "
-                         "(single worker; drives the execution-duration estimate)")
-    ap.add_argument("--per-candidate-seconds-max", type=float, default=DEFAULT_PER_CANDIDATE_SECONDS[1],
+                         "(single worker; drives the execution-duration estimate; default: config, 0.05)")
+    ap.add_argument("--per-candidate-seconds-max", type=float, default=_UNSET,
                     help="upper bound of the assumed per-candidate execution cost in seconds "
-                         "(single worker; drives the execution-duration estimate)")
+                         "(single worker; drives the execution-duration estimate; default: config, 2)")
     ap.add_argument("--cost-per-candidate", type=float, default=None,
                     help="optional flat monetary cost per candidate; enables the monetary-cost estimate")
     ap.add_argument("--coverage-strength", type=int, default=0, metavar="T",

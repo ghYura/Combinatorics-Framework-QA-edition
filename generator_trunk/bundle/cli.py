@@ -134,15 +134,26 @@ def cmd_resume(a, *, stages: 'StageTable | None' = None) -> None:
     reconcile_interrupted(layout)
     spec, toml_path = _load_one_spec(Path(manifest.spec_path))
     current_sha = file_sha256(toml_path)
-    spec_changed = current_sha != manifest.spec_sha256
+    # An XLSX workbook's companion constraint sidecar is part of the spec: a changed (added,
+    # removed or edited) companion changes the run even when the workbook bytes are identical.
+    current_side = getattr(spec, "sidecar_sha256", "") or None
+    side_changed = current_side != manifest.constraints_sidecar_sha256
+    spec_changed = current_sha != manifest.spec_sha256 or side_changed
     if spec_changed:
-        print(f"  ! spec changed ({manifest.spec_sha256} -> {current_sha}); invalidating gen and all downstream stages")
+        if current_sha != manifest.spec_sha256:
+            print(f"  ! spec changed ({manifest.spec_sha256} -> {current_sha}); invalidating gen and all downstream stages")
+        if side_changed:
+            print(f"  ! constraints companion changed ({manifest.constraints_sidecar_sha256} -> {current_side}); "
+                  f"invalidating gen and all downstream stages")
         manifest = dataclasses.replace(
             manifest, spec_path=str(toml_path), spec_sha256=current_sha,
-            spec_version=spec.spec_version)
+            spec_version=spec.spec_version,
+            constraints_sidecar_path=getattr(spec, "sidecar_path", "") or None,
+            constraints_sidecar_sha256=current_side)
         write_json_atomic(layout.manifest_path, manifest)
     else:
-        ok(f"spec '{spec.name}' unchanged (sha256 {current_sha})")
+        ok(f"spec '{spec.name}' unchanged (sha256 {current_sha}"
+           + (f"; constraints companion {current_side}" if current_side else "") + ")")
     _resume_run(layout, manifest, spec, toml_path, cfg, spec_changed=spec_changed,
                 stages=stages)
 
@@ -423,6 +434,12 @@ def main(*, stages: 'StageTable | None' = None):
                          "don't block) and X/extreme runs need no --allow-extreme -- Core at full "
                          "generative power. Layered like any config "
                          "(CLI > BUNDLE_UNLEASH_INITIAL_PRODUCTIVITY_POWER > config file > default False).")
+    ap.add_argument("--per-candidate-seconds-min", type=float, default=_UNSET, metavar="S",
+                    help="lower bound of the assumed per-candidate execution cost in seconds for the "
+                         "wall-time budget estimate (default: 0.05; prefer a measured value)")
+    ap.add_argument("--per-candidate-seconds-max", type=float, default=_UNSET, metavar="S",
+                    help="upper bound of the assumed per-candidate execution cost in seconds for the "
+                         "wall-time budget estimate (default: 2; prefer a measured value)")
     ap.add_argument("--cost-per-candidate", type=float, default=None, metavar="PRICE",
                     help="flat monetary cost per candidate (e.g. cloud/API price); without this, "
                          "the monetary-cost dimension has no projection and --budget-monetary-cost "

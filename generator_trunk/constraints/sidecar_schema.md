@@ -1,5 +1,9 @@
 # Constraint sidecar — schema (v1)
 
+> **XLSX workbooks** carry this sidecar as a companion file `<stem>.constraints.json` beside the
+> workbook (e.g. `demo.xlsx` → `demo.constraints.json`), validated on load; see
+> `docs/07_CONSTRAINTS_GUIDE.md` ("XLSX workbook input").
+
 The **sidecar** is the single declarative artifact the constraint layer ("bonds") speaks. Every
 authoring surface — the spec's `[[params]]`/`[[constraints]]` tables (`fwgen.emit_sidecar`), the
 bond-matrix, the graph/threads editor, the Blockly `when` builder, and the unified `editor.html` —

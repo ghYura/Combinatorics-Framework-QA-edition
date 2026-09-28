@@ -82,6 +82,9 @@ class StageTable:
     # measures the optional multiplier when the spec can only bound it (verb chains,
     # FW_Group, braces in optional sheets: legacy XLSX input, re-declared TOML slots)
     optional_table_rows: "Callable[..., Any] | None" = None
+    # exact Reader emission when the sieve deferred optional bonds to assembly (None = no
+    # deferred bonds): keeps the Reader's candidate-count invariant exact, not loosened
+    deferred_assembly_expected: "Callable[..., Any] | None" = None
 
     def with_(self, **overrides: Callable[..., Any]) -> "StageTable":
         """Return a copy with the named collaborators replaced.

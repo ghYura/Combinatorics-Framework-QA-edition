@@ -130,7 +130,8 @@ atoms** → *combinations of combinations*. Critical details from the source:
 
 - The source rows are **content-sorted (lex) before enumeration** (Iter4 Step-10, lines 952-987) so the
   index-order the generators use is a **pure function of the data** — the determinism fix recorded in
-  `README_CANONICAL_TRUTH.txt` (the 33,674,483 vs 34,368,597 `fw_opt4` split).
+  `README_CANONICAL_TRUTH.txt` (sheet E's order-dependent 13/14/15 rows behind the historic
+  33,674,483 vs 34,368,597 `fw_opt4` split; 13 is the declared convention).
 - `FW_ReplaceRE("pat","rep")` then does **regex surgery on the code-string** of each group (lines
   1050-1066): literal remap, delete (`""`), or `+`-splice another sheet's first code. It rewrites the
   **`Short` code-string** (`"[47, 48]"`), *not* value text — a textual replacement throws

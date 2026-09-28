@@ -59,6 +59,8 @@ def decode_row(cells: "Mapping[str, Sequence[int] | None]", sheets: "Sequence[st
                 raise ValueError(f"sheet {sheet!r}: code {codes[0]} has no NumberToValue1 entry")
             values.append(value)
         elif sheet in baseline:
+            if isinstance(baseline[sheet], (list, tuple)):
+                raise ValueError(f"sheet {sheet!r}: multi-value baseline; a single-pick slot holds at most one")
             values.append(baseline[sheet])
         else:
             raise ValueError(f"sheet {sheet!r}: empty cell and no baseline value")

@@ -36,7 +36,6 @@ import json
 import os
 import subprocess
 import sys
-import uuid
 from pathlib import Path
 
 import pytest
@@ -45,6 +44,7 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
 sys.path.insert(0, str(HERE / "constraints"))
 import sieve as sv  # noqa: E402
+import live_db_guard  # noqa: E402
 import shutil  # noqa: E402
 import tempfile  # noqa: E402
 from bundle import config, stages  # noqa: E402
@@ -308,10 +308,29 @@ def _main_db_password():
         return os.environ.get("BUNDLE_MAIN_DB_PASSWORD", "")
 
 
-def _connect(dbname):
+def _connect_port(port, dbname):
+    # Refuses (without any I/O) unless live-database tests were explicitly opted into.
+    live_db_guard.require_opt_in()
     import pg8000.dbapi
-    return pg8000.dbapi.connect(host="127.0.0.1", port=5433, user="postgres",
+    return pg8000.dbapi.connect(host="127.0.0.1", port=port, user="postgres",
                                 password=_main_db_password(), database=dbname)
+
+
+def _connect(dbname):
+    return _connect_port(5433, dbname)
+
+
+def _live_databases_or_skip():
+    """The owned-database manager for one live test, or skip/fail BEFORE any connection or
+    subprocess: real credentials alone never enable these tests. Opt in with
+    BUNDLE_TEST_LIVE_DB=1 and BUNDLE_TEST_DB_PREFIX=<owned prefix> (see live_db_guard)."""
+    try:
+        prefix = live_db_guard.live_db_prefix()
+    except live_db_guard.LiveDbNotEnabled as exc:
+        pytest.skip(str(exc))
+    except live_db_guard.LiveDbConfigError as exc:
+        pytest.fail(str(exc))
+    return live_db_guard.OwnedDatabases(prefix, _connect_port)
 
 
 class _Slot:
@@ -381,24 +400,9 @@ gate = {}
 """
 
 
-def _drop_db(tmpdb):
-    admin = _connect("postgres")
-    admin.autocommit = True
-    admin.cursor().execute(
-        f"SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname='{tmpdb}' AND pid<>pg_backend_pid();")
-    admin.cursor().execute(f'DROP DATABASE IF EXISTS "{tmpdb}";')
-    admin.close()
-
-
 def test_db_dry_run_leaves_rows_then_actual_sieve_removes_them():
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001 - any driver/auth error → skip
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
-    tmpdb = "fw_step35_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
+    tmpdb = dbs.create("step35", 5433)
     try:
         conn = _connect(tmpdb)
         _populate_demo_fw_final(conn)
@@ -430,23 +434,17 @@ def test_db_dry_run_leaves_rows_then_actual_sieve_removes_them():
         assert count() == 1, "actual sieve must remove the 3 violators"
         conn.close()
     finally:
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 def test_cli_constraints_dry_run_reports_without_deleting():
     """End-to-end `bundle constraints dry-run <spec> --db <name>`: scans a real Core-filled
     fw_final, reports the per-rule/overlap impact, and leaves every row in place."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     import tempfile
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
-    tmpdb = "fw_step35cli_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     with tempfile.TemporaryDirectory() as spec_dir:
         (Path(spec_dir) / "demo.toml").write_text(_DEMO_SPEC_TOML, encoding="utf-8")
+        tmpdb = dbs.create("step35cli", 5433)
         try:
             conn = _connect(tmpdb)
             _populate_demo_fw_final(conn)
@@ -465,28 +463,22 @@ def test_cli_constraints_dry_run_reports_without_deleting():
             c = conn.cursor(); c.execute("SELECT count(*) FROM fw_final;"); n = c.fetchone()[0]; conn.close()
             assert n == 4, "the dry-run command must not delete any fw_final rows"
         finally:
-            _drop_db(tmpdb)
+            dbs.cleanup()
 
 
 def test_live_tryout_core_96_then_dry_run_96_then_actual_72():
     """STEP 35 acceptance on a REAL Generator→Core-produced fw_final (not synthetic): the tryout
     fills 96 mandatory rows; the dry-run reports 24 removals and LEAVES all 96; the actual sieve
     removes exactly those 24 → 72."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists():
         pytest.skip("java / Core jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
     cfg, _sources = config.resolve_config(cli={})
     spec = fg.load_spec(sorted(_TRYOUT_SPEC_DIR.glob("*.toml"))[0])
     assert fg.estimate_core_combos(spec) == 96       # tryout mandatory product
 
-    tmpdb = "fw_live35_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwlive35-"))
+    tmpdb = dbs.create("live35", 5433)
     try:
         # 1) Generator → workbook → Core fills the REAL fw_final.
         xlsx = stages.stage_gen(_TRYOUT_SPEC_DIR, scratch)
@@ -517,7 +509,7 @@ def test_live_tryout_core_96_then_dry_run_96_then_actual_72():
         conn.close()
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 # ───────── Face-2 end-to-end: EVERY link variation through the REAL Bundle, verb-rich ─────────
@@ -549,21 +541,15 @@ def test_face2_all_link_variations_through_real_bundle():
     Each variation is checked against BOTH a closed-form count and the independently unit-tested pure
     engine (`sv.sieve`) decoded over the real rows; then an actual delete + idempotency re-scan +
     survivor inspection proves the destructive path."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists():
         pytest.skip("java / Core jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
 
     cfg, _sources = config.resolve_config(cli={})
-    tmpdb = "fw_face2_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwface2-"))
     spec_dir = scratch / "spec"; spec_dir.mkdir()
     (spec_dir / "verbs.toml").write_text(_verb_rich_spec(), encoding="utf-8")
+    tmpdb = dbs.create("face2", 5433)
     try:
         spec = fg.load_spec(spec_dir / "verbs.toml")
         xlsx = stages.stage_gen(spec_dir, scratch)
@@ -590,8 +576,10 @@ def test_face2_all_link_variations_through_real_bundle():
                             v = code2val.get(s, {}).get(int(code))
                             if v is not None:
                                 row.append({"sheet": s, "value": v, "pos": pos})
-                    elif s in baseline:
-                        row.append({"sheet": s, "value": baseline[s], "pos": pos})
+                    elif s in baseline:               # an empty cell inherits EVERY base-row value
+                        base = baseline[s]
+                        for v in (base if isinstance(base, (list, tuple)) else [base]):
+                            row.append({"sheet": s, "value": v, "pos": pos})
                 rows.append(row)
             cur.close()
             return rows
@@ -636,9 +624,14 @@ def test_face2_all_link_variations_through_real_bundle():
             ("when predicate over params",
              {"id": "wp", "polarity": "forbid", "sheets": ["A", "C"],
               "when": "A.n + C.n > 4", "gate": {}}, params, 3 * P),
+            # K = FW_Combi(2) over k1..k3 -> rows {k1,k2} {k1,k3} {k2,k3}: every value sits in 2 of 3,
+            # so each rule removes 1/3 (A=a1) x 2/3 of N = 2P, including rows that inherit K's base.
             ("match a value inside a multi-value FW_Combi(2) slot (K)",
              {"id": "kmv", "polarity": "forbid", "sheets": ["A", "K"],
-              "pairs": [{"A": "a1", "K": "k1"}], "gate": {}}, None, None),
+              "pairs": [{"A": "a1", "K": "k1"}], "gate": {}}, None, 2 * P),
+            ("match the base row's SECOND value of the multi-value slot (K)",
+             {"id": "kmv2", "polarity": "forbid", "sheets": ["A", "K"],
+              "pairs": [{"A": "a1", "K": "k2"}], "gate": {}}, None, 2 * P),
         ]
 
         for label, cons, p, cf in cases:
@@ -680,7 +673,7 @@ def test_face2_all_link_variations_through_real_bundle():
         conn.close()
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 # ───────────── FW_Optional bonds: enforced on the ASSEMBLED candidate, deferred by the sieve ─────────────
@@ -717,12 +710,9 @@ def test_optional_bonds_deferred_by_fw_final_sieve_not_misapplied_through_real_b
     first value. The sieve must NOT inherit a baseline there (the old bug deleted every a1 row for a
     bond on the optional baseline) and must DEFER any bond touching an optional sheet to assembly,
     while mandatory-only bonds still apply. Driven through real Generator→Core."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists():
         pytest.skip("java / Core jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
 
     spec_toml = ('title="optional bonds"\n[[goals]]\nkey="x"\ndir="max"\n'
                  '[[slots]]\nsheet="HEAD"\nkey="head"\nverb="FW_Combi(1)"\nraw=true\nvalues=["h"]\n'
@@ -731,13 +721,10 @@ def test_optional_bonds_deferred_by_fw_final_sieve_not_misapplied_through_real_b
                  '[[slots]]\nsheet="OPT"\nkey="opt"\nverb="FW_Combi(1)"\nraw=true\nflags=["FW_Optional"]\nvalues=["w1","w2"]\n'
                  '[[slots]]\nsheet="TAIL"\nkey="tail"\nverb="FW_Combi(1)"\nraw=true\nvalues=["t"]\n')
     cfg, _sources = config.resolve_config(cli={})
-    tmpdb = "fw_opt_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwopt-"))
     spec_dir = scratch / "spec"; spec_dir.mkdir()
     (spec_dir / "opt.toml").write_text(spec_toml, encoding="utf-8")
+    tmpdb = dbs.create("opt", 5433)
     try:
         spec = fg.load_spec(spec_dir / "opt.toml")
         n_opt = sum(1 for s in spec.slots if "FW_Optional" in s.flags)
@@ -780,7 +767,7 @@ def test_optional_bonds_deferred_by_fw_final_sieve_not_misapplied_through_real_b
         conn.close()
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 def test_optional_optional_bond_fires_only_when_both_present():
@@ -820,12 +807,9 @@ def test_multiple_optional_tables_through_real_bundle():
     — while a mandatory↔mandatory bond still applies; (3) on a REAL assembled candidate (mandatory ∪
     a size-3 optional combo from fw_opt3, exactly the Reader's base∪final∪opt merge) an
     optional↔optional bond fires, but never on a size-1 fw_opt1 candidate (only one optional present)."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists():
         pytest.skip("java / Core jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
 
     def sl(sheet, key, vals, opt=False):
         flags = 'flags=["FW_Optional"]\n' if opt else ''
@@ -835,13 +819,10 @@ def test_multiple_optional_tables_through_real_bundle():
                  + sl("O1", "o1", ["o1v1", "o1v2"], True) + sl("O2", "o2", ["o2v1", "o2v2"], True)
                  + sl("O3", "o3", ["o3v1", "o3v2"], True) + sl("TAIL", "tail", ["t"]))
     cfg, _sources = config.resolve_config(cli={})
-    tmpdb = "fw_mopt_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwmopt-"))
     spec_dir = scratch / "spec"; spec_dir.mkdir()
     (spec_dir / "m.toml").write_text(spec_toml, encoding="utf-8")
+    tmpdb = dbs.create("mopt", 5433)
     try:
         spec = fg.load_spec(spec_dir / "m.toml")
         n_opt = sum(1 for s in spec.slots if "FW_Optional" in s.flags)
@@ -901,7 +882,7 @@ def test_multiple_optional_tables_through_real_bundle():
         conn.close()
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 def test_optional_bonds_enforced_in_reader_at_assembly():
@@ -910,12 +891,9 @@ def test_optional_bonds_enforced_in_reader_at_assembly():
     the rebuilt Reader evaluates it per assembled candidate, skipping exactly the forbidden ones. The
     forbidden set is cross-checked against the engine's verdict on every real assembled candidate, and
     a control run (no bonds file) re-emits everything (proves the no-op / non-breaking path)."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists() or not stages.READER_JAR.exists():
         pytest.skip("java / Core jar / Reader jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
 
     def sl(sheet, key, vals, opt=False):
         flags = 'flags=["FW_Optional"]\n' if opt else ''
@@ -927,13 +905,10 @@ def test_optional_bonds_enforced_in_reader_at_assembly():
                  + '\n[[constraints]]\nid="oo"\nsheets=["O1","O3"]\n'
                    'pairs=[{O1="o1v1",O3="o3v1"}]\ngate={}\n')   # optional↔optional: fires only when both present
     cfg, _sources = config.resolve_config(cli={})
-    tmpdb = "fw_rdrbond_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwrdrbond-"))
     spec_dir = scratch / "spec"; spec_dir.mkdir()
     (spec_dir / "o.toml").write_text(spec_toml, encoding="utf-8")
+    tmpdb = dbs.create("rdrbond", 5433)
     try:
         spec = fg.load_spec(spec_dir / "o.toml")
         n_opt = sum(1 for s in spec.slots if "FW_Optional" in s.flags)
@@ -986,6 +961,9 @@ def test_optional_bonds_enforced_in_reader_at_assembly():
         assert len(expected_forbidden) > 0
 
         # READER assembles candidates → loose files, enforcing the bond per candidate.
+        # The Reader creates the results DB under this name on the results port: reserve it
+        # (absent now) so cleanup drops it too -- the old test leaked it.
+        dbs.reserve(tmpdb, cfg.results_db_port)
         stages.stage_reader(scratch, tmpdb, "py", 5433, cfg.results_db_port, fw_final, n_opt=n_opt, cfg=cfg)
         emitted = {p.stem for p in (scratch / "src").glob("*") if p.is_file()}
         assert emitted, "the Reader produced no candidate files"
@@ -1004,7 +982,7 @@ def test_optional_bonds_enforced_in_reader_at_assembly():
         assert expected_forbidden <= emitted_all               # the previously-forbidden ones reappear
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 def test_exact_impact_counts_the_full_assembled_space():
@@ -1012,12 +990,9 @@ def test_exact_impact_counts_the_full_assembled_space():
     (|fw_final| × (1 + Σ|fw_optX|)) — mandatory bonds kill whole fw_final rows (× the optional
     multiplier), optional bonds kill assembled (final ∪ opt) candidates, no double-count. Verified
     against an independent enumeration of every assembled candidate on a real Core DB with fw_optX."""
+    dbs = _live_databases_or_skip()         # skip/fail before any connection
     if shutil.which("java") is None or not stages.CORE_JAR.exists():
         pytest.skip("java / Core jar unavailable")
-    try:
-        admin = _connect("postgres")
-    except Exception as exc:                       # noqa: BLE001
-        pytest.skip(f"main Postgres (5433) not reachable: {exc}")
 
     def sl(sheet, key, vals, opt=False):
         flags = 'flags=["FW_Optional"]\n' if opt else ''
@@ -1027,13 +1002,10 @@ def test_exact_impact_counts_the_full_assembled_space():
                  + sl("O1", "o1", ["o1v1", "o1v2"], True) + sl("O2", "o2", ["o2v1", "o2v2"], True)
                  + sl("O3", "o3", ["o3v1", "o3v2"], True) + sl("TAIL", "tail", ["t"]))
     cfg, _sources = config.resolve_config(cli={})
-    tmpdb = "fw_exi_" + uuid.uuid4().hex[:12]
-    admin.autocommit = True
-    admin.cursor().execute(f'CREATE DATABASE "{tmpdb}";')
-    admin.close()
     scratch = Path(tempfile.mkdtemp(prefix="fwexi-"))
     spec_dir = scratch / "spec"; spec_dir.mkdir()
     (spec_dir / "o.toml").write_text(spec_toml, encoding="utf-8")
+    tmpdb = dbs.create("exi", 5433)
     try:
         spec = fg.load_spec(spec_dir / "o.toml")
         xlsx = stages.stage_gen(spec_dir, scratch)
@@ -1087,7 +1059,7 @@ def test_exact_impact_counts_the_full_assembled_space():
         assert sv.impact_over_rows(cached[0], cached[1], sc, opt_sheets) == res
     finally:
         shutil.rmtree(scratch, ignore_errors=True)
-        _drop_db(tmpdb)
+        dbs.cleanup()
 
 
 if __name__ == "__main__":
