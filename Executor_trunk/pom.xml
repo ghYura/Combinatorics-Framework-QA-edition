@@ -203,7 +203,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.7.11</version>
+            <version>42.7.12</version>
         </dependency>
 
         <!-- gRPC candidate transport (2026-07-02): live candidate feed from the Reader
