@@ -81,6 +81,7 @@ from .stages import (
     READER_PROPS,
     SRC,
     capability_gate,
+    deferred_assembly_expected,
     fg,
     normalize_language,
     preflight,
@@ -381,6 +382,24 @@ def _optional_table_rows(cfg, main_port, db, sizes) -> int:
     return total
 
 
+def _expected_after_deferred_bonds(st, spec, work, db, main_port, cfg, optional_contract, fw_final,
+                                   optional_factor):
+    """(expected Reader emission, detail) after the sieve. Normally fw_final x the optional
+    multiplier; when the sieve deferred optional bonds to the Reader, the exact count of the
+    assembled candidates those bonds keep (detail = {"total", "removed", "kept"})."""
+    full = fw_final * optional_factor
+    fn = getattr(st, "deferred_assembly_expected", None)
+    if fn is None or optional_contract is None or not optional_contract.active:
+        return full, None
+    detail = fn(spec, work, db, main_port, cfg, optional_contract.consumed_sizes)
+    if detail is None:
+        return full, None
+    if detail["total"] != full:
+        raise StageError(f"deferred optional bonds: decoded assembled space {detail['total']} != post-sieve "
+                         f"fw_final x optional multiplier {full}")
+    return detail["kept"], detail
+
+
 def _measured_optional_factor(st, cfg, main_port, db, optional_contract, predicted):
     """The optional multiplier the Reader will realise: 1 + Σ|fw_opt<size>| over the
     consumed sizes, measured after Core, whenever the spec can only BOUND it (an
@@ -547,6 +566,7 @@ def default_stage_table() -> StageTable:
         optional_tables=_optional_tables,
         record_handoff_manifest=_record_handoff_manifest,
         optional_table_rows=_optional_table_rows,
+        deferred_assembly_expected=deferred_assembly_expected,
     )
 
 
@@ -736,10 +756,15 @@ def _run(a, *, stages: 'StageTable | None' = None) -> None:
         with journal.stage("sieve") as rec:
             fw_final = st.sieve(spec, work, a.db, a.main_port, fw_final, cfg)
             rec.count("post_sieve", actual=fw_final)
+            full, deferred = _expected_after_deferred_bonds(st, spec, work, a.db, a.main_port, cfg,
+                                                            optional_contract, fw_final, optional_factor)
+            if deferred:
+                rec.count("assembled_before_deferred_bonds", actual=deferred["total"])
+                rec.count("deferred_bond_removals", actual=deferred["removed"])
+                rec.count("reader_expected", actual=full)
             _record_artifacts(rec, *st.component_artifacts("sieve", cfg))
             rec.invariant(invariants.post_sieve_le_core(fw_final, pre_sieve))
             invariants.enforce(rec.invariants)
-        full = fw_final * optional_factor
     run_id = run_layout.run_id if run_layout else None
     manifest = None
     manifest_path = None
@@ -1119,7 +1144,8 @@ def _resume_run(layout, manifest, spec, toml_path, cfg, *, spec_changed: bool = 
                 _record_artifacts(rec, *st.component_artifacts("sieve", cfg))
                 rec.invariant(invariants.post_sieve_le_core(fw_final, pre_sieve))
                 invariants.enforce(rec.invariants)
-        full = fw_final * optional_factor
+        full, _deferred = _expected_after_deferred_bonds(st, spec, work, db, main_port, cfg,
+                                                         optional_contract, fw_final, optional_factor)
         trusted = trusted and reuse_sieve
 
     # ---- reader: reusable iff upstream trusted, prior SUCCEEDED, the same
