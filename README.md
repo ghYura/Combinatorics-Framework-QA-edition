@@ -433,3 +433,24 @@ they are organised and run.
 - SQL three-valued (NULL) partitioning on a real PostgreSQL fixture; sets hide bag errors -> [20-d14-sql-partitioning](SmallUseCasesDemo/20-d14-sql-partitioning/)
 - A small auction solver: feasibility, exact optimum, ties and heuristic gaps -> [21-d14-solver-relations](SmallUseCasesDemo/21-d14-solver-relations/)
 - Crash and partition faults on three replica processes with real WAL files -> [22-d15-fault-schedules](SmallUseCasesDemo/22-d15-fault-schedules/)
+
+## Use cases with real systems under test
+
+The full-size use cases live in `generator_trunk/`. Their systems under test (SUTs) are kept in a separate,
+subordinate repository, [ghYura/SUT](https://github.com/ghYura/SUT): check it out as `suts/` inside this
+repository or as `SUT/` beside it, or point `BUNDLE_SUT_ROOT` at it (see [Systems under test](#systems-under-test)).
+Each one below is a canonical, versioned entry in `generator_trunk/sut_manifests/`, validated by
+`python generator_trunk/bundle_run.py sut-manifests`.
+
+- Control-circuit search: generated recursive topologies compiled into real circuits and simulated -> [generator_trunk/scenarios/automation_scheme_studio](generator_trunk/scenarios/automation_scheme_studio/) · SUT: [automation-scheme-studio](https://github.com/ghYura/SUT/tree/main/automation-scheme-studio)
+- Order- and interaction-sensitive faults in a fintech stack (identity, accounts, cards, transfers, currency, sanctions, clearing) -> [generator_trunk/scenarios/fintech_client_server](generator_trunk/scenarios/fintech_client_server/) · SUT: [fin_tech_to_test](https://github.com/ghYura/SUT/tree/main/fin_tech_to_test)
+- Conditional and nested-dependency acceptance rules of an HTTP telemetry catalog -> [generator_trunk/usecases/telemetry_catalog_e2e](generator_trunk/usecases/telemetry_catalog_e2e/), [generator_trunk/usecases/telemetry_catalog_full](generator_trunk/usecases/telemetry_catalog_full/) · SUT: [telemetry_catalog_service](https://github.com/ghYura/SUT/tree/main/telemetry_catalog_service)
+
+Use cases that need no external SUT:
+
+- Higher-order record-pipeline composition judged by an exact differential oracle (the direct engine path) -> [generator_trunk/engine_demo](generator_trunk/engine_demo/)
+- Java candidate spaces routed to the Janino and ECJ compilers, with an external dependency JAR -> [generator_trunk/java_e2e](generator_trunk/java_e2e/)
+
+The SUT repository's [collection map](https://github.com/ghYura/SUT#collection-map) lists its other systems
+(geometry, ML sandboxes, tutors, tryout fixtures and newer SUTs not yet wired to a campaign here);
+`bundle_run.py sut-manifests` also reports why those are not maintained as gates.
