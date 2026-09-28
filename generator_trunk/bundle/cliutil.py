@@ -26,6 +26,7 @@
 """Shared CLI helpers: layered-config resolution and spec loading.
 """
 from __future__ import annotations
+import math
 import dataclasses
 from pathlib import Path
 from .budgets import BudgetLimits
@@ -92,6 +93,8 @@ _CLI_ARG_TO_CONFIG_KEY = {
     "budget_disk_bytes": "budget_disk_bytes", "budget_inodes": "budget_inodes",
     "budget_wall_time_seconds": "budget_wall_time_seconds", "budget_requests": "budget_external_requests",
     "budget_monetary_cost": "budget_monetary_cost", "budget_warn_fraction": "budget_warn_fraction",
+    "per_candidate_seconds_min": "per_candidate_seconds_min",
+    "per_candidate_seconds_max": "per_candidate_seconds_max",
     "repeat": "repeat_each_candidate", "repeat_policy": "repeat_policy",
     "repeat_scope": "repeat_scope", "repeat_environments": "repeat_environments",
 }
@@ -177,6 +180,14 @@ def _load_one_spec(spec_dir):
     XLSX workbook (the Framework's original input) — or of that file itself. An invalid
     spec rejects gracefully: never a mid-command crash or a partial artifact."""
     return load_spec_input(spec_dir)
+
+
+def _per_candidate_seconds(cfg: BundleConfig) -> "tuple[float, float]":
+    """The configured per-candidate cost range, validated: finite, with 0 < min <= max."""
+    lo, hi = float(cfg.per_candidate_seconds_min), float(cfg.per_candidate_seconds_max)
+    if not (math.isfinite(lo) and math.isfinite(hi) and 0 < lo <= hi):
+        raise PreflightError(f"per-candidate seconds must be finite with 0 < min <= max, got [{lo!r}, {hi!r}]")
+    return lo, hi
 
 
 def _budget_limits_from_config(cfg: BundleConfig) -> BudgetLimits:

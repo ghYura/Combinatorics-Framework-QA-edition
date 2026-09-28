@@ -112,6 +112,12 @@ byte cost `[200,2000]` without a sample). It names the **dominant resource**. Re
 per-unit assumptions with measured values from the stage benchmark
 ([13_BENCHMARKS_AND_SCALE_CLAIMS.md](13_BENCHMARKS_AND_SCALE_CLAIMS.md)) for tighter estimates.
 
+The execution-duration estimate uses a per-candidate cost range (single worker; default
+`[0.05, 2]` seconds). `plan` and the run's `wall_time_seconds` gate read the same setting:
+`--per-candidate-seconds-min/max` on either command, or `BUNDLE_PER_CANDIDATE_SECONDS_MIN/MAX`.
+Set it from a measured run, e.g. an `executor-summary.json` duration divided by its candidate
+count. The run records the range it used in the manifest's budget intent.
+
 ## Budget gates and overrides
 
 Seven hard ceilings (defaults are conservative placeholders, all overridable per dimension):

@@ -434,6 +434,12 @@ def main(*, stages: 'StageTable | None' = None):
                          "don't block) and X/extreme runs need no --allow-extreme -- Core at full "
                          "generative power. Layered like any config "
                          "(CLI > BUNDLE_UNLEASH_INITIAL_PRODUCTIVITY_POWER > config file > default False).")
+    ap.add_argument("--per-candidate-seconds-min", type=float, default=_UNSET, metavar="S",
+                    help="lower bound of the assumed per-candidate execution cost in seconds for the "
+                         "wall-time budget estimate (default: 0.05; prefer a measured value)")
+    ap.add_argument("--per-candidate-seconds-max", type=float, default=_UNSET, metavar="S",
+                    help="upper bound of the assumed per-candidate execution cost in seconds for the "
+                         "wall-time budget estimate (default: 2; prefer a measured value)")
     ap.add_argument("--cost-per-candidate", type=float, default=None, metavar="PRICE",
                     help="flat monetary cost per candidate (e.g. cloud/API price); without this, "
                          "the monetary-cost dimension has no projection and --budget-monetary-cost "

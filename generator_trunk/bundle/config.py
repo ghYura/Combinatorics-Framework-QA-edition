@@ -26,6 +26,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 import re
 import sys
@@ -69,6 +70,7 @@ _FIELD_KINDS: "Mapping[str, type]" = {
     "sandbox_candidate_env": str,
     "executor_tolerate_outcomes": str,
     "budget_warn_fraction": float,
+    "per_candidate_seconds_min": float, "per_candidate_seconds_max": float,
     "candidate_sink": str, "shard_max_records": int, "shard_max_bytes": int,
     "grpc_host": str, "grpc_port": int, "grpc_bind_host": str,
     "executor_pool_size": int, "executor_workers": int,
@@ -278,6 +280,12 @@ class BundleConfig:
     budget_external_requests: "Optional[int]" = 2_000_000
     budget_monetary_cost: "Optional[float]" = None
     budget_warn_fraction: float = 0.5
+    # Assumed per-candidate execution cost (seconds, single worker) behind the wall-time
+    # estimate that `plan` and the run's budget gate share. Defaults equal
+    # resources.DEFAULT_PER_CANDIDATE_SECONDS; set a MEASURED range (e.g. from a prior run's
+    # executor-summary.json) to replace the generic placeholder. Recorded in the run manifest.
+    per_candidate_seconds_min: float = 0.05
+    per_candidate_seconds_max: float = 2.0
     # Plan-1 Phase 2 (docs/24 §3): per-candidate repeat policy. K=1 (default) is the
     # legacy single-run path — zero behavioural change. `repeat_environments` defaults
     # to 0 = "unset"; it is *required* (≥1) only for `nested` with K>1, and ignored for
@@ -286,6 +294,14 @@ class BundleConfig:
     repeat_policy: str = "local"
     repeat_scope: str = "metrics"
     repeat_environments: int = 0
+
+    def validate_per_candidate_seconds(self) -> None:
+        """The per-candidate cost range must be finite with 0 < min <= max (ConfigError otherwise):
+        an infinite or NaN endpoint would reach the integer resource estimates as a crash."""
+        lo, hi = self.per_candidate_seconds_min, self.per_candidate_seconds_max
+        if not (math.isfinite(lo) and math.isfinite(hi) and 0 < lo <= hi):
+            raise ConfigError(f"per_candidate_seconds_min/max must be finite with 0 < min <= max, "
+                              f"got [{lo!r}, {hi!r}]")
 
     def validate_repeat(self) -> "Tuple[str, str, int, int]":
         """Validate the Plan-1 repeat parameters and return the normalized
@@ -579,6 +595,7 @@ def resolve_config(*, cli: "Optional[Mapping[str, Any]]" = None,
             sources[key] = layer_name
     cfg = BundleConfig(**values)
     cfg.validate_seed_bias()
+    cfg.validate_per_candidate_seconds()
     return cfg, sources
 
 

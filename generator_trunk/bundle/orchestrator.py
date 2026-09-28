@@ -38,6 +38,7 @@ from . import invariants, shards
 from .budgets import blocking_checks, evaluate_budgets, warning_checks
 from .cliutil import (
     _budget_limits_from_config,
+    _per_candidate_seconds,
     _resolve_bundle_config,
     _resolve_execution_policy,
     _with_db,
@@ -298,8 +299,9 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
     # estimate `evaluate_budgets` can compare against `--budget-monetary-cost`.
     # Without wiring it through here, a configured monetary ceiling could never
     # actually block a run — exactly the gap flagged in review.
+    per_candidate = _per_candidate_seconds(cfg)          # the range `plan` uses too
     resource_plan = estimate_resources(cardinality_plan, cost_per_candidate=a.cost_per_candidate,
-                                       count_plan=repeat_plan)
+                                       count_plan=repeat_plan, per_candidate_seconds=per_candidate)
     checks = evaluate_budgets(cardinality_plan, resource_plan, _budget_limits_from_config(cfg))
     blocking = blocking_checks(checks)
     for c in warning_checks(checks):
@@ -319,7 +321,7 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
                   f"allowed without --allow-extreme")
         return {"run_class": resource_plan.run_class.value, "allow_extreme": bool(a.allow_extreme),
                 "exceeded": [c.dimension for c in blocking], "override": False, "reason": None,
-                "unleash_initial_productivity_power": True}
+                "unleash_initial_productivity_power": True, "per_candidate_seconds": list(per_candidate)}
 
     if extreme and not a.allow_extreme:
         raise BudgetError(
@@ -330,7 +332,7 @@ def _check_budgets(a, spec, cfg: BundleConfig) -> dict:
 
     intent = {"run_class": resource_plan.run_class.value, "allow_extreme": bool(a.allow_extreme),
               "exceeded": [c.dimension for c in blocking], "override": False, "reason": None,
-              "unleash_initial_productivity_power": False}
+              "unleash_initial_productivity_power": False, "per_candidate_seconds": list(per_candidate)}
     if not blocking:
         return intent
     if not (a.override_budget and a.override_budget.strip()):
