@@ -39,7 +39,7 @@
         <maven.compiler.target>21</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <flatlaf.version>3.7.1</flatlaf.version>
-        <jackson.version>2.21.3</jackson.version>
+        <jackson.version>2.21.6</jackson.version>
     </properties>
 
     <dependencyManagement>
