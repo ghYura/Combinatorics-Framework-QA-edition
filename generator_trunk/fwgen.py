@@ -2050,6 +2050,28 @@ def _workbook_sheet_values(ws) -> "list[str]":
     return out
 
 
+def _open_workbook(path, **kw):
+    """`openpyxl.load_workbook`, tolerating a declared-but-missing `xl/sharedStrings.xml` (some
+    writers emit inline strings only; Core's POI reader accepts such files). The file on disk is
+    never changed: a copy with an empty shared-strings part is loaded from memory."""
+    try:
+        return openpyxl.load_workbook(path, **kw)
+    except KeyError as exc:
+        if "sharedStrings" not in str(exc):
+            raise
+    import io
+    import zipfile
+    buf = io.BytesIO()
+    with zipfile.ZipFile(path) as src, zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as dst:
+        for item in src.infolist():
+            dst.writestr(item, src.read(item.filename))
+        dst.writestr("xl/sharedStrings.xml",
+                     '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<sst xmlns='
+                     '"http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="0" uniqueCount="0"/>')
+    buf.seek(0)
+    return openpyxl.load_workbook(buf, **kw)
+
+
 def load_workbook_spec(path: "str | Path") -> Spec:
     """Read a legacy XLSX workbook as a Spec — the Framework's ORIGINAL input format,
     processed by the Bundle alongside TOML specs.
@@ -2060,7 +2082,7 @@ def load_workbook_spec(path: "str | Path") -> Spec:
     are the sheets the FW_Seq program runs, with their values verbatim (`raw`); data
     sheets without an FW_Seq row are kept as `passive_sheets`."""
     path = Path(path)
-    wb = openpyxl.load_workbook(path, read_only=True, data_only=False)
+    wb = _open_workbook(path, read_only=True, data_only=False)
     try:
         names = [str(n) for n in wb.sheetnames]
         data = [n for n in names if not n.startswith("FW_")]
@@ -3178,7 +3200,7 @@ CONTROL_HEAD = ["FW_Seq", "FW_SheetNames", "FW_RunMeFirstOnce", "FW_Arguments", 
 
 def validate_workbook(path: str | Path) -> list[str]:
     """Return a list of contract violations ([] == valid)."""
-    wb = openpyxl.load_workbook(path, data_only=False)
+    wb = _open_workbook(path, data_only=False)
     sn = wb.sheetnames
     errs: list[str] = []
     if sn[:5] != CONTROL_HEAD:
@@ -3205,8 +3227,10 @@ def validate_workbook(path: str | Path) -> list[str]:
             for op in verb_sheet_operands(c):
                 if op not in data_sheets:
                     errs.append(f"FW_Seq operand sheet '{op}' (in {c!r}) has no data sheet")
-    # FW_CUSTOM_VAR col0 int
-    for row in wb["FW_CUSTOM_VAR"].iter_rows(values_only=True):
+    # FW_CUSTOM_VAR col0 int (a missing control sheet is reported, not a crash)
+    if "FW_CUSTOM_VAR" not in wb.sheetnames:
+        errs.append("control sheet FW_CUSTOM_VAR is missing (custom verdict codes cannot be read)")
+    for row in (wb["FW_CUSTOM_VAR"].iter_rows(values_only=True) if "FW_CUSTOM_VAR" in wb.sheetnames else ()):
         if row and row[0] is not None:
             try:
                 int(row[0])
@@ -3218,7 +3242,13 @@ def validate_workbook(path: str | Path) -> list[str]:
     for ds in data_sheets:
         for row in wb[ds].iter_rows(values_only=True):
             for v in row:
-                if v is not None and str(v).lstrip().startswith("FW_"):
+                t = str(v).lstrip() if v is not None else ""
+                # Core's own data-cell tokens are values, not verbs (WorkbookParser; see
+                # _workbook_sheet_values): FW_EMPTY_STRING, FW_File=<path>, FW_VAR=FW_EXIT_CODE
+                if t.startswith(("FW_EMPTY_STRING", "FW_File=")) or (
+                        "FW_EXIT_CODE" in t and _FW_VAR_EXIT_RE.match(t)):
+                    continue
+                if v is not None and t.startswith("FW_"):
                     errs.append(f"data cell in '{ds}' starts with FW_: {v!r} -- Core reads a cell "
                                 f"that starts with FW_ as a verb, not data. Start the fragment with "
                                 f"another statement, e.g. `_v = ...` then `FW_VAR = _v`")
@@ -3229,7 +3259,7 @@ def validate_workbook(path: str | Path) -> list[str]:
 # ---- XLSX -> JSON (lossless round-trip; from v25 combiner_xlsx) -------------
 
 def workbook_to_json(path: str | Path) -> dict:
-    wb = openpyxl.load_workbook(path, data_only=False)
+    wb = _open_workbook(path, data_only=False)
     return {"workbook": Path(path).name,
             "sheets": [{"name": n,
                         "rows": [list(r) for r in wb[n].iter_rows(values_only=True)]}
