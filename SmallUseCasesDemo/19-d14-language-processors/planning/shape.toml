@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version="1"
+title="D14a sizing only; never execute"
+seq_extra=[["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["XVAL", "FW_Combi(1)", "FW_Combi(size)"], ["YVAL", "FW_Combi(1)", "FW_Combi(size)"], ["SHAPE", "FW_Combi(1)", "FW_Combi(size)"], ["OP_A", "FW_Combi(1)", "FW_Combi(size)"], ["OP_B", "FW_Combi(1)", "FW_Combi(size)"], ["DECL", "FW_Permut()", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet="HEAD"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[slots]]
+sheet="IMPL"
+verb="FW_Combi(1)"
+raw=true
+values=["impl(\"faithful\");", "impl(\"reverse_sub\");", "impl(\"alias_dead_temp\");"]
+
+[[slots]]
+sheet="XVAL"
+verb="FW_Combi(1)"
+raw=true
+values=["xval(-1);", "xval(2);"]
+
+[[slots]]
+sheet="YVAL"
+verb="FW_Combi(1)"
+raw=true
+values=["yval(-1);", "yval(2);"]
+
+[[slots]]
+sheet="SHAPE"
+verb="FW_Combi(1)"
+raw=true
+values=["shape(\"L\");", "shape(\"R\");"]
+
+[[slots]]
+sheet="OP_A"
+verb="FW_Combi(1)"
+raw=true
+values=["op_a(\"+\");", "op_a(\"-\");", "op_a(\"*\");"]
+
+[[slots]]
+sheet="OP_B"
+verb="FW_Combi(1)"
+raw=true
+values=["op_b(\"+\");", "op_b(\"-\");", "op_b(\"*\");"]
+
+[[slots]]
+sheet="DECL"
+verb="FW_Combi(1)"
+raw=true
+values=["declare(\"x\");", "declare(\"y\");"]
+
+[[slots]]
+sheet="TAIL"
+verb="FW_Combi(1)"
+raw=true
+values=["pass\n"]
+
+[[custom_vars]]
+code=2
+msg="D14a compiler output violates differential or metamorphic relation"

@@ -1,0 +1,28 @@
+{
+  "head_chars": 17015,
+  "head_sha256": "6668a97787e39587c1092bb7548acae98ed14588b99c7db0906d935553fcead8",
+  "module_sha256": {
+    "processor": "e7ef4508c549d406f08262de55c2619e893bf7c3f6cff7e786914cc6932d36ea",
+    "judge": "c02bcfbcf690853d6175afd0b8da45d198f874217e8ca8aadd275673425b9088",
+    "oracle": "ed9157055c62a4c505e90e6c7eadcff5e228f27dfe5180a6a9fd2d18e62b11c8",
+    "runtime": "8ea8269212aa7b944aa4292b3f764105da9773247f87eb9d6c616d205e3bb1b8"
+  },
+  "orders": [
+    "ABCDEG",
+    "CBAGED",
+    "DCBEGA",
+    "DGEBCA",
+    "EACGDB",
+    "EBDAGC",
+    "GABEDC",
+    "GCDAEB",
+    "ABGCDE"
+  ],
+  "files": {
+    "spec.toml": "6acaecf5aa7b6116fa4f20e70219195822c094e752d330c42fa7a51fc972503d",
+    "demo.xlsx": "5af51e5f082c289f6ee2abd47efeec300085056b00dbc77936032622f9bc89d6"
+  },
+  "schema": "d13e.build/v1",
+  "contract": "v1",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

@@ -1,0 +1,496 @@
+{
+  "budget_blocking": [],
+  "budget_checks": [
+    {
+      "dimension": "mandatory_rows",
+      "hard": 200,
+      "label": "mandatory Core rows",
+      "message": "mandatory Core rows ~144 exceeds warning threshold 100 (hard limit 200)",
+      "severity": "WARNING",
+      "unsizable": false,
+      "value": 144,
+      "warning": 100.0
+    },
+    {
+      "dimension": "final_candidates",
+      "hard": 200,
+      "label": "final candidates",
+      "message": "final candidates ~144 exceeds warning threshold 100 (hard limit 200)",
+      "severity": "WARNING",
+      "unsizable": false,
+      "value": 144,
+      "warning": 100.0
+    },
+    {
+      "dimension": "disk_bytes",
+      "hard": 150000000,
+      "label": "estimated disk bytes (Core+Results+sources)",
+      "message": "estimated disk bytes (Core+Results+sources) ~1.224e+06 within budget (limit 1.5e+08)",
+      "severity": "OK",
+      "unsizable": false,
+      "value": 1224000,
+      "warning": 75000000.0
+    },
+    {
+      "dimension": "inodes",
+      "hard": 2000000,
+      "label": "estimated loose-file inodes",
+      "message": "estimated loose-file inodes ~144 within budget (limit 2e+06)",
+      "severity": "OK",
+      "unsizable": false,
+      "value": 144,
+      "warning": 1000000.0
+    },
+    {
+      "dimension": "wall_time_seconds",
+      "hard": 600.0,
+      "label": "estimated wall time (s)",
+      "message": "estimated wall time (s) ~288 within budget (limit 600)",
+      "severity": "OK",
+      "unsizable": false,
+      "value": 288,
+      "warning": 300.0
+    },
+    {
+      "dimension": "external_requests",
+      "hard": 2000000,
+      "label": "estimated external requests",
+      "message": "estimated external requests ~144 within budget (limit 2e+06)",
+      "severity": "OK",
+      "unsizable": false,
+      "value": 144,
+      "warning": 1000000.0
+    },
+    {
+      "dimension": "monetary_cost",
+      "hard": null,
+      "label": "estimated monetary cost",
+      "message": "estimated monetary cost: no limit configured",
+      "severity": "OK",
+      "unsizable": false,
+      "value": null,
+      "warning": null
+    }
+  ],
+  "cardinality": {
+    "coverage": null,
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "mandatory": {
+      "assumptions": [],
+      "formula": "Π rows(sheet) over the mandatory sheets of the effective FW_Seq program",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "optional_multiplier": {
+      "assumptions": [],
+      "formula": "no FW_Optional sheets -> factor 1",
+      "lower": 1,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 1,
+      "value": 1
+    },
+    "per_slot": {
+      "EDIT": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "EDIT: FW_Combi(1)(n=2) -> FW_Combi(size)",
+        "lower": 2,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 2,
+        "value": 2
+      },
+      "HEAD": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "HEAD: FW_Combi(1)(n=1) -> FW_Combi(size)",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      },
+      "IMPL": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "IMPL: FW_Combi(1)(n=3) -> FW_Combi(size)",
+        "lower": 3,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 3,
+        "value": 3
+      },
+      "INSTANCE": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "INSTANCE: FW_Combi(1)(n=4) -> FW_Combi(size)",
+        "lower": 4,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 4,
+        "value": 4
+      },
+      "RELABEL": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "RELABEL: FW_Permut()(n=3) -> FW_Combi(size)",
+        "lower": 6,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 6,
+        "value": 6
+      },
+      "TAIL": {
+        "assumptions": [
+          "every pass is injective, so DISTINCT removes nothing"
+        ],
+        "formula": "TAIL: FW_Combi(1)(n=1) -> FW_Combi(size)",
+        "lower": 1,
+        "mode": "EXACT",
+        "reasons": [],
+        "upper": 1,
+        "value": 1
+      }
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "= mandatory (no constraints declared -> sieve is a no-op)",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "raw_values": {
+      "EDIT": 2,
+      "HEAD": 1,
+      "IMPL": 3,
+      "INSTANCE": 4,
+      "RELABEL": 3,
+      "TAIL": 1
+    }
+  },
+  "constraints_present": 0,
+  "constraints_source": null,
+  "dependency_graph": {
+    "graph": {
+      "edges": [],
+      "nodes": [
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 2,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "EDIT",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "HEAD",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "IMPL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 4,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "INSTANCE",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 3,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "RELABEL",
+          "kind": "slot"
+        },
+        {
+          "attrs": {
+            "chain": null,
+            "excluded": false,
+            "group": false,
+            "heading": false,
+            "keeps_rows": true,
+            "n": 1,
+            "optional": false,
+            "separator": null,
+            "verb": "FW_Combi(1)"
+          },
+          "id": "TAIL",
+          "kind": "slot"
+        }
+      ]
+    },
+    "graph_hash": "sha256:f38457f117bbc6f5a3b6faaea2e1397d4ef7223eb3d33502f10d1f740dda7096",
+    "warnings": []
+  },
+  "optional_table_contract": {
+    "combinations_by_size": {},
+    "complete": true,
+    "consumed_sizes": [],
+    "core_property": {
+      "core.optional.includeOptionalCombiPairsToDBCSVList": ""
+    },
+    "expected_multiplier": 1,
+    "mode": "complete",
+    "optional_sheet_count": 0,
+    "produced_sizes": [],
+    "reader_property": {
+      "reader.core.isOptCSVList": ""
+    },
+    "required_tables": [],
+    "schema": "bundle.optional-table-contract/v1",
+    "slot_value_counts": [],
+    "sources": {
+      "consumed_sizes": "run contract: none",
+      "optional_sheet_count": "run contract: FW_Optional slots in the specification",
+      "produced_sizes": "run contract: none"
+    }
+  },
+  "repeat_environments_source": "default",
+  "repeat_plan": {
+    "assignment_units": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "e_effective": 1,
+    "full_verdict_invocations": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "k": 1,
+    "measurement_opportunities": {
+      "assumptions": [],
+      "formula": "post_sieve × optional_multiplier",
+      "lower": 144,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 144,
+      "value": 144
+    },
+    "metric_only_invocations": {
+      "assumptions": [],
+      "formula": "0 (K=1: no metric-only invocations)",
+      "lower": 0,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 0,
+      "value": 0
+    },
+    "policy": "local",
+    "scope": "metrics",
+    "topology_inactive": true
+  },
+  "resources": {
+    "candidate_source_bytes": {
+      "assumptions": [
+        "no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate",
+        "per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "candidate source bytes ≈ final candidates count [144, 144] × 500-5000 per unit",
+      "lower": 72000,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 720000,
+      "value": 396000
+    },
+    "core_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Core DB bytes ≈ Core rows count [144, 144] × 200-2000 per unit",
+      "lower": 28800,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT Core rows count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 288000,
+      "value": 158400
+    },
+    "dominant": "candidate source bytes",
+    "dominant_reason": "largest assumed point estimate (396000) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking",
+    "duration_seconds": {
+      "assumptions": [
+        "per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)",
+        "with repeats active, duration ≈ I × per-candidate cost — the CONSERVATIVE assumption t_m == t_v (a metric-only re-measure costs as much as a full verdict); the split V·t_v + metric_only·t_m awaits Phase 4's measured t_m",
+        "per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "execution duration (seconds) ≈ measurement opportunities (I) count [144, 144] × 0.05-2 per unit",
+      "lower": 7,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT measurement opportunities (I) count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 288,
+      "value": 147
+    },
+    "execution_count": null,
+    "execution_count_estimate": null,
+    "final_count": 144,
+    "inode_count": {
+      "assumptions": [
+        "one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "loose-file inode count ≈ final candidates count [144, 144] × 1 per unit",
+      "lower": 144,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT final candidates count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 144,
+      "value": 144
+    },
+    "metric_artifact_bytes": null,
+    "monetary_cost": null,
+    "request_count": {
+      "assumptions": [
+        "one execution request per candidate invocation; I = V + metric-only repeats (docs/24 §3.3)",
+        "per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "external request count ≈ measurement opportunities (I) count [144, 144] × 1 per unit",
+      "lower": 144,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT measurement opportunities (I) count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 144,
+      "value": 144
+    },
+    "results_db_bytes": {
+      "assumptions": [
+        "per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range"
+      ],
+      "formula": "Results DB bytes ≈ verdict rows (V) count [144, 144] × 150-1500 per unit",
+      "lower": 21600,
+      "mode": "ESTIMATED",
+      "reasons": [
+        "derived from a EXACT verdict rows (V) count — the per-unit cost itself is an assumption, not a measurement, so this stays ESTIMATED however exact the count is"
+      ],
+      "upper": 216000,
+      "value": 118800
+    },
+    "run_class": "S"
+  },
+  "schema": "bundle.plan/v1",
+  "seq_extra_rows": 6,
+  "slots": [
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "HEAD",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "IMPL",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 4,
+      "sheet": "INSTANCE",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 3,
+      "sheet": "RELABEL",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 2,
+      "sheet": "EDIT",
+      "verb": "FW_Combi(1)"
+    },
+    {
+      "flags": [],
+      "n": 1,
+      "sheet": "TAIL",
+      "verb": "FW_Combi(1)"
+    }
+  ],
+  "spec_name": "shape",
+  "spec_path": "21-d14-solver-relations/planning/shape.toml",
+  "spec_sha256": "db0e94b6313e72545b209c9269a784b78bd32908f5af05ecadfb95ca71c28cef",
+  "spec_version": "1",
+  "warnings": []
+}

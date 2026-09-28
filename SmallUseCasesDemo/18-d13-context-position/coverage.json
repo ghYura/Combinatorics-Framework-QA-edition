@@ -1,0 +1,419 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived; offline SciPy/HiGHS feasibility, no minimality claim",
+  "universe_size": 720,
+  "alphabet": "ABCDEG",
+  "orders": [
+    "ABCDEG",
+    "CBAGED",
+    "DCBEGA",
+    "DGEBCA",
+    "EACGDB",
+    "EBDAGC",
+    "GABEDC",
+    "GCDAEB"
+  ],
+  "obligations": {
+    "ABC": [
+      "ABCDEG",
+      "GABEDC"
+    ],
+    "ABD": [
+      "ABCDEG",
+      "GABEDC"
+    ],
+    "ABE": [
+      "ABCDEG",
+      "GABEDC"
+    ],
+    "ABG": [
+      "ABCDEG"
+    ],
+    "ACB": [
+      "EACGDB"
+    ],
+    "ACD": [
+      "ABCDEG",
+      "EACGDB"
+    ],
+    "ACE": [
+      "ABCDEG"
+    ],
+    "ACG": [
+      "ABCDEG",
+      "EACGDB"
+    ],
+    "ADB": [
+      "EACGDB"
+    ],
+    "ADC": [
+      "GABEDC"
+    ],
+    "ADE": [
+      "ABCDEG"
+    ],
+    "ADG": [
+      "ABCDEG"
+    ],
+    "AEB": [
+      "GCDAEB"
+    ],
+    "AEC": [
+      "GABEDC"
+    ],
+    "AED": [
+      "CBAGED",
+      "GABEDC"
+    ],
+    "AEG": [
+      "ABCDEG"
+    ],
+    "AGB": [
+      "EACGDB"
+    ],
+    "AGC": [
+      "EBDAGC"
+    ],
+    "AGD": [
+      "CBAGED",
+      "EACGDB"
+    ],
+    "AGE": [
+      "CBAGED"
+    ],
+    "BAC": [
+      "EBDAGC"
+    ],
+    "BAD": [
+      "CBAGED"
+    ],
+    "BAE": [
+      "CBAGED"
+    ],
+    "BAG": [
+      "CBAGED",
+      "EBDAGC"
+    ],
+    "BCA": [
+      "DGEBCA"
+    ],
+    "BCD": [
+      "ABCDEG"
+    ],
+    "BCE": [
+      "ABCDEG"
+    ],
+    "BCG": [
+      "ABCDEG"
+    ],
+    "BDA": [
+      "EBDAGC"
+    ],
+    "BDC": [
+      "EBDAGC",
+      "GABEDC"
+    ],
+    "BDE": [
+      "ABCDEG"
+    ],
+    "BDG": [
+      "ABCDEG",
+      "EBDAGC"
+    ],
+    "BEA": [
+      "DCBEGA"
+    ],
+    "BEC": [
+      "GABEDC"
+    ],
+    "BED": [
+      "CBAGED",
+      "GABEDC"
+    ],
+    "BEG": [
+      "ABCDEG",
+      "DCBEGA"
+    ],
+    "BGA": [
+      "DCBEGA"
+    ],
+    "BGC": [
+      "EBDAGC"
+    ],
+    "BGD": [
+      "CBAGED"
+    ],
+    "BGE": [
+      "CBAGED"
+    ],
+    "CAB": [
+      "GCDAEB"
+    ],
+    "CAD": [
+      "CBAGED"
+    ],
+    "CAE": [
+      "CBAGED",
+      "GCDAEB"
+    ],
+    "CAG": [
+      "CBAGED"
+    ],
+    "CBA": [
+      "CBAGED",
+      "DCBEGA"
+    ],
+    "CBD": [
+      "CBAGED"
+    ],
+    "CBE": [
+      "CBAGED",
+      "DCBEGA"
+    ],
+    "CBG": [
+      "CBAGED",
+      "DCBEGA"
+    ],
+    "CDA": [
+      "GCDAEB"
+    ],
+    "CDB": [
+      "EACGDB",
+      "GCDAEB"
+    ],
+    "CDE": [
+      "ABCDEG",
+      "GCDAEB"
+    ],
+    "CDG": [
+      "ABCDEG"
+    ],
+    "CEA": [
+      "DCBEGA"
+    ],
+    "CEB": [
+      "GCDAEB"
+    ],
+    "CED": [
+      "CBAGED"
+    ],
+    "CEG": [
+      "ABCDEG",
+      "DCBEGA"
+    ],
+    "CGA": [
+      "DCBEGA"
+    ],
+    "CGB": [
+      "EACGDB"
+    ],
+    "CGD": [
+      "CBAGED",
+      "EACGDB"
+    ],
+    "CGE": [
+      "CBAGED"
+    ],
+    "DAB": [
+      "GCDAEB"
+    ],
+    "DAC": [
+      "EBDAGC"
+    ],
+    "DAE": [
+      "GCDAEB"
+    ],
+    "DAG": [
+      "EBDAGC"
+    ],
+    "DBA": [
+      "DCBEGA",
+      "DGEBCA"
+    ],
+    "DBC": [
+      "DGEBCA"
+    ],
+    "DBE": [
+      "DCBEGA"
+    ],
+    "DBG": [
+      "DCBEGA"
+    ],
+    "DCA": [
+      "DCBEGA",
+      "DGEBCA"
+    ],
+    "DCB": [
+      "DCBEGA"
+    ],
+    "DCE": [
+      "DCBEGA"
+    ],
+    "DCG": [
+      "DCBEGA"
+    ],
+    "DEA": [
+      "DCBEGA",
+      "DGEBCA"
+    ],
+    "DEB": [
+      "DGEBCA",
+      "GCDAEB"
+    ],
+    "DEC": [
+      "DGEBCA"
+    ],
+    "DEG": [
+      "ABCDEG",
+      "DCBEGA"
+    ],
+    "DGA": [
+      "DCBEGA",
+      "DGEBCA"
+    ],
+    "DGB": [
+      "DGEBCA"
+    ],
+    "DGC": [
+      "DGEBCA",
+      "EBDAGC"
+    ],
+    "DGE": [
+      "DGEBCA"
+    ],
+    "EAB": [
+      "EACGDB"
+    ],
+    "EAC": [
+      "EACGDB",
+      "EBDAGC"
+    ],
+    "EAD": [
+      "EACGDB"
+    ],
+    "EAG": [
+      "EACGDB",
+      "EBDAGC"
+    ],
+    "EBA": [
+      "DGEBCA",
+      "EBDAGC"
+    ],
+    "EBC": [
+      "DGEBCA",
+      "EBDAGC"
+    ],
+    "EBD": [
+      "EBDAGC"
+    ],
+    "EBG": [
+      "EBDAGC"
+    ],
+    "ECA": [
+      "DGEBCA"
+    ],
+    "ECB": [
+      "EACGDB"
+    ],
+    "ECD": [
+      "EACGDB"
+    ],
+    "ECG": [
+      "EACGDB"
+    ],
+    "EDA": [
+      "EBDAGC"
+    ],
+    "EDB": [
+      "EACGDB"
+    ],
+    "EDC": [
+      "EBDAGC",
+      "GABEDC"
+    ],
+    "EDG": [
+      "EBDAGC"
+    ],
+    "EGA": [
+      "DCBEGA"
+    ],
+    "EGB": [
+      "EACGDB"
+    ],
+    "EGC": [
+      "EBDAGC"
+    ],
+    "EGD": [
+      "EACGDB"
+    ],
+    "GAB": [
+      "GABEDC",
+      "GCDAEB"
+    ],
+    "GAC": [
+      "GABEDC"
+    ],
+    "GAD": [
+      "GABEDC"
+    ],
+    "GAE": [
+      "GABEDC",
+      "GCDAEB"
+    ],
+    "GBA": [
+      "DGEBCA"
+    ],
+    "GBC": [
+      "DGEBCA",
+      "GABEDC"
+    ],
+    "GBD": [
+      "GABEDC"
+    ],
+    "GBE": [
+      "GABEDC"
+    ],
+    "GCA": [
+      "DGEBCA",
+      "GCDAEB"
+    ],
+    "GCB": [
+      "GCDAEB"
+    ],
+    "GCD": [
+      "GCDAEB"
+    ],
+    "GCE": [
+      "GCDAEB"
+    ],
+    "GDA": [
+      "GCDAEB"
+    ],
+    "GDB": [
+      "EACGDB",
+      "GCDAEB"
+    ],
+    "GDC": [
+      "GABEDC"
+    ],
+    "GDE": [
+      "GCDAEB"
+    ],
+    "GEA": [
+      "DGEBCA"
+    ],
+    "GEB": [
+      "DGEBCA",
+      "GCDAEB"
+    ],
+    "GEC": [
+      "DGEBCA",
+      "GABEDC"
+    ],
+    "GED": [
+      "CBAGED",
+      "GABEDC"
+    ]
+  },
+  "solver_message": "Optimization terminated successfully. (HiGHS Status 7: Optimal)"
+}

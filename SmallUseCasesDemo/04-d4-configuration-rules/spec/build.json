@@ -1,0 +1,23 @@
+{
+  "head_chars": 13371,
+  "head_sha256": "e358f0a96176e2142ec7b4d8fe7a7d907de4a6788f7df798860d7aa845d8e1e3",
+  "module_sha256": {
+    "sut": "34a6170684c3503580a9bcfbf944ee19bc09e5668a1f9d2c17917404c2d8f2b8",
+    "oracle": "d8db6d3116e2f95b7f9c612334e53a19d948dff50ef3eb7dcad9772d06ea7f68",
+    "runtime": "08827b1cad7c2096cb8a104726cd051c4e42e7bd9c51de97636f7bcc3b1110be"
+  },
+  "variants": {
+    "main": {
+      "spec.toml": "69b64bda438099d1b021e19416feb39eb7afc03c77d0b4c09ffb9b7c20bfdb56",
+      "demo.xlsx": "f1e8617c1aeaa13d37bd856bfac64cde2765be4a2c5827510457fca7873e90db",
+      "demo.constraints.json": "4e772a22abd420e88955c1c73dfca90476b4a739ef248177496ea9671005d506"
+    },
+    "controls": {
+      "spec.toml": "c2b6071e14a32de9f56a8344be4a60a12bdd08d2dd4b36b9304ae84ef7bb7500",
+      "demo.xlsx": "a7cfafa1e871db1748aa111dadfa64d1bcda50d014b8f523b1e63ee363fba8b2"
+    }
+  },
+  "schema": "d4.build/v1",
+  "contract": "v1",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

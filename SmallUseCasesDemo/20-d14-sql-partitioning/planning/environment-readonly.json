@@ -1,0 +1,17 @@
+{
+  "observed_eest": "2026-09-28T20:56:16+03:00",
+  "kind": "Read-only preparation; no fixture created",
+  "cached_images": [
+    "postgres:16.9-alpine",
+    "python:3-slim"
+  ],
+  "installed_pure_python_dependencies": {
+    "pg8000": "1.31.5",
+    "scramp": "1.4.17",
+    "asn1crypto": "1.5.1",
+    "python-dateutil": "2.9.0.post0",
+    "six": "1.17.0"
+  },
+  "execution_policy": "networked-api-probe; allowlisted target container",
+  "framework_modified": false
+}

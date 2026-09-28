@@ -1,0 +1,2533 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived predictions; no D6 run yet",
+  "counter_schedules": [
+    "AABB",
+    "ABAB",
+    "ABBA",
+    "BAAB",
+    "BABA",
+    "BBAA"
+  ],
+  "counter_counts": {
+    "raw": 96,
+    "after_two_each": 36,
+    "after_cap": 24,
+    "schedules_by_cap": {
+      "0": 2,
+      "1": 4,
+      "2": 6
+    }
+  },
+  "queue_counts": {
+    "raw": 32,
+    "after_two_each": 12,
+    "after_enabled": 6,
+    "feasible_schedules": 3
+  },
+  "queue_rejected": [
+    {
+      "schedule": "CPPC",
+      "first_disabled_step": 1
+    },
+    {
+      "schedule": "CPCP",
+      "first_disabled_step": 1
+    },
+    {
+      "schedule": "CCPP",
+      "first_disabled_step": 1
+    }
+  ],
+  "counter_cases": [
+    {
+      "id": "counter|atomic_commit|CAP=0|SEQ=AABB",
+      "policy": "atomic_commit",
+      "cap": 0,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=0|SEQ=AABB",
+      "policy": "split_rw",
+      "cap": 0,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=0|SEQ=BBAA",
+      "policy": "atomic_commit",
+      "cap": 0,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=0|SEQ=BBAA",
+      "policy": "split_rw",
+      "cap": 0,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=1|SEQ=AABB",
+      "policy": "atomic_commit",
+      "cap": 1,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=1|SEQ=AABB",
+      "policy": "split_rw",
+      "cap": 1,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=1|SEQ=ABBA",
+      "policy": "atomic_commit",
+      "cap": 1,
+      "schedule": "ABBA",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=1|SEQ=ABBA",
+      "policy": "split_rw",
+      "cap": 1,
+      "schedule": "ABBA",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=1|SEQ=BAAB",
+      "policy": "atomic_commit",
+      "cap": 1,
+      "schedule": "BAAB",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=1|SEQ=BAAB",
+      "policy": "split_rw",
+      "cap": 1,
+      "schedule": "BAAB",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=1|SEQ=BBAA",
+      "policy": "atomic_commit",
+      "cap": 1,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=1|SEQ=BBAA",
+      "policy": "split_rw",
+      "cap": 1,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=AABB",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=AABB",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "AABB",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=ABAB",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "ABAB",
+      "context_switches": 3,
+      "preemptions": 2,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=ABAB",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "ABAB",
+      "context_switches": 3,
+      "preemptions": 2,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=ABBA",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "ABBA",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=ABBA",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "ABBA",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "A": 0,
+            "B": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=BAAB",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "BAAB",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=BAAB",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "BAAB",
+      "context_switches": 2,
+      "preemptions": 1,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=BABA",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "BABA",
+      "context_switches": 3,
+      "preemptions": 2,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=BABA",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "BABA",
+      "context_switches": 3,
+      "preemptions": 2,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 0
+          }
+        }
+      ],
+      "failing_checkpoints": [
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "counter|atomic_commit|CAP=2|SEQ=BBAA",
+      "policy": "atomic_commit",
+      "cap": 2,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "counter|split_rw|CAP=2|SEQ=BBAA",
+      "policy": "split_rw",
+      "cap": 2,
+      "schedule": "BBAA",
+      "context_switches": 1,
+      "preemptions": 0,
+      "predicted_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "B",
+          "op": "read",
+          "counter": 0,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "B",
+          "op": "write",
+          "counter": 1,
+          "locals": {
+            "B": 0
+          }
+        },
+        {
+          "thread": "A",
+          "op": "read",
+          "counter": 1,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        },
+        {
+          "thread": "A",
+          "op": "write",
+          "counter": 2,
+          "locals": {
+            "B": 0,
+            "A": 1
+          }
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    }
+  ],
+  "queue_cases": [
+    {
+      "id": "queue|actual_queue|SEQ=PPCC",
+      "policy": "actual_queue",
+      "schedule": "PPCC",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "queue|stale_empty|SEQ=PPCC",
+      "policy": "stale_empty",
+      "schedule": "PPCC",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "queue|actual_queue|SEQ=PCPC",
+      "policy": "actual_queue",
+      "schedule": "PCPC",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "queue|stale_empty|SEQ=PCPC",
+      "policy": "stale_empty",
+      "schedule": "PCPC",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": true,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "queue|actual_queue|SEQ=PCCP",
+      "policy": "actual_queue",
+      "schedule": "PCCP",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [],
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "queue|stale_empty|SEQ=PCCP",
+      "policy": "stale_empty",
+      "schedule": "PCCP",
+      "predicted_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": "EMPTY"
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": true,
+          "pop_result": "EMPTY"
+        }
+      ],
+      "reference_trace": [
+        {
+          "thread": "P",
+          "op": "enqueue",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "wait_readable",
+          "items": [
+            "item"
+          ],
+          "published_nonempty": false,
+          "pop_result": null
+        },
+        {
+          "thread": "C",
+          "op": "try_pop",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        },
+        {
+          "thread": "P",
+          "op": "publish",
+          "items": [],
+          "published_nonempty": false,
+          "pop_result": "item"
+        }
+      ],
+      "failing_checkpoints": [
+        3,
+        4
+      ],
+      "predicted_outcome": "DOMAIN_FAIL"
+    }
+  ],
+  "outcomes": {
+    "counter": {
+      "PASS": 18,
+      "DOMAIN_FAIL": 6
+    },
+    "queue": {
+      "PASS": 5,
+      "DOMAIN_FAIL": 1
+    }
+  }
+}

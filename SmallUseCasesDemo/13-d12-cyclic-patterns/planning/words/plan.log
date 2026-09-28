@@ -1,0 +1,72 @@
+spec 'shape'  (13-d12-cyclic-patterns/planning/words/shape.toml)
+  spec_version=1  sha256=cc9ddf266c355fd1a624f98f32bfcf8c4848ca6b185e777f48bb5b9544c417ef
+  slots: 8   seq_extra rows: 8
+operator table:
+  HEAD: FW_Combi(1)  n=1
+  P0: FW_Combi(1)  n=3
+  P1: FW_Combi(1)  n=3
+  P2: FW_Combi(1)  n=3
+  P3: FW_Combi(1)  n=3
+  P4: FW_Combi(1)  n=3
+  P5: FW_Combi(1)  n=3
+  TAIL: FW_Combi(1)  n=1
+constraints present: 0
+
+raw values (declared per-slot sizes):
+  HEAD: 1
+  P0: 3
+  P1: 3
+  P2: 3
+  P3: 3
+  P4: 3
+  P5: 3
+  TAIL: 1
+per-slot Core rows:
+  HEAD: 1  (EXACT — HEAD: FW_Combi(1)(n=1) -> FW_Combi(size))
+  P0: 3  (EXACT — P0: FW_Combi(1)(n=3) -> FW_Combi(size))
+  P1: 3  (EXACT — P1: FW_Combi(1)(n=3) -> FW_Combi(size))
+  P2: 3  (EXACT — P2: FW_Combi(1)(n=3) -> FW_Combi(size))
+  P3: 3  (EXACT — P3: FW_Combi(1)(n=3) -> FW_Combi(size))
+  P4: 3  (EXACT — P4: FW_Combi(1)(n=3) -> FW_Combi(size))
+  P5: 3  (EXACT — P5: FW_Combi(1)(n=3) -> FW_Combi(size))
+  TAIL: 1  (EXACT — TAIL: FW_Combi(1)(n=1) -> FW_Combi(size))
+mandatory Core product: 729  (EXACT — Π rows(sheet) over the mandatory sheets of the effective FW_Seq program)
+estimated post-sieve: 729  (EXACT — = mandatory (no constraints declared -> sieve is a no-op))
+optional multiplier: 1  (EXACT — no FW_Optional sheets -> factor 1)
+final candidate count: 729  (EXACT — post_sieve × optional_multiplier)
+
+summary: mandatory=729 (EXACT, before sieve)  post-sieve=729 (EXACT, after-sieve estimate)  optional×1 (EXACT)  final=729 (EXACT)
+
+run class: B  (final candidate count = 729)
+Core DB bytes: ~801900  [145800, 1458000]  (ESTIMATED — Core DB bytes ≈ Core rows count [729, 729] × 200-2000 per unit)
+    assumption: per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+Results DB bytes: ~601425  [109350, 1093500]  (ESTIMATED — Results DB bytes ≈ verdict rows (V) count [729, 729] × 150-1500 per unit)
+    assumption: per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+candidate source bytes: ~2004750  [364500, 3645000]  (ESTIMATED — candidate source bytes ≈ final candidates count [729, 729] × 500-5000 per unit)
+    assumption: no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate
+    assumption: per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+loose-file inode count: ~729  [729, 729]  (ESTIMATED — loose-file inode count ≈ final candidates count [729, 729] × 1 per unit)
+    assumption: one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+external request count: ~729  [729, 729]  (ESTIMATED — external request count ≈ measurement opportunities (I) count [729, 729] × 1 per unit)
+    assumption: one execution request per candidate invocation; I = V + metric-only repeats (docs/24 §3.3)
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+execution duration (s): ~747  [36, 1458]  (ESTIMATED — execution duration (seconds) ≈ measurement opportunities (I) count [729, 729] × 0.05-2 per unit)
+    assumption: per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)
+    assumption: with repeats active, duration ≈ I × per-candidate cost — the CONSERVATIVE assumption t_m == t_v (a metric-only re-measure costs as much as a full verdict); the split V·t_v + metric_only·t_m awaits Phase 4's measured t_m
+    assumption: per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+dominant resource: candidate source bytes  (largest assumed point estimate (2004750) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking)
+
+repeat plan: K=1 — repeat topology inactive (A=V=I=C); legacy single-run path
+
+budget evaluation (analysis-only; the run path is the enforcement point):
+  [OK] mandatory Core rows ~729 within budget (limit 2e+06)
+  [OK] final candidates ~729 within budget (limit 2e+06)
+  [OK] estimated disk bytes (Core+Results+sources) ~6.1965e+06 within budget (limit 2.14748e+10)
+  [OK] estimated loose-file inodes ~729 within budget (limit 2e+06)
+  [OK] estimated wall time (s) ~1458 within budget (limit 86400)
+  [OK] estimated external requests ~729 within budget (limit 2e+06)
+  [OK] estimated monetary cost: no limit configured
+
+warnings: none
+  ✓ plan -> 13-d12-cyclic-patterns/planning/words/plan/plan.json  (FW_Seq graph sha256:954a53f427e974797e091c651cc8f17f186050282e8e0b141a226c7ef7403d0c)

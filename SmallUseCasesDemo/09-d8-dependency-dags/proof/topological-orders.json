@@ -1,0 +1,1313 @@
+{
+  "schema": "d8b.topological-orders/v1",
+  "summary": {
+    "graphs": 64,
+    "graph_order_pairs": 315,
+    "eligible_additions": 31,
+    "all_preserve_order_sets": true,
+    "equal_lexicographic_minima": true,
+    "example_100010_to_101010": {
+      "ABCD_and_CABD_valid_before_and_after": true,
+      "orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "CABD"
+      ]
+    }
+  },
+  "graphs": [
+    {
+      "bits": "000000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "BCDA",
+        "BDAC",
+        "BDCA",
+        "CABD",
+        "CADB",
+        "CBAD",
+        "CBDA",
+        "CDAB",
+        "CDBA",
+        "DABC",
+        "DACB",
+        "DBAC",
+        "DBCA",
+        "DCAB",
+        "DCBA"
+      ]
+    },
+    {
+      "bits": "000001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD",
+        "BCAD",
+        "BCDA",
+        "CABD",
+        "CADB",
+        "CBAD",
+        "CBDA",
+        "CDAB",
+        "CDBA"
+      ]
+    },
+    {
+      "bits": "000010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "BCDA",
+        "BDAC",
+        "BDCA",
+        "CABD",
+        "CBAD",
+        "CBDA"
+      ]
+    },
+    {
+      "bits": "000011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "BACD",
+        "BCAD",
+        "BCDA",
+        "CABD",
+        "CBAD",
+        "CBDA"
+      ]
+    },
+    {
+      "bits": "000100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "BCDA",
+        "BDAC",
+        "BDCA",
+        "DABC",
+        "DBAC",
+        "DBCA"
+      ]
+    },
+    {
+      "bits": "000101",
+      "topological_orders": [
+        "ABCD",
+        "BACD",
+        "BCAD",
+        "BCDA"
+      ]
+    },
+    {
+      "bits": "000110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "BCDA",
+        "BDAC",
+        "BDCA"
+      ]
+    },
+    {
+      "bits": "000111",
+      "topological_orders": [
+        "ABCD",
+        "BACD",
+        "BCAD",
+        "BCDA"
+      ]
+    },
+    {
+      "bits": "001000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "CABD",
+        "CADB",
+        "CBAD"
+      ]
+    },
+    {
+      "bits": "001001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD",
+        "BCAD",
+        "CABD",
+        "CADB",
+        "CBAD"
+      ]
+    },
+    {
+      "bits": "001010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "BACD",
+        "BADC",
+        "BCAD",
+        "CABD",
+        "CBAD"
+      ]
+    },
+    {
+      "bits": "001011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "BACD",
+        "BCAD",
+        "CABD",
+        "CBAD"
+      ]
+    },
+    {
+      "bits": "001100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "BACD",
+        "BADC",
+        "BCAD"
+      ]
+    },
+    {
+      "bits": "001101",
+      "topological_orders": [
+        "ABCD",
+        "BACD",
+        "BCAD"
+      ]
+    },
+    {
+      "bits": "001110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "BACD",
+        "BADC",
+        "BCAD"
+      ]
+    },
+    {
+      "bits": "001111",
+      "topological_orders": [
+        "ABCD",
+        "BACD",
+        "BCAD"
+      ]
+    },
+    {
+      "bits": "010000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "BACD",
+        "BADC",
+        "BDAC",
+        "DABC",
+        "DACB",
+        "DBAC"
+      ]
+    },
+    {
+      "bits": "010001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "010010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "BACD",
+        "BADC",
+        "BDAC"
+      ]
+    },
+    {
+      "bits": "010011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "010100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "BACD",
+        "BADC",
+        "BDAC",
+        "DABC",
+        "DBAC"
+      ]
+    },
+    {
+      "bits": "010101",
+      "topological_orders": [
+        "ABCD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "010110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "BACD",
+        "BADC",
+        "BDAC"
+      ]
+    },
+    {
+      "bits": "010111",
+      "topological_orders": [
+        "ABCD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "011000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "BACD",
+        "BADC"
+      ]
+    },
+    {
+      "bits": "011001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "011010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "BACD",
+        "BADC"
+      ]
+    },
+    {
+      "bits": "011011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "011100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "BACD",
+        "BADC"
+      ]
+    },
+    {
+      "bits": "011101",
+      "topological_orders": [
+        "ABCD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "011110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "BACD",
+        "BADC"
+      ]
+    },
+    {
+      "bits": "011111",
+      "topological_orders": [
+        "ABCD",
+        "BACD"
+      ]
+    },
+    {
+      "bits": "100000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "CABD",
+        "CADB",
+        "CDAB",
+        "DABC",
+        "DACB",
+        "DCAB"
+      ]
+    },
+    {
+      "bits": "100001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "CABD",
+        "CADB",
+        "CDAB"
+      ]
+    },
+    {
+      "bits": "100010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "CABD"
+      ]
+    },
+    {
+      "bits": "100011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "CABD"
+      ]
+    },
+    {
+      "bits": "100100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "DABC"
+      ]
+    },
+    {
+      "bits": "100101",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "100110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC"
+      ]
+    },
+    {
+      "bits": "100111",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "101000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "CABD",
+        "CADB"
+      ]
+    },
+    {
+      "bits": "101001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "CABD",
+        "CADB"
+      ]
+    },
+    {
+      "bits": "101010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "CABD"
+      ]
+    },
+    {
+      "bits": "101011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "CABD"
+      ]
+    },
+    {
+      "bits": "101100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC"
+      ]
+    },
+    {
+      "bits": "101101",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "101110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC"
+      ]
+    },
+    {
+      "bits": "101111",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "110000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB",
+        "DABC",
+        "DACB"
+      ]
+    },
+    {
+      "bits": "110001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB"
+      ]
+    },
+    {
+      "bits": "110010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD"
+      ]
+    },
+    {
+      "bits": "110011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD"
+      ]
+    },
+    {
+      "bits": "110100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "DABC"
+      ]
+    },
+    {
+      "bits": "110101",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "110110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC"
+      ]
+    },
+    {
+      "bits": "110111",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "111000",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "ACDB",
+        "ADBC",
+        "ADCB"
+      ]
+    },
+    {
+      "bits": "111001",
+      "topological_orders": [
+        "ABCD",
+        "ACBD",
+        "ACDB"
+      ]
+    },
+    {
+      "bits": "111010",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ACBD"
+      ]
+    },
+    {
+      "bits": "111011",
+      "topological_orders": [
+        "ABCD",
+        "ACBD"
+      ]
+    },
+    {
+      "bits": "111100",
+      "topological_orders": [
+        "ABCD",
+        "ABDC",
+        "ADBC"
+      ]
+    },
+    {
+      "bits": "111101",
+      "topological_orders": [
+        "ABCD"
+      ]
+    },
+    {
+      "bits": "111110",
+      "topological_orders": [
+        "ABCD",
+        "ABDC"
+      ]
+    },
+    {
+      "bits": "111111",
+      "topological_orders": [
+        "ABCD"
+      ]
+    }
+  ],
+  "redundant_edge_additions": [
+    {
+      "before": "000101",
+      "after": "000111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD",
+        "BCAD",
+        "BCDA"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD",
+        "BCAD",
+        "BCDA"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "001101",
+      "after": "001111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD",
+        "BCAD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD",
+        "BCAD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "010001",
+      "after": "011001",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ACBD",
+        "ACDB",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "010011",
+      "after": "011011",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ACBD",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ACBD",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "010101",
+      "after": "011101",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "010101",
+      "after": "010111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "010111",
+      "after": "011111",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "011101",
+      "after": "011111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "BACD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "BACD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100010",
+      "after": "101010",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "CABD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC",
+        "ACBD",
+        "CABD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100011",
+      "after": "101011",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ACBD",
+        "CABD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ACBD",
+        "CABD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100100",
+      "after": "110100",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "DABC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC",
+        "ADBC",
+        "DABC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100101",
+      "after": "110101",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100101",
+      "after": "101101",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100101",
+      "after": "100111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100110",
+      "after": "110110",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100110",
+      "after": "101110",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100111",
+      "after": "110111",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "100111",
+      "after": "101111",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "101100",
+      "after": "111100",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC",
+        "ADBC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC",
+        "ADBC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "101101",
+      "after": "111101",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "101101",
+      "after": "101111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "101110",
+      "after": "111110",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "101111",
+      "after": "111111",
+      "added_edge": [
+        0,
+        2
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110001",
+      "after": "111001",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ACBD",
+        "ACDB"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ACBD",
+        "ACDB"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110010",
+      "after": "111010",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC",
+        "ACBD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC",
+        "ACBD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110011",
+      "after": "111011",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ACBD"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ACBD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110101",
+      "after": "111101",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110101",
+      "after": "110111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110110",
+      "after": "111110",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD",
+        "ABDC"
+      ],
+      "orders_after": [
+        "ABCD",
+        "ABDC"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "110111",
+      "after": "111111",
+      "added_edge": [
+        0,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    },
+    {
+      "before": "111101",
+      "after": "111111",
+      "added_edge": [
+        1,
+        3
+      ],
+      "orders_before": [
+        "ABCD"
+      ],
+      "orders_after": [
+        "ABCD"
+      ],
+      "equal_sets": true,
+      "lexicographic_minimum": [
+        "ABCD",
+        "ABCD"
+      ]
+    }
+  ]
+}

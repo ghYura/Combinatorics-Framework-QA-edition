@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "params": {
+    "U1": {
+      "user_at(1,0);": {
+        "n": 0
+      }
+    },
+    "U2": {
+      "user_at(2,0);": {
+        "n": 0
+      },
+      "user_at(2,1);": {
+        "n": 1
+      }
+    },
+    "U3": {
+      "user_at(3,0);": {
+        "n": 0
+      },
+      "user_at(3,1);": {
+        "n": 1
+      },
+      "user_at(3,2);": {
+        "n": 2
+      }
+    },
+    "S1": {
+      "session_at(1,0);": {
+        "n": 0
+      }
+    },
+    "S2": {
+      "session_at(2,0);": {
+        "n": 0
+      },
+      "session_at(2,1);": {
+        "n": 1
+      }
+    },
+    "S3": {
+      "session_at(3,0);": {
+        "n": 0
+      },
+      "session_at(3,1);": {
+        "n": 1
+      },
+      "session_at(3,2);": {
+        "n": 2
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "user_rgs",
+      "polarity": "require",
+      "sheets": [
+        "U2",
+        "U3"
+      ],
+      "when": "U3.n <= 1 + U2.n",
+      "desc": "the user labels form a canonical restricted-growth string (the other conditions hold by slot domains)"
+    },
+    {
+      "id": "session_rgs",
+      "polarity": "require",
+      "sheets": [
+        "S2",
+        "S3"
+      ],
+      "when": "S3.n <= 1 + S2.n",
+      "desc": "the user-local session labels form a canonical restricted-growth string, independently of the users"
+    }
+  ]
+}

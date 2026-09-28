@@ -1,0 +1,10920 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived predictions; no D11 run yet",
+  "players": [
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F"
+  ],
+  "base_values": [
+    2,
+    2,
+    1,
+    1,
+    4,
+    0
+  ],
+  "interaction_terms": [
+    [
+      "AB",
+      12
+    ],
+    [
+      "ACD",
+      5
+    ],
+    [
+      "BCD",
+      5
+    ]
+  ],
+  "cases": [
+    {
+      "id": "C=000000",
+      "mask": "000000",
+      "members": [],
+      "standalone_value": 0,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 0,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000001",
+      "mask": "000001",
+      "members": [
+        "F"
+      ],
+      "standalone_value": 0,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 0,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000010",
+      "mask": "000010",
+      "members": [
+        "E"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 4,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000011",
+      "mask": "000011",
+      "members": [
+        "E",
+        "F"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 4,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000100",
+      "mask": "000100",
+      "members": [
+        "D"
+      ],
+      "standalone_value": 1,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 1,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000101",
+      "mask": "000101",
+      "members": [
+        "D",
+        "F"
+      ],
+      "standalone_value": 1,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 1,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000110",
+      "mask": "000110",
+      "members": [
+        "D",
+        "E"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 5,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=000111",
+      "mask": "000111",
+      "members": [
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 5,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001000",
+      "mask": "001000",
+      "members": [
+        "C"
+      ],
+      "standalone_value": 1,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 1,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001001",
+      "mask": "001001",
+      "members": [
+        "C",
+        "F"
+      ],
+      "standalone_value": 1,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 1,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001010",
+      "mask": "001010",
+      "members": [
+        "C",
+        "E"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 5,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001011",
+      "mask": "001011",
+      "members": [
+        "C",
+        "E",
+        "F"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 5,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001100",
+      "mask": "001100",
+      "members": [
+        "C",
+        "D"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001101",
+      "mask": "001101",
+      "members": [
+        "C",
+        "D",
+        "F"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001110",
+      "mask": "001110",
+      "members": [
+        "C",
+        "D",
+        "E"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=001111",
+      "mask": "001111",
+      "members": [
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010000",
+      "mask": "010000",
+      "members": [
+        "B"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010001",
+      "mask": "010001",
+      "members": [
+        "B",
+        "F"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010010",
+      "mask": "010010",
+      "members": [
+        "B",
+        "E"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010011",
+      "mask": "010011",
+      "members": [
+        "B",
+        "E",
+        "F"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010100",
+      "mask": "010100",
+      "members": [
+        "B",
+        "D"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010101",
+      "mask": "010101",
+      "members": [
+        "B",
+        "D",
+        "F"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010110",
+      "mask": "010110",
+      "members": [
+        "B",
+        "D",
+        "E"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=010111",
+      "mask": "010111",
+      "members": [
+        "B",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011000",
+      "mask": "011000",
+      "members": [
+        "B",
+        "C"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011001",
+      "mask": "011001",
+      "members": [
+        "B",
+        "C",
+        "F"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011010",
+      "mask": "011010",
+      "members": [
+        "B",
+        "C",
+        "E"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011011",
+      "mask": "011011",
+      "members": [
+        "B",
+        "C",
+        "E",
+        "F"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011100",
+      "mask": "011100",
+      "members": [
+        "B",
+        "C",
+        "D"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 5
+      },
+      "value": 9,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011101",
+      "mask": "011101",
+      "members": [
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 5
+      },
+      "value": 9,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011110",
+      "mask": "011110",
+      "members": [
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 5
+      },
+      "value": 13,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=011111",
+      "mask": "011111",
+      "members": [
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 5
+      },
+      "value": 13,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100000",
+      "mask": "100000",
+      "members": [
+        "A"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100001",
+      "mask": "100001",
+      "members": [
+        "A",
+        "F"
+      ],
+      "standalone_value": 2,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 2,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100010",
+      "mask": "100010",
+      "members": [
+        "A",
+        "E"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100011",
+      "mask": "100011",
+      "members": [
+        "A",
+        "E",
+        "F"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 6,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100100",
+      "mask": "100100",
+      "members": [
+        "A",
+        "D"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100101",
+      "mask": "100101",
+      "members": [
+        "A",
+        "D",
+        "F"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100110",
+      "mask": "100110",
+      "members": [
+        "A",
+        "D",
+        "E"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=100111",
+      "mask": "100111",
+      "members": [
+        "A",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101000",
+      "mask": "101000",
+      "members": [
+        "A",
+        "C"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101001",
+      "mask": "101001",
+      "members": [
+        "A",
+        "C",
+        "F"
+      ],
+      "standalone_value": 3,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 3,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101010",
+      "mask": "101010",
+      "members": [
+        "A",
+        "C",
+        "E"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101011",
+      "mask": "101011",
+      "members": [
+        "A",
+        "C",
+        "E",
+        "F"
+      ],
+      "standalone_value": 7,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 7,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101100",
+      "mask": "101100",
+      "members": [
+        "A",
+        "C",
+        "D"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 5,
+        "BCD": 0
+      },
+      "value": 9,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101101",
+      "mask": "101101",
+      "members": [
+        "A",
+        "C",
+        "D",
+        "F"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 5,
+        "BCD": 0
+      },
+      "value": 9,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101110",
+      "mask": "101110",
+      "members": [
+        "A",
+        "C",
+        "D",
+        "E"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 5,
+        "BCD": 0
+      },
+      "value": 13,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=101111",
+      "mask": "101111",
+      "members": [
+        "A",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 0,
+        "ACD": 5,
+        "BCD": 0
+      },
+      "value": 13,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110000",
+      "mask": "110000",
+      "members": [
+        "A",
+        "B"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 16,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110001",
+      "mask": "110001",
+      "members": [
+        "A",
+        "B",
+        "F"
+      ],
+      "standalone_value": 4,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 16,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110010",
+      "mask": "110010",
+      "members": [
+        "A",
+        "B",
+        "E"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 20,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110011",
+      "mask": "110011",
+      "members": [
+        "A",
+        "B",
+        "E",
+        "F"
+      ],
+      "standalone_value": 8,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 20,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110100",
+      "mask": "110100",
+      "members": [
+        "A",
+        "B",
+        "D"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 17,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110101",
+      "mask": "110101",
+      "members": [
+        "A",
+        "B",
+        "D",
+        "F"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 17,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110110",
+      "mask": "110110",
+      "members": [
+        "A",
+        "B",
+        "D",
+        "E"
+      ],
+      "standalone_value": 9,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 21,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=110111",
+      "mask": "110111",
+      "members": [
+        "A",
+        "B",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 9,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 21,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111000",
+      "mask": "111000",
+      "members": [
+        "A",
+        "B",
+        "C"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 17,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111001",
+      "mask": "111001",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "F"
+      ],
+      "standalone_value": 5,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 17,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111010",
+      "mask": "111010",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "E"
+      ],
+      "standalone_value": 9,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 21,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111011",
+      "mask": "111011",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "E",
+        "F"
+      ],
+      "standalone_value": 9,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 0,
+        "BCD": 0
+      },
+      "value": 21,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111100",
+      "mask": "111100",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 5,
+        "BCD": 5
+      },
+      "value": 28,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111101",
+      "mask": "111101",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "F"
+      ],
+      "standalone_value": 6,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 5,
+        "BCD": 5
+      },
+      "value": 28,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111110",
+      "mask": "111110",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E"
+      ],
+      "standalone_value": 10,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 5,
+        "BCD": 5
+      },
+      "value": 32,
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "C=111111",
+      "mask": "111111",
+      "members": [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F"
+      ],
+      "standalone_value": 10,
+      "interaction_bonuses": {
+        "AB": 12,
+        "ACD": 5,
+        "BCD": 5
+      },
+      "value": 32,
+      "predicted_outcome": "PASS"
+    }
+  ],
+  "outcomes": {
+    "PASS": 64
+  },
+  "shapley": {
+    "A": {
+      "n": "29",
+      "d": "3"
+    },
+    "B": {
+      "n": "29",
+      "d": "3"
+    },
+    "C": {
+      "n": "13",
+      "d": "3"
+    },
+    "D": {
+      "n": "13",
+      "d": "3"
+    },
+    "E": {
+      "n": "4",
+      "d": "1"
+    },
+    "F": {
+      "n": "0",
+      "d": "1"
+    }
+  },
+  "marginals": [
+    {
+      "player": "A",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "000111",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "001000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "001001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "001010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "001011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "A",
+      "coalition": "001100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "A",
+      "coalition": "001101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "A",
+      "coalition": "001110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "A",
+      "coalition": "001111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "A",
+      "coalition": "010000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "010111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "011000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "011001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "011010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "011011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "A",
+      "coalition": "011100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "A",
+      "coalition": "011101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "A",
+      "coalition": "011110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "A",
+      "coalition": "011111",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "B",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "000111",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "001000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "001001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "001010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "001011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 2
+    },
+    {
+      "player": "B",
+      "coalition": "001100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "B",
+      "coalition": "001101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "B",
+      "coalition": "001110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "B",
+      "coalition": "001111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 7
+    },
+    {
+      "player": "B",
+      "coalition": "100000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "100111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "101000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "101001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "101010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "101011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 14
+    },
+    {
+      "player": "B",
+      "coalition": "101100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "B",
+      "coalition": "101101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "B",
+      "coalition": "101110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "B",
+      "coalition": "101111",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 19
+    },
+    {
+      "player": "C",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "000111",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "010000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "010001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "010010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "010011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "010100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "010101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "010110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "010111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "100000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "100001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "100010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "100011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "100100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "100101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "100110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "100111",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "C",
+      "coalition": "110000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "110001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "110010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "110011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "C",
+      "coalition": "110100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "C",
+      "coalition": "110101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "C",
+      "coalition": "110110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "C",
+      "coalition": "110111",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "D",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "000001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "000010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "000011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "001000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "001001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "001010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "001011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "010000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "010001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "010010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "010011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "011000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "011001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "011010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "011011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "100000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "100001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "100010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "100011",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "101000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "101001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "101010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "101011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 6
+    },
+    {
+      "player": "D",
+      "coalition": "110000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "110001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "110010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "110011",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 1
+    },
+    {
+      "player": "D",
+      "coalition": "111000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "D",
+      "coalition": "111001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "D",
+      "coalition": "111010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "D",
+      "coalition": "111011",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 11
+    },
+    {
+      "player": "E",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "000001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "000100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "000101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "001000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "001001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "001100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "001101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "010000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "010001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "010100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "010101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "011000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "011001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "011100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "011101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "100000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "100001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "100100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "100101",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "101000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "101001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "101100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "101101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "110000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "110001",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "110100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "110101",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "111000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "111001",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "111100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "E",
+      "coalition": "111101",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 4
+    },
+    {
+      "player": "F",
+      "coalition": "000000",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "000010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "000100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "000110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "001000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "001010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "001100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "001110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "010000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "010010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "010100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "010110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "011000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "011010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "011100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "011110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "100000",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "100010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "100100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "100110",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "101000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "101010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "101100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "101110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "110000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "110010",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "110100",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "110110",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "111000",
+      "weight": {
+        "n": "1",
+        "d": "60"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "111010",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "111100",
+      "weight": {
+        "n": "1",
+        "d": "30"
+      },
+      "marginal": 0
+    },
+    {
+      "player": "F",
+      "coalition": "111110",
+      "weight": {
+        "n": "1",
+        "d": "6"
+      },
+      "marginal": 0
+    }
+  ],
+  "permutations": [
+    {
+      "order": "ABCDEF",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ABCDFE",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ABCEDF",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ABCEFD",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ABCFDE",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ABCFED",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ABDCEF",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ABDCFE",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ABDECF",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ABDEFC",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ABDFCE",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ABDFEC",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ABECDF",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ABECFD",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ABEDCF",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ABEDFC",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ABEFCD",
+      "marginals": [
+        2,
+        14,
+        4,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "ABEFDC",
+      "marginals": [
+        2,
+        14,
+        4,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "ABFCDE",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ABFCED",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ABFDCE",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ABFDEC",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ABFECD",
+      "marginals": [
+        2,
+        14,
+        0,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "ABFEDC",
+      "marginals": [
+        2,
+        14,
+        0,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "ACBDEF",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ACBDFE",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ACBEDF",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ACBEFD",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ACBFDE",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ACBFED",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ACDBEF",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ACDBFE",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ACDEBF",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ACDEFB",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ACDFBE",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "ACDFEB",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "ACEBDF",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ACEBFD",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ACEDBF",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ACEDFB",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ACEFBD",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ACEFDB",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ACFBDE",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ACFBED",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ACFDBE",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "ACFDEB",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "ACFEBD",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ACFEDB",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ADBCEF",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ADBCFE",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ADBECF",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ADBEFC",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ADBFCE",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ADBFEC",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ADCBEF",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "ADCBFE",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "ADCEBF",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ADCEFB",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ADCFBE",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "ADCFEB",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "ADEBCF",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ADEBFC",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ADECBF",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ADECFB",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ADEFBC",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ADEFCB",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ADFBCE",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "ADFBEC",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "ADFCBE",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "ADFCEB",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "ADFEBC",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ADFECB",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AEBCDF",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "AEBCFD",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "AEBDCF",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "AEBDFC",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "AEBFCD",
+      "marginals": [
+        2,
+        4,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AEBFDC",
+      "marginals": [
+        2,
+        4,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AECBDF",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "AECBFD",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "AECDBF",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "AECDFB",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "AECFBD",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AECFDB",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AEDBCF",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "AEDBFC",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "AEDCBF",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "AEDCFB",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "AEDFBC",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AEDFCB",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AEFBCD",
+      "marginals": [
+        2,
+        4,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AEFBDC",
+      "marginals": [
+        2,
+        4,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AEFCBD",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AEFCDB",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AEFDBC",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AEFDCB",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AFBCDE",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "AFBCED",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "AFBDCE",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "AFBDEC",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "AFBECD",
+      "marginals": [
+        2,
+        0,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AFBEDC",
+      "marginals": [
+        2,
+        0,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AFCBDE",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "AFCBED",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "AFCDBE",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "AFCDEB",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "AFCEBD",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AFCEDB",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AFDBCE",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "AFDBEC",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "AFDCBE",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "AFDCEB",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "AFDEBC",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AFDECB",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AFEBCD",
+      "marginals": [
+        2,
+        0,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AFEBDC",
+      "marginals": [
+        2,
+        0,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "AFECBD",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AFECDB",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "AFEDBC",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "AFEDCB",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BACDEF",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BACDFE",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BACEDF",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BACEFD",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BACFDE",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BACFED",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BADCEF",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BADCFE",
+      "marginals": [
+        2,
+        14,
+        1,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BADECF",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BADEFC",
+      "marginals": [
+        2,
+        14,
+        1,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BADFCE",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BADFEC",
+      "marginals": [
+        2,
+        14,
+        1,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BAECDF",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BAECFD",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BAEDCF",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BAEDFC",
+      "marginals": [
+        2,
+        14,
+        4,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BAEFCD",
+      "marginals": [
+        2,
+        14,
+        4,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BAEFDC",
+      "marginals": [
+        2,
+        14,
+        4,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BAFCDE",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BAFCED",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BAFDCE",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BAFDEC",
+      "marginals": [
+        2,
+        14,
+        0,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BAFECD",
+      "marginals": [
+        2,
+        14,
+        0,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BAFEDC",
+      "marginals": [
+        2,
+        14,
+        0,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BCADEF",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BCADFE",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BCAEDF",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BCAEFD",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BCAFDE",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BCAFED",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BCDAEF",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BCDAFE",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BCDEAF",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BCDEFA",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BCDFAE",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BCDFEA",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BCEADF",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BCEAFD",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BCEDAF",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BCEDFA",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BCEFAD",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BCEFDA",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BCFADE",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BCFAED",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BCFDAE",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BCFDEA",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BCFEAD",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BCFEDA",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BDACEF",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BDACFE",
+      "marginals": [
+        2,
+        1,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BDAECF",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BDAEFC",
+      "marginals": [
+        2,
+        1,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BDAFCE",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BDAFEC",
+      "marginals": [
+        2,
+        1,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BDCAEF",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "BDCAFE",
+      "marginals": [
+        2,
+        1,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "BDCEAF",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BDCEFA",
+      "marginals": [
+        2,
+        1,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BDCFAE",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BDCFEA",
+      "marginals": [
+        2,
+        1,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BDEACF",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BDEAFC",
+      "marginals": [
+        2,
+        1,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BDECAF",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BDECFA",
+      "marginals": [
+        2,
+        1,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BDEFAC",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BDEFCA",
+      "marginals": [
+        2,
+        1,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BDFACE",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BDFAEC",
+      "marginals": [
+        2,
+        1,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BDFCAE",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BDFCEA",
+      "marginals": [
+        2,
+        1,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BDFEAC",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BDFECA",
+      "marginals": [
+        2,
+        1,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BEACDF",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BEACFD",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BEADCF",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BEADFC",
+      "marginals": [
+        2,
+        4,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BEAFCD",
+      "marginals": [
+        2,
+        4,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BEAFDC",
+      "marginals": [
+        2,
+        4,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BECADF",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BECAFD",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BECDAF",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BECDFA",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BECFAD",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BECFDA",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BEDACF",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "BEDAFC",
+      "marginals": [
+        2,
+        4,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "BEDCAF",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "BEDCFA",
+      "marginals": [
+        2,
+        4,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "BEDFAC",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BEDFCA",
+      "marginals": [
+        2,
+        4,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BEFACD",
+      "marginals": [
+        2,
+        4,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BEFADC",
+      "marginals": [
+        2,
+        4,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BEFCAD",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BEFCDA",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BEFDAC",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BEFDCA",
+      "marginals": [
+        2,
+        4,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BFACDE",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BFACED",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BFADCE",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BFADEC",
+      "marginals": [
+        2,
+        0,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BFAECD",
+      "marginals": [
+        2,
+        0,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BFAEDC",
+      "marginals": [
+        2,
+        0,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BFCADE",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BFCAED",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BFCDAE",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BFCDEA",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BFCEAD",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BFCEDA",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BFDACE",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "BFDAEC",
+      "marginals": [
+        2,
+        0,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "BFDCAE",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "BFDCEA",
+      "marginals": [
+        2,
+        0,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "BFDEAC",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BFDECA",
+      "marginals": [
+        2,
+        0,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BFEACD",
+      "marginals": [
+        2,
+        0,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BFEADC",
+      "marginals": [
+        2,
+        0,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "BFECAD",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BFECDA",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "BFEDAC",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "BFEDCA",
+      "marginals": [
+        2,
+        0,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CABDEF",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CABDFE",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CABEDF",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CABEFD",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CABFDE",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CABFED",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CADBEF",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CADBFE",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CADEBF",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CADEFB",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CADFBE",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CADFEB",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CAEBDF",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CAEBFD",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CAEDBF",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CAEDFB",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CAEFBD",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CAEFDB",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CAFBDE",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CAFBED",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CAFDBE",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CAFDEB",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CAFEBD",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CAFEDB",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CBADEF",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CBADFE",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CBAEDF",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CBAEFD",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CBAFDE",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CBAFED",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CBDAEF",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CBDAFE",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CBDEAF",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CBDEFA",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CBDFAE",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CBDFEA",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CBEADF",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CBEAFD",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CBEDAF",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CBEDFA",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CBEFAD",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CBEFDA",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CBFADE",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CBFAED",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CBFDAE",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CBFDEA",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CBFEAD",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CBFEDA",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CDABEF",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CDABFE",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CDAEBF",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CDAEFB",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CDAFBE",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CDAFEB",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CDBAEF",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "CDBAFE",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "CDBEAF",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CDBEFA",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CDBFAE",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CDBFEA",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CDEABF",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CDEAFB",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CDEBAF",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CDEBFA",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CDEFAB",
+      "marginals": [
+        1,
+        1,
+        4,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CDEFBA",
+      "marginals": [
+        1,
+        1,
+        4,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CDFABE",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CDFAEB",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CDFBAE",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CDFBEA",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CDFEAB",
+      "marginals": [
+        1,
+        1,
+        0,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CDFEBA",
+      "marginals": [
+        1,
+        1,
+        0,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CEABDF",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CEABFD",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CEADBF",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CEADFB",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CEAFBD",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CEAFDB",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CEBADF",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "CEBAFD",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "CEBDAF",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CEBDFA",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CEBFAD",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CEBFDA",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CEDABF",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CEDAFB",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CEDBAF",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "CEDBFA",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "CEDFAB",
+      "marginals": [
+        1,
+        4,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CEDFBA",
+      "marginals": [
+        1,
+        4,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CEFABD",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CEFADB",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CEFBAD",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CEFBDA",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CEFDAB",
+      "marginals": [
+        1,
+        4,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CEFDBA",
+      "marginals": [
+        1,
+        4,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CFABDE",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CFABED",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CFADBE",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CFADEB",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CFAEBD",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CFAEDB",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CFBADE",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "CFBAED",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "CFBDAE",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CFBDEA",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CFBEAD",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CFBEDA",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CFDABE",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CFDAEB",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CFDBAE",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "CFDBEA",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "CFDEAB",
+      "marginals": [
+        1,
+        0,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CFDEBA",
+      "marginals": [
+        1,
+        0,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CFEABD",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CFEADB",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CFEBAD",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "CFEBDA",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "CFEDAB",
+      "marginals": [
+        1,
+        0,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "CFEDBA",
+      "marginals": [
+        1,
+        0,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DABCEF",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DABCFE",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DABECF",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DABEFC",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DABFCE",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DABFEC",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DACBEF",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DACBFE",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DACEBF",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DACEFB",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DACFBE",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DACFEB",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DAEBCF",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DAEBFC",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DAECBF",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DAECFB",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DAEFBC",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DAEFCB",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DAFBCE",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DAFBEC",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DAFCBE",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DAFCEB",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DAFEBC",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DAFECB",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DBACEF",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DBACFE",
+      "marginals": [
+        1,
+        2,
+        14,
+        11,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DBAECF",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DBAEFC",
+      "marginals": [
+        1,
+        2,
+        14,
+        4,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DBAFCE",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DBAFEC",
+      "marginals": [
+        1,
+        2,
+        14,
+        0,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DBCAEF",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DBCAFE",
+      "marginals": [
+        1,
+        2,
+        6,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DBCEAF",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DBCEFA",
+      "marginals": [
+        1,
+        2,
+        6,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DBCFAE",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DBCFEA",
+      "marginals": [
+        1,
+        2,
+        6,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DBEACF",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DBEAFC",
+      "marginals": [
+        1,
+        2,
+        4,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DBECAF",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DBECFA",
+      "marginals": [
+        1,
+        2,
+        4,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DBEFAC",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DBEFCA",
+      "marginals": [
+        1,
+        2,
+        4,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DBFACE",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DBFAEC",
+      "marginals": [
+        1,
+        2,
+        0,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DBFCAE",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DBFCEA",
+      "marginals": [
+        1,
+        2,
+        0,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DBFEAC",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DBFECA",
+      "marginals": [
+        1,
+        2,
+        0,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DCABEF",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DCABFE",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DCAEBF",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DCAEFB",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DCAFBE",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DCAFEB",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DCBAEF",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        4,
+        0
+      ]
+    },
+    {
+      "order": "DCBAFE",
+      "marginals": [
+        1,
+        1,
+        7,
+        19,
+        0,
+        4
+      ]
+    },
+    {
+      "order": "DCBEAF",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DCBEFA",
+      "marginals": [
+        1,
+        1,
+        7,
+        4,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DCBFAE",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DCBFEA",
+      "marginals": [
+        1,
+        1,
+        7,
+        0,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DCEABF",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DCEAFB",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DCEBAF",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DCEBFA",
+      "marginals": [
+        1,
+        1,
+        4,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DCEFAB",
+      "marginals": [
+        1,
+        1,
+        4,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DCEFBA",
+      "marginals": [
+        1,
+        1,
+        4,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DCFABE",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DCFAEB",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DCFBAE",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DCFBEA",
+      "marginals": [
+        1,
+        1,
+        0,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DCFEAB",
+      "marginals": [
+        1,
+        1,
+        0,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DCFEBA",
+      "marginals": [
+        1,
+        1,
+        0,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DEABCF",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DEABFC",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DEACBF",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DEACFB",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DEAFBC",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DEAFCB",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DEBACF",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "DEBAFC",
+      "marginals": [
+        1,
+        4,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "DEBCAF",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DEBCFA",
+      "marginals": [
+        1,
+        4,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DEBFAC",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DEBFCA",
+      "marginals": [
+        1,
+        4,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DECABF",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DECAFB",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DECBAF",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "DECBFA",
+      "marginals": [
+        1,
+        4,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "DECFAB",
+      "marginals": [
+        1,
+        4,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DECFBA",
+      "marginals": [
+        1,
+        4,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DEFABC",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DEFACB",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DEFBAC",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DEFBCA",
+      "marginals": [
+        1,
+        4,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DEFCAB",
+      "marginals": [
+        1,
+        4,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DEFCBA",
+      "marginals": [
+        1,
+        4,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DFABCE",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DFABEC",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DFACBE",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DFACEB",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DFAEBC",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DFAECB",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DFBACE",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "DFBAEC",
+      "marginals": [
+        1,
+        0,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "DFBCAE",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DFBCEA",
+      "marginals": [
+        1,
+        0,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DFBEAC",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DFBECA",
+      "marginals": [
+        1,
+        0,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DFCABE",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DFCAEB",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DFCBAE",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "DFCBEA",
+      "marginals": [
+        1,
+        0,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "DFCEAB",
+      "marginals": [
+        1,
+        0,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DFCEBA",
+      "marginals": [
+        1,
+        0,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DFEABC",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DFEACB",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DFEBAC",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "DFEBCA",
+      "marginals": [
+        1,
+        0,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "DFECAB",
+      "marginals": [
+        1,
+        0,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "DFECBA",
+      "marginals": [
+        1,
+        0,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EABCDF",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EABCFD",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EABDCF",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EABDFC",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EABFCD",
+      "marginals": [
+        4,
+        2,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EABFDC",
+      "marginals": [
+        4,
+        2,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EACBDF",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EACBFD",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EACDBF",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EACDFB",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EACFBD",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EACFDB",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EADBCF",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EADBFC",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EADCBF",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EADCFB",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EADFBC",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EADFCB",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EAFBCD",
+      "marginals": [
+        4,
+        2,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EAFBDC",
+      "marginals": [
+        4,
+        2,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EAFCBD",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EAFCDB",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EAFDBC",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EAFDCB",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EBACDF",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EBACFD",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EBADCF",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EBADFC",
+      "marginals": [
+        4,
+        2,
+        14,
+        1,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EBAFCD",
+      "marginals": [
+        4,
+        2,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EBAFDC",
+      "marginals": [
+        4,
+        2,
+        14,
+        0,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EBCADF",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EBCAFD",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EBCDAF",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EBCDFA",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EBCFAD",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EBCFDA",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EBDACF",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EBDAFC",
+      "marginals": [
+        4,
+        2,
+        1,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EBDCAF",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EBDCFA",
+      "marginals": [
+        4,
+        2,
+        1,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EBDFAC",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EBDFCA",
+      "marginals": [
+        4,
+        2,
+        1,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EBFACD",
+      "marginals": [
+        4,
+        2,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EBFADC",
+      "marginals": [
+        4,
+        2,
+        0,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EBFCAD",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EBFCDA",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EBFDAC",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EBFDCA",
+      "marginals": [
+        4,
+        2,
+        0,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ECABDF",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ECABFD",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ECADBF",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ECADFB",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ECAFBD",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ECAFDB",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ECBADF",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "ECBAFD",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "ECBDAF",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ECBDFA",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ECBFAD",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ECBFDA",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ECDABF",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ECDAFB",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ECDBAF",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "ECDBFA",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "ECDFAB",
+      "marginals": [
+        4,
+        1,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "ECDFBA",
+      "marginals": [
+        4,
+        1,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "ECFABD",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ECFADB",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ECFBAD",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "ECFBDA",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "ECFDAB",
+      "marginals": [
+        4,
+        1,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "ECFDBA",
+      "marginals": [
+        4,
+        1,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EDABCF",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EDABFC",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EDACBF",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EDACFB",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EDAFBC",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EDAFCB",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EDBACF",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        11,
+        0
+      ]
+    },
+    {
+      "order": "EDBAFC",
+      "marginals": [
+        4,
+        1,
+        2,
+        14,
+        0,
+        11
+      ]
+    },
+    {
+      "order": "EDBCAF",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EDBCFA",
+      "marginals": [
+        4,
+        1,
+        2,
+        6,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EDBFAC",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EDBFCA",
+      "marginals": [
+        4,
+        1,
+        2,
+        0,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EDCABF",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EDCAFB",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EDCBAF",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        19,
+        0
+      ]
+    },
+    {
+      "order": "EDCBFA",
+      "marginals": [
+        4,
+        1,
+        1,
+        7,
+        0,
+        19
+      ]
+    },
+    {
+      "order": "EDCFAB",
+      "marginals": [
+        4,
+        1,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EDCFBA",
+      "marginals": [
+        4,
+        1,
+        1,
+        0,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EDFABC",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EDFACB",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EDFBAC",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EDFBCA",
+      "marginals": [
+        4,
+        1,
+        0,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EDFCAB",
+      "marginals": [
+        4,
+        1,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EDFCBA",
+      "marginals": [
+        4,
+        1,
+        0,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EFABCD",
+      "marginals": [
+        4,
+        0,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EFABDC",
+      "marginals": [
+        4,
+        0,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EFACBD",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFACDB",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFADBC",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFADCB",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFBACD",
+      "marginals": [
+        4,
+        0,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EFBADC",
+      "marginals": [
+        4,
+        0,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "EFBCAD",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFBCDA",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFBDAC",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFBDCA",
+      "marginals": [
+        4,
+        0,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFCABD",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFCADB",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFCBAD",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFCBDA",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFCDAB",
+      "marginals": [
+        4,
+        0,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EFCDBA",
+      "marginals": [
+        4,
+        0,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EFDABC",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFDACB",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFDBAC",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "EFDBCA",
+      "marginals": [
+        4,
+        0,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "EFDCAB",
+      "marginals": [
+        4,
+        0,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "EFDCBA",
+      "marginals": [
+        4,
+        0,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FABCDE",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FABCED",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FABDCE",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FABDEC",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FABECD",
+      "marginals": [
+        0,
+        2,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FABEDC",
+      "marginals": [
+        0,
+        2,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FACBDE",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FACBED",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FACDBE",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FACDEB",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FACEBD",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FACEDB",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FADBCE",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FADBEC",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FADCBE",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FADCEB",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FADEBC",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FADECB",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FAEBCD",
+      "marginals": [
+        0,
+        2,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FAEBDC",
+      "marginals": [
+        0,
+        2,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FAECBD",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FAECDB",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FAEDBC",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FAEDCB",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FBACDE",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FBACED",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FBADCE",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FBADEC",
+      "marginals": [
+        0,
+        2,
+        14,
+        1,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FBAECD",
+      "marginals": [
+        0,
+        2,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FBAEDC",
+      "marginals": [
+        0,
+        2,
+        14,
+        4,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FBCADE",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FBCAED",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FBCDAE",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FBCDEA",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FBCEAD",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FBCEDA",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FBDACE",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FBDAEC",
+      "marginals": [
+        0,
+        2,
+        1,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FBDCAE",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FBDCEA",
+      "marginals": [
+        0,
+        2,
+        1,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FBDEAC",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FBDECA",
+      "marginals": [
+        0,
+        2,
+        1,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FBEACD",
+      "marginals": [
+        0,
+        2,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FBEADC",
+      "marginals": [
+        0,
+        2,
+        4,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FBECAD",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FBECDA",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FBEDAC",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FBEDCA",
+      "marginals": [
+        0,
+        2,
+        4,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FCABDE",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FCABED",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FCADBE",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FCADEB",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FCAEBD",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FCAEDB",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FCBADE",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FCBAED",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FCBDAE",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FCBDEA",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FCBEAD",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FCBEDA",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FCDABE",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FCDAEB",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FCDBAE",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FCDBEA",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FCDEAB",
+      "marginals": [
+        0,
+        1,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FCDEBA",
+      "marginals": [
+        0,
+        1,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FCEABD",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FCEADB",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FCEBAD",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FCEBDA",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FCEDAB",
+      "marginals": [
+        0,
+        1,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FCEDBA",
+      "marginals": [
+        0,
+        1,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FDABCE",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FDABEC",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FDACBE",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FDACEB",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FDAEBC",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FDAECB",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FDBACE",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        11,
+        4
+      ]
+    },
+    {
+      "order": "FDBAEC",
+      "marginals": [
+        0,
+        1,
+        2,
+        14,
+        4,
+        11
+      ]
+    },
+    {
+      "order": "FDBCAE",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FDBCEA",
+      "marginals": [
+        0,
+        1,
+        2,
+        6,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FDBEAC",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FDBECA",
+      "marginals": [
+        0,
+        1,
+        2,
+        4,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FDCABE",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FDCAEB",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FDCBAE",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        19,
+        4
+      ]
+    },
+    {
+      "order": "FDCBEA",
+      "marginals": [
+        0,
+        1,
+        1,
+        7,
+        4,
+        19
+      ]
+    },
+    {
+      "order": "FDCEAB",
+      "marginals": [
+        0,
+        1,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FDCEBA",
+      "marginals": [
+        0,
+        1,
+        1,
+        4,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FDEABC",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FDEACB",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FDEBAC",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FDEBCA",
+      "marginals": [
+        0,
+        1,
+        4,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FDECAB",
+      "marginals": [
+        0,
+        1,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FDECBA",
+      "marginals": [
+        0,
+        1,
+        4,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FEABCD",
+      "marginals": [
+        0,
+        4,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FEABDC",
+      "marginals": [
+        0,
+        4,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FEACBD",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEACDB",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FEADBC",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEADCB",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FEBACD",
+      "marginals": [
+        0,
+        4,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FEBADC",
+      "marginals": [
+        0,
+        4,
+        2,
+        14,
+        1,
+        11
+      ]
+    },
+    {
+      "order": "FEBCAD",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEBCDA",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FEBDAC",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEBDCA",
+      "marginals": [
+        0,
+        4,
+        2,
+        1,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FECABD",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FECADB",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FECBAD",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FECBDA",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FECDAB",
+      "marginals": [
+        0,
+        4,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FECDBA",
+      "marginals": [
+        0,
+        4,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FEDABC",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEDACB",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FEDBAC",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        14,
+        11
+      ]
+    },
+    {
+      "order": "FEDBCA",
+      "marginals": [
+        0,
+        4,
+        1,
+        2,
+        6,
+        19
+      ]
+    },
+    {
+      "order": "FEDCAB",
+      "marginals": [
+        0,
+        4,
+        1,
+        1,
+        7,
+        19
+      ]
+    },
+    {
+      "order": "FEDCBA",
+      "marginals": [
+        0,
+        4,
+        1,
+        1,
+        7,
+        19
+      ]
+    }
+  ],
+  "permutation_sums": {
+    "A": 6960,
+    "B": 6960,
+    "C": 3120,
+    "D": 3120,
+    "E": 2880,
+    "F": 0
+  },
+  "dividends": {
+    "000000": 0,
+    "000001": 0,
+    "000010": 4,
+    "000100": 1,
+    "001000": 1,
+    "010000": 2,
+    "100000": 2,
+    "000011": 0,
+    "000101": 0,
+    "000110": 0,
+    "001001": 0,
+    "001010": 0,
+    "001100": 0,
+    "010001": 0,
+    "010010": 0,
+    "010100": 0,
+    "011000": 0,
+    "100001": 0,
+    "100010": 0,
+    "100100": 0,
+    "101000": 0,
+    "110000": 12,
+    "000111": 0,
+    "001011": 0,
+    "001101": 0,
+    "001110": 0,
+    "010011": 0,
+    "010101": 0,
+    "010110": 0,
+    "011001": 0,
+    "011010": 0,
+    "011100": 5,
+    "100011": 0,
+    "100101": 0,
+    "100110": 0,
+    "101001": 0,
+    "101010": 0,
+    "101100": 5,
+    "110001": 0,
+    "110010": 0,
+    "110100": 0,
+    "111000": 0,
+    "001111": 0,
+    "010111": 0,
+    "011011": 0,
+    "011101": 0,
+    "011110": 0,
+    "100111": 0,
+    "101011": 0,
+    "101101": 0,
+    "101110": 0,
+    "110011": 0,
+    "110101": 0,
+    "110110": 0,
+    "111001": 0,
+    "111010": 0,
+    "111100": 0,
+    "011111": 0,
+    "101111": 0,
+    "110111": 0,
+    "111011": 0,
+    "111101": 0,
+    "111110": 0,
+    "111111": 0
+  },
+  "standalone": {
+    "A": 2,
+    "B": 2,
+    "C": 1,
+    "D": 1,
+    "E": 4,
+    "F": 0
+  },
+  "leave_one_out": {
+    "A": 19,
+    "B": 19,
+    "C": 11,
+    "D": 11,
+    "E": 4,
+    "F": 0
+  },
+  "uniform_subset_marginals": {
+    "A": {
+      "n": "37",
+      "d": "4"
+    },
+    "B": {
+      "n": "37",
+      "d": "4"
+    },
+    "C": {
+      "n": "7",
+      "d": "2"
+    },
+    "D": {
+      "n": "7",
+      "d": "2"
+    },
+    "E": {
+      "n": "4",
+      "d": "1"
+    },
+    "F": {
+      "n": "0",
+      "d": "1"
+    }
+  }
+}

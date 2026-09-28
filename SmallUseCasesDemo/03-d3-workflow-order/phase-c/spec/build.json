@@ -1,0 +1,22 @@
+{
+  "head_chars": 12246,
+  "head_sha256": "8c7c29ef8df4445c0970ec01daa205a6b59e1788d34306cc5d476c06acf1f574",
+  "module_sha256": {
+    "sut": "c85fa53a66bb4783af2333b42d7fe0edfe409e445b7138b1591b60acdb4528d3",
+    "oracle": "7f6d6500f1de745aa9d2a58b14a9bdc26d954c3b1027ec08deecef0ae2aa0ce0",
+    "runtime": "3dbb04a6f17e9fb9978c6c29d4fb3e55c9c86882cf296cd1f00dbfcf8fd74b1c"
+  },
+  "variants": {
+    "full": {
+      "spec.toml": "ca9cb073b0cbd10f68d5205e93376bd87b8d044f3bcc04b6f61189e7d2ae1aa5",
+      "demo.xlsx": "e555ec5ce3999e38c86fa7c9046101e08e500983a8ea23901cdc4de6098faf4f"
+    },
+    "catalogue-SCA3": {
+      "spec.toml": "ea559076b2ff0d1ae7d1ea291a45c6e7d8d2efff960f724c946b83eceac617aa",
+      "demo.xlsx": "bdfc5302158fee50bf0c8e90a825d8a3af9614d2ad728295e87232075f61e767"
+    }
+  },
+  "schema": "d3c.build/v1",
+  "contract": "phase-c",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

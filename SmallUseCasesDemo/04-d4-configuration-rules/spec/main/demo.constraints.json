@@ -1,0 +1,118 @@
+{
+  "version": 1,
+  "params": {
+    "MODE": {
+      "mode(\"batch\");": {
+        "live": 0
+      },
+      "mode(\"live\");": {
+        "live": 1
+      }
+    },
+    "WORKERS": {
+      "workers(1);": {
+        "n": 1
+      },
+      "workers(2);": {
+        "n": 2
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "R1",
+      "polarity": "forbid",
+      "sheets": [
+        "ENV",
+        "TRANSPORT"
+      ],
+      "pairs": [
+        {
+          "ENV": "env(\"prod\");",
+          "TRANSPORT": "transport(\"http\");"
+        }
+      ],
+      "desc": "prod with http"
+    },
+    {
+      "id": "R2",
+      "polarity": "forbid",
+      "sets": {
+        "MODE": [
+          "mode(\"live\");"
+        ],
+        "FEATURES": [
+          "feature(\"cache\");"
+        ]
+      },
+      "desc": "live with cache selected"
+    },
+    {
+      "id": "R3",
+      "polarity": "require",
+      "sheets": [
+        "MODE",
+        "WORKERS"
+      ],
+      "when": "MODE.live == 0 or WORKERS.n >= 2",
+      "desc": "live needs workers >= 2"
+    },
+    {
+      "id": "R4",
+      "polarity": "require",
+      "mapping": {
+        "source": "ENV",
+        "target": "FEATURES",
+        "allow": {
+          "env(\"prod\");": [
+            "feature(\"audit\");",
+            "feature(\"gzip\");"
+          ]
+        }
+      },
+      "desc": "prod allows only audit and gzip; dev unconstrained"
+    },
+    {
+      "id": "R5",
+      "polarity": "require",
+      "assert": {
+        "sheet": "WORKERS",
+        "ge": "workers(2);"
+      },
+      "condition": {
+        "all": [
+          {
+            "sheet": "MODE",
+            "eq": "mode(\"batch\");"
+          },
+          {
+            "sheet": "FEATURES",
+            "has": "feature(\"audit\");"
+          }
+        ]
+      },
+      "desc": "batch with audit needs workers >= 2 (ordinal)"
+    },
+    {
+      "id": "R6",
+      "polarity": "forbid",
+      "sheets": [
+        "ENV",
+        "DEBUG"
+      ],
+      "pairs": [
+        {
+          "ENV": "env(\"prod\");",
+          "DEBUG": "debug();"
+        }
+      ],
+      "desc": "prod with DEBUG present (deferred to the Reader)"
+    }
+  ],
+  "orders": {
+    "WORKERS": [
+      "workers(1);",
+      "workers(2);"
+    ]
+  }
+}

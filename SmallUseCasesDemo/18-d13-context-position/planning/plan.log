@@ -1,0 +1,63 @@
+spec 'shape'  (18-d13-context-position/planning/shape.toml)
+  spec_version=1  sha256=01e5ff581ad66cf89a068ea16fcf7f84525d76516487082c594eade136e2205d
+  slots: 5   seq_extra rows: 5
+operator table:
+  HEAD: FW_Combi(1)  n=1
+  IMPL: FW_Combi(1)  n=3
+  TASK: FW_Combi(1)  n=2
+  ORDER: FW_Combi(1)  n=9
+  TAIL: FW_Combi(1)  n=1
+constraints present: 0
+
+raw values (declared per-slot sizes):
+  HEAD: 1
+  IMPL: 3
+  TASK: 2
+  ORDER: 9
+  TAIL: 1
+per-slot Core rows:
+  HEAD: 1  (EXACT — HEAD: FW_Combi(1)(n=1) -> FW_Combi(size))
+  IMPL: 3  (EXACT — IMPL: FW_Combi(1)(n=3) -> FW_Combi(size))
+  TASK: 2  (EXACT — TASK: FW_Combi(1)(n=2) -> FW_Combi(size))
+  ORDER: 9  (EXACT — ORDER: FW_Combi(1)(n=9) -> FW_Combi(size))
+  TAIL: 1  (EXACT — TAIL: FW_Combi(1)(n=1) -> FW_Combi(size))
+mandatory Core product: 54  (EXACT — Π rows(sheet) over the mandatory sheets of the effective FW_Seq program)
+estimated post-sieve: 54  (EXACT — = mandatory (no constraints declared -> sieve is a no-op))
+optional multiplier: 1  (EXACT — no FW_Optional sheets -> factor 1)
+final candidate count: 54  (EXACT — post_sieve × optional_multiplier)
+
+summary: mandatory=54 (EXACT, before sieve)  post-sieve=54 (EXACT, after-sieve estimate)  optional×1 (EXACT)  final=54 (EXACT)
+
+run class: S  (final candidate count = 54)
+Core DB bytes: ~59400  [10800, 108000]  (ESTIMATED — Core DB bytes ≈ Core rows count [54, 54] × 200-2000 per unit)
+    assumption: per-unit cost assumed in [200-2000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+Results DB bytes: ~44550  [8100, 81000]  (ESTIMATED — Results DB bytes ≈ verdict rows (V) count [54, 54] × 150-1500 per unit)
+    assumption: per-unit cost assumed in [150-1500] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+candidate source bytes: ~148500  [27000, 270000]  (ESTIMATED — candidate source bytes ≈ final candidates count [54, 54] × 500-5000 per unit)
+    assumption: no template sample provided — candidate source size assumed in the generic range (500, 5000) bytes; pass a real sample (`template_sample_bytes`) for a sound estimate
+    assumption: per-unit cost assumed in [500-5000] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+loose-file inode count: ~54  [54, 54]  (ESTIMATED — loose-file inode count ≈ final candidates count [54, 54] × 1 per unit)
+    assumption: one inode per loose candidate file — the compressed shard sink (STEP 32) would change this ratio; not yet active by default
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+external request count: ~54  [54, 54]  (ESTIMATED — external request count ≈ measurement opportunities (I) count [54, 54] × 1 per unit)
+    assumption: one execution request per candidate invocation; I = V + metric-only repeats (docs/24 §3.3)
+    assumption: per-unit cost assumed in [1] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+execution duration (s): ~55  [2, 108]  (ESTIMATED — execution duration (seconds) ≈ measurement opportunities (I) count [54, 54] × 0.05-2 per unit)
+    assumption: per-candidate cost assumed in [0.05, 2] seconds, single worker — no parallelism/backpressure modelled (see STEP 33/34)
+    assumption: with repeats active, duration ≈ I × per-candidate cost — the CONSERVATIVE assumption t_m == t_v (a metric-only re-measure costs as much as a full verdict); the split V·t_v + metric_only·t_m awaits Phase 4's measured t_m
+    assumption: per-unit cost assumed in [0.05-2] without a real sample — replace with a measured value (e.g. via `bundle doctor`/the stage benchmark harness) for a tighter range
+dominant resource: candidate source bytes  (largest assumed point estimate (148500) among sizable dimensions — a rough cross-unit signal only; budget gates (STEP 12) will provide a normalized ranking)
+
+repeat plan: K=1 — repeat topology inactive (A=V=I=C); legacy single-run path
+
+budget evaluation (analysis-only; the run path is the enforcement point):
+  [WARNING] mandatory Core rows ~54 exceeds warning threshold 50 (hard limit 100)
+  [WARNING] final candidates ~54 exceeds warning threshold 50 (hard limit 100)
+  [OK] estimated disk bytes (Core+Results+sources) ~459000 within budget (limit 5e+07)
+  [OK] estimated loose-file inodes ~54 within budget (limit 2e+06)
+  [OK] estimated wall time (s) ~108 within budget (limit 400)
+  [OK] estimated external requests ~54 within budget (limit 2e+06)
+  [OK] estimated monetary cost: no limit configured
+
+warnings: none
+  ✓ plan -> 18-d13-context-position/planning/plan/plan.json  (FW_Seq graph sha256:7836485e343325e7a4b091a08d07343ed6a537d6341bc2746d35a2f0c3521dec)

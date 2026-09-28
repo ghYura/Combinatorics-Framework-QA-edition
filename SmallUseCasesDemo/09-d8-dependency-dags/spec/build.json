@@ -1,0 +1,16 @@
+{
+  "head_chars": 12730,
+  "head_sha256": "3a5ec9ae0d738123500af0041b7d7f077bcfe838a4fde718c6f9f9c5a0dd3ff6",
+  "module_sha256": {
+    "sut": "bd7ab9ead3b514720b3bd77b5003f23af3e78519890d5227bc3ad2062409d2cc",
+    "oracle": "bf3afa0a1a4cd9b2a0fd89b8ba63872e82801954980461699f1b7dc75c580255",
+    "runtime": "55c88233ab75c4899724d51f4e1095a2abbc574efc3c37e5e974c54299d505d8"
+  },
+  "files": {
+    "spec.toml": "9ad121dcaffcef5ad36dab5d4c36f784634ecd3418fa8b06326ccdfa4e73aaa0",
+    "demo.xlsx": "4ee07b34939392de83f407870dd644f18707e2b8a67f44b3ef41953f789633aa"
+  },
+  "schema": "d8b.build/v1",
+  "contract": "v1",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

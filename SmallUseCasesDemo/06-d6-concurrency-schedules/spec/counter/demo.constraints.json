@@ -1,0 +1,75 @@
+{
+  "version": 1,
+  "params": {
+    "S1": {
+      "set_step(1,\"A\");": {
+        "a": 1
+      },
+      "set_step(1,\"B\");": {
+        "a": 0
+      }
+    },
+    "S2": {
+      "set_step(2,\"A\");": {
+        "a": 1
+      },
+      "set_step(2,\"B\");": {
+        "a": 0
+      }
+    },
+    "S3": {
+      "set_step(3,\"A\");": {
+        "a": 1
+      },
+      "set_step(3,\"B\");": {
+        "a": 0
+      }
+    },
+    "S4": {
+      "set_step(4,\"A\");": {
+        "a": 1
+      },
+      "set_step(4,\"B\");": {
+        "a": 0
+      }
+    },
+    "CAP": {
+      "cap(0);": {
+        "n": 0
+      },
+      "cap(1);": {
+        "n": 1
+      },
+      "cap(2);": {
+        "n": 2
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "two_each",
+      "polarity": "require",
+      "sheets": [
+        "S1",
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "when": "S1.a + S2.a + S3.a + S4.a == 2",
+      "desc": "each thread appears exactly twice (A has a=1, B has a=0)"
+    },
+    {
+      "id": "preemption_cap",
+      "polarity": "require",
+      "sheets": [
+        "CAP",
+        "S1",
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "when": "int(S1.a != S2.a) + int(S2.a != S3.a and S1.a != S2.a) + int(S3.a != S4.a and S1.a != S3.a and S2.a != S3.a) <= CAP.n",
+      "desc": "preemptions (switches away from a thread with a step left) within the cap"
+    }
+  ]
+}

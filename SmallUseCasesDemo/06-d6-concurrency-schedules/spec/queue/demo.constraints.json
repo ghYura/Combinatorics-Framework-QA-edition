@@ -1,0 +1,60 @@
+{
+  "version": 1,
+  "params": {
+    "S1": {
+      "set_step(1,\"P\");": {
+        "p": 1
+      },
+      "set_step(1,\"C\");": {
+        "p": 0
+      }
+    },
+    "S2": {
+      "set_step(2,\"P\");": {
+        "p": 1
+      },
+      "set_step(2,\"C\");": {
+        "p": 0
+      }
+    },
+    "S3": {
+      "set_step(3,\"P\");": {
+        "p": 1
+      },
+      "set_step(3,\"C\");": {
+        "p": 0
+      }
+    },
+    "S4": {
+      "set_step(4,\"P\");": {
+        "p": 1
+      },
+      "set_step(4,\"C\");": {
+        "p": 0
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "two_each",
+      "polarity": "require",
+      "sheets": [
+        "S1",
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "when": "S1.p + S2.p + S3.p + S4.p == 2",
+      "desc": "producer and consumer each appear exactly twice (P has p=1, C has p=0)"
+    },
+    {
+      "id": "producer_first",
+      "polarity": "require",
+      "assert": {
+        "sheet": "S1",
+        "eq": "set_step(1,\"P\");"
+      },
+      "desc": "S1 is the producer (reference exploration: exactly the enabled schedules)"
+    }
+  ]
+}

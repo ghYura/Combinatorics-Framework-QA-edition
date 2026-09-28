@@ -1,0 +1,26 @@
+{
+  "head_chars": 13746,
+  "head_sha256": "4d0d2e6c3b660dc618e4fc5a9b24e0eb2d5705bdce698da0883f8adc0889776c",
+  "module_sha256": {
+    "sut": "480dbaf27acf4fc70303279679c35e698b4ee8cfa70a4221f5ebc4a09df86fbf",
+    "oracle": "e8eb1bdbccf673cd68f3b5b2bde8cd76dd3ff271d388a862623ca66f9e32a8ff",
+    "runtime": "d82398326f3cc3400c0f619f213c25fe4cc91d6269a57ebc9e190eace4152e3b"
+  },
+  "variants": {
+    "A": {
+      "spec.toml": "2c6d9938bc4821dafeddb380d0f7396d23cff04549a36ba25d0c88c8271efaca",
+      "demo.xlsx": "1daa89e1e8f7ecb4bf1ba83a229004c05488007194bf2f9ec77aa4205936f8ad"
+    },
+    "B": {
+      "spec.toml": "df1d5694d79d75556510deeab52b6f4524495b068a32c65d5a5d551d3acd8ec2",
+      "demo.xlsx": "2b656707d593a8e7e73d07addf9179bd626b39e9e7a5f2ee97497753dc464225"
+    },
+    "B-alt": {
+      "spec.toml": "149e9504588b19d3923e911e327d56ece47d88005fb9d280bc085dbc178c1c54",
+      "demo.xlsx": "73993cab4b8bfa22946c62f83f613120ef45e016b68bfacb28189c05742fd298"
+    }
+  },
+  "schema": "d3.build/v1",
+  "contract": "v1",
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

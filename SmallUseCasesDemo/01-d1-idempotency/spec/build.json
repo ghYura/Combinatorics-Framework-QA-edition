@@ -1,0 +1,32 @@
+{
+  "head_chars": 20566,
+  "head_sha256": "84737551587e6cf0e7c2439bcd77667bf5c78968ebaa51701277fb1ccfa26eff",
+  "module_sha256": {
+    "sut": "82343bc71770a497719a52ae9b848189aabfef53dafc27cd51586b9e515cb66f",
+    "oracle": "153e23df5e202cbc9557c7658f9d34e6ceb366c7d817dfebd352c661aad5fd61",
+    "runtime": "94a1ef196a9c9f97fdd01f6f0fe8b85a5fe067457c576e6dd32996789933acbf"
+  },
+  "fwgen_command": [
+    "python",
+    "generator_trunk/fwgen_cli.py",
+    "gen",
+    "--specs",
+    "<dir holding spec.toml>",
+    "--out",
+    "<dir>"
+  ],
+  "fwgen_stdout": [
+    "spec                                     rows=600    chunks=1    compact (Core expands)                         OK",
+    "  constraints companion -> spec.constraints.json",
+    "",
+    "1 workbooks \u2192 /tmp/tmp0y5lkvt8/wb    ALL VALID"
+  ],
+  "schema": "d1.build/v1",
+  "contract": "v1",
+  "files_sha256": {
+    "spec.toml": "e27cdccd7758d2fa0642508cd6387436878a084d58b77398ab07c032d02b1175",
+    "demo.constraints.json": "bbf3fe3404f70266c38bbd1026a1505e0db9243a39e5bc344874adb7d247d2f8",
+    "demo.xlsx": "737eb154718606d16daa7c7f877e7c997260784c4a8a7b7a6f2212198b72a8b6"
+  },
+  "note": "demo.xlsx bytes carry zip timestamps; compare cell content with build_spec.py --check"
+}

@@ -1,0 +1,153 @@
+# SPDX-License-Identifier: BUSL-1.1
+spec_version = "1"
+title = "D13d architecture sizing probe; never execute"
+args = ["noargs"]
+seq_extra = [["HEAD", "FW_Combi(1)", "FW_Combi(size)"], ["IMPL", "FW_Combi(1)", "FW_Combi(size)"], ["WRITE_AT", "FW_Combi(1)", "FW_Combi(size)"], ["U1", "FW_Combi(1)", "FW_Combi(size)"], ["U2", "FW_Combi(1)", "FW_Combi(size)"], ["U3", "FW_Combi(1)", "FW_Combi(size)"], ["S1", "FW_Combi(1)", "FW_Combi(size)"], ["S2", "FW_Combi(1)", "FW_Combi(size)"], ["S3", "FW_Combi(1)", "FW_Combi(size)"], ["R12", "FW_Combi(1)", "FW_Combi(size)"], ["R23", "FW_Combi(1)", "FW_Combi(size)"], ["TAIL", "FW_Combi(1)", "FW_Combi(size)"]]
+
+[[slots]]
+sheet = "HEAD"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[slots]]
+sheet = "IMPL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["impl(\"scoped\");", "impl(\"user_only\");", "impl(\"session_only\");", "impl(\"ignores_reset\");"]
+
+[[slots]]
+sheet = "WRITE_AT"
+verb = "FW_Combi(1)"
+raw = true
+values = ["write_at(1);", "write_at(2);"]
+
+[[slots]]
+sheet = "U1"
+verb = "FW_Combi(1)"
+raw = true
+values = ["user_at(1,0);"]
+
+[[slots]]
+sheet = "U2"
+verb = "FW_Combi(1)"
+raw = true
+values = ["user_at(2,0);", "user_at(2,1);"]
+
+[[slots]]
+sheet = "U3"
+verb = "FW_Combi(1)"
+raw = true
+values = ["user_at(3,0);", "user_at(3,1);", "user_at(3,2);"]
+
+[[slots]]
+sheet = "S1"
+verb = "FW_Combi(1)"
+raw = true
+values = ["session_at(1,0);"]
+
+[[slots]]
+sheet = "S2"
+verb = "FW_Combi(1)"
+raw = true
+values = ["session_at(2,0);", "session_at(2,1);"]
+
+[[slots]]
+sheet = "S3"
+verb = "FW_Combi(1)"
+raw = true
+values = ["session_at(3,0);", "session_at(3,1);", "session_at(3,2);"]
+
+[[slots]]
+sheet = "R12"
+verb = "FW_Combi(1)"
+raw = true
+values = ["reset_cut(1,0);", "reset_cut(1,1);"]
+
+[[slots]]
+sheet = "R23"
+verb = "FW_Combi(1)"
+raw = true
+values = ["reset_cut(2,0);", "reset_cut(2,1);"]
+
+[[slots]]
+sheet = "TAIL"
+verb = "FW_Combi(1)"
+raw = true
+values = ["pass\n"]
+
+[[params]]
+sheet = "U1"
+value = "user_at(1,0);"
+n = 0
+
+[[params]]
+sheet = "U2"
+value = "user_at(2,0);"
+n = 0
+
+[[params]]
+sheet = "U2"
+value = "user_at(2,1);"
+n = 1
+
+[[params]]
+sheet = "U3"
+value = "user_at(3,0);"
+n = 0
+
+[[params]]
+sheet = "U3"
+value = "user_at(3,1);"
+n = 1
+
+[[params]]
+sheet = "U3"
+value = "user_at(3,2);"
+n = 2
+
+[[params]]
+sheet = "S1"
+value = "session_at(1,0);"
+n = 0
+
+[[params]]
+sheet = "S2"
+value = "session_at(2,0);"
+n = 0
+
+[[params]]
+sheet = "S2"
+value = "session_at(2,1);"
+n = 1
+
+[[params]]
+sheet = "S3"
+value = "session_at(3,0);"
+n = 0
+
+[[params]]
+sheet = "S3"
+value = "session_at(3,1);"
+n = 1
+
+[[params]]
+sheet = "S3"
+value = "session_at(3,2);"
+n = 2
+
+[[constraints]]
+id = "user_rgs"
+polarity = "require"
+sheets = ["U2", "U3"]
+when = "U3.n <= 1 + U2.n"
+
+[[constraints]]
+id = "session_rgs"
+polarity = "require"
+sheets = ["S2", "S3"]
+when = "S3.n <= 1 + S2.n"
+
+[[custom_vars]]
+code = 2
+msg = "D13d memory isolation or retention violation; inspect all checkpoints"

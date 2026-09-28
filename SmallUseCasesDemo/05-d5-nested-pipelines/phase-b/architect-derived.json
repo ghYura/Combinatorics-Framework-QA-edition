@@ -1,0 +1,1249 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived; no phase-B runs yet",
+  "input": {
+    "x": 2,
+    "y": 5
+  },
+  "trees": [
+    {
+      "id": "ZIP=A|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -6
+      }
+    },
+    {
+      "id": "ZIP=A|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -6
+      }
+    },
+    {
+      "id": "ZIP=A|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -6
+      }
+    },
+    {
+      "id": "ZIP=A|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -6
+      }
+    },
+    {
+      "id": "ZIP=M|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -10
+      }
+    },
+    {
+      "id": "ZIP=M|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -10
+      }
+    },
+    {
+      "id": "ZIP=M|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -10
+      }
+    },
+    {
+      "id": "ZIP=M|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -10
+      }
+    }
+  ],
+  "B1_cases": [
+    {
+      "id": "B1|correct|ZIP=A|CAT=A|TAIL=N",
+      "policy": "correct",
+      "tree_id": "ZIP=A|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -6
+      },
+      "predicted": {
+        "x": 0,
+        "y": -6
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=A|CAT=A|TAIL=N",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=A|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -6
+      },
+      "predicted": {
+        "x": 5,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=A|CAT=A|TAIL=N",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=A|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -6
+      },
+      "predicted": {
+        "x": -3,
+        "y": -9
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=A|CAT=A|TAIL=S",
+      "policy": "correct",
+      "tree_id": "ZIP=A|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -6
+      },
+      "predicted": {
+        "x": -3,
+        "y": -6
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=A|CAT=A|TAIL=S",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=A|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -6
+      },
+      "predicted": {
+        "x": -8,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=A|CAT=A|TAIL=S",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=A|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -6
+      },
+      "predicted": {
+        "x": 0,
+        "y": -9
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=A|CAT=M|TAIL=N",
+      "policy": "correct",
+      "tree_id": "ZIP=A|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=A|CAT=M|TAIL=N",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=A|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": 12,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=A|CAT=M|TAIL=N",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=A|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -6
+      },
+      "predicted": {
+        "x": -4,
+        "y": -9
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=A|CAT=M|TAIL=S",
+      "policy": "correct",
+      "tree_id": "ZIP=A|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -6
+      },
+      "predicted": {
+        "x": -5,
+        "y": -6
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=A|CAT=M|TAIL=S",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=A|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -6
+      },
+      "predicted": {
+        "x": -15,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=A|CAT=M|TAIL=S",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=A|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "A",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -6
+      },
+      "predicted": {
+        "x": 1,
+        "y": -9
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=M|CAT=A|TAIL=N",
+      "policy": "correct",
+      "tree_id": "ZIP=M|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -10
+      },
+      "predicted": {
+        "x": 0,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=M|CAT=A|TAIL=N",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=M|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -10
+      },
+      "predicted": {
+        "x": 6,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=M|CAT=A|TAIL=N",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=M|CAT=A|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 0,
+        "y": -10
+      },
+      "predicted": {
+        "x": -3,
+        "y": -13
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=M|CAT=A|TAIL=S",
+      "policy": "correct",
+      "tree_id": "ZIP=M|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -10
+      },
+      "predicted": {
+        "x": -3,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=M|CAT=A|TAIL=S",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=M|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -10
+      },
+      "predicted": {
+        "x": -9,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=M|CAT=A|TAIL=S",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=M|CAT=A|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "A"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -3,
+        "y": -10
+      },
+      "predicted": {
+        "x": 0,
+        "y": -13
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=M|CAT=M|TAIL=N",
+      "policy": "correct",
+      "tree_id": "ZIP=M|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=M|CAT=M|TAIL=N",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=M|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": 14,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=M|CAT=M|TAIL=N",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=M|CAT=M|TAIL=N",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "N"
+      ],
+      "expected": {
+        "x": 2,
+        "y": -10
+      },
+      "predicted": {
+        "x": -4,
+        "y": -13
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|correct|ZIP=M|CAT=M|TAIL=S",
+      "policy": "correct",
+      "tree_id": "ZIP=M|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -10
+      },
+      "predicted": {
+        "x": -5,
+        "y": -10
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B1|flatten_scope|ZIP=M|CAT=M|TAIL=S",
+      "policy": "flatten_scope",
+      "tree_id": "ZIP=M|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -10
+      },
+      "predicted": {
+        "x": -17,
+        "y": 5
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B1|leak_scope|ZIP=M|CAT=M|TAIL=S",
+      "policy": "leak_scope",
+      "tree_id": "ZIP=M|CAT=M|TAIL=S",
+      "tree": [
+        {
+          "scope": "x",
+          "children": [
+            {
+              "scope": "y",
+              "children": [
+                "M",
+                "N"
+              ]
+            }
+          ]
+        },
+        "S",
+        {
+          "scope": "x",
+          "children": [
+            "M"
+          ]
+        },
+        "S"
+      ],
+      "expected": {
+        "x": -5,
+        "y": -10
+      },
+      "predicted": {
+        "x": 1,
+        "y": -13
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    }
+  ],
+  "B2_cases": [
+    {
+      "id": "B2|correct|BUNDLE=all8",
+      "policy": "correct",
+      "predicted": {
+        "ZIP=A|CAT=A|TAIL=N": {
+          "x": 0,
+          "y": -6
+        },
+        "ZIP=A|CAT=A|TAIL=S": {
+          "x": -3,
+          "y": -6
+        },
+        "ZIP=A|CAT=M|TAIL=N": {
+          "x": 2,
+          "y": -6
+        },
+        "ZIP=A|CAT=M|TAIL=S": {
+          "x": -5,
+          "y": -6
+        },
+        "ZIP=M|CAT=A|TAIL=N": {
+          "x": 0,
+          "y": -10
+        },
+        "ZIP=M|CAT=A|TAIL=S": {
+          "x": -3,
+          "y": -10
+        },
+        "ZIP=M|CAT=M|TAIL=N": {
+          "x": 2,
+          "y": -10
+        },
+        "ZIP=M|CAT=M|TAIL=S": {
+          "x": -5,
+          "y": -10
+        }
+      },
+      "predicted_outcome": "PASS"
+    },
+    {
+      "id": "B2|flatten_scope|BUNDLE=all8",
+      "policy": "flatten_scope",
+      "predicted": {
+        "ZIP=A|CAT=A|TAIL=N": {
+          "x": 5,
+          "y": 5
+        },
+        "ZIP=A|CAT=A|TAIL=S": {
+          "x": -8,
+          "y": 5
+        },
+        "ZIP=A|CAT=M|TAIL=N": {
+          "x": 12,
+          "y": 5
+        },
+        "ZIP=A|CAT=M|TAIL=S": {
+          "x": -15,
+          "y": 5
+        },
+        "ZIP=M|CAT=A|TAIL=N": {
+          "x": 6,
+          "y": 5
+        },
+        "ZIP=M|CAT=A|TAIL=S": {
+          "x": -9,
+          "y": 5
+        },
+        "ZIP=M|CAT=M|TAIL=N": {
+          "x": 14,
+          "y": 5
+        },
+        "ZIP=M|CAT=M|TAIL=S": {
+          "x": -17,
+          "y": 5
+        }
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    },
+    {
+      "id": "B2|leak_scope|BUNDLE=all8",
+      "policy": "leak_scope",
+      "predicted": {
+        "ZIP=A|CAT=A|TAIL=N": {
+          "x": -3,
+          "y": -9
+        },
+        "ZIP=A|CAT=A|TAIL=S": {
+          "x": 0,
+          "y": -9
+        },
+        "ZIP=A|CAT=M|TAIL=N": {
+          "x": -4,
+          "y": -9
+        },
+        "ZIP=A|CAT=M|TAIL=S": {
+          "x": 1,
+          "y": -9
+        },
+        "ZIP=M|CAT=A|TAIL=N": {
+          "x": -3,
+          "y": -13
+        },
+        "ZIP=M|CAT=A|TAIL=S": {
+          "x": 0,
+          "y": -13
+        },
+        "ZIP=M|CAT=M|TAIL=N": {
+          "x": -4,
+          "y": -13
+        },
+        "ZIP=M|CAT=M|TAIL=S": {
+          "x": 1,
+          "y": -13
+        }
+      },
+      "predicted_outcome": "DOMAIN_FAIL"
+    }
+  ],
+  "counts": {
+    "E1": 2,
+    "E2_after_subsets": 8,
+    "E2_after_identity": 7,
+    "E3": 2,
+    "JZIP": 2,
+    "JCAT": 4,
+    "ROOT": 8,
+    "B1_candidates": 24,
+    "BUNDLE": 1,
+    "B2_candidates": 3
+  },
+  "outcomes": {
+    "B1": {
+      "PASS": 8,
+      "DOMAIN_FAIL": 16
+    },
+    "B2": {
+      "PASS": 1,
+      "DOMAIN_FAIL": 2
+    }
+  }
+}

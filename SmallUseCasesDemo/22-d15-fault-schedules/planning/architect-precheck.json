@@ -1,0 +1,86 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived and plan-checked; not run evidence",
+  "created": "2026-09-28T22:38:53.104756+03:00",
+  "raw_cases": 336,
+  "rejected_ids": [
+    "P=durable|F=012|C=0|K=partition|R=stable",
+    "P=durable|F=012|C=0|K=partition|R=fresh",
+    "P=durable|F=012|C=1|K=partition|R=stable",
+    "P=durable|F=012|C=1|K=partition|R=fresh",
+    "P=durable|F=012|C=2|K=partition|R=stable",
+    "P=durable|F=012|C=2|K=partition|R=fresh",
+    "P=durable|F=012|C=3|K=partition|R=stable",
+    "P=durable|F=012|C=3|K=partition|R=fresh",
+    "P=volatile_ack|F=012|C=0|K=partition|R=stable",
+    "P=volatile_ack|F=012|C=0|K=partition|R=fresh",
+    "P=volatile_ack|F=012|C=1|K=partition|R=stable",
+    "P=volatile_ack|F=012|C=1|K=partition|R=fresh",
+    "P=volatile_ack|F=012|C=2|K=partition|R=stable",
+    "P=volatile_ack|F=012|C=2|K=partition|R=fresh",
+    "P=volatile_ack|F=012|C=3|K=partition|R=stable",
+    "P=volatile_ack|F=012|C=3|K=partition|R=fresh",
+    "P=replay_twice|F=012|C=0|K=partition|R=stable",
+    "P=replay_twice|F=012|C=0|K=partition|R=fresh",
+    "P=replay_twice|F=012|C=1|K=partition|R=stable",
+    "P=replay_twice|F=012|C=1|K=partition|R=fresh",
+    "P=replay_twice|F=012|C=2|K=partition|R=stable",
+    "P=replay_twice|F=012|C=2|K=partition|R=fresh",
+    "P=replay_twice|F=012|C=3|K=partition|R=stable",
+    "P=replay_twice|F=012|C=3|K=partition|R=fresh"
+  ],
+  "valid_cases": 312,
+  "independent_failure_formula_matches": 312,
+  "outcomes": {
+    "PASS": 216,
+    "DOMAIN_FAIL": 96
+  },
+  "counts": {
+    "attempts": 1062,
+    "worker_starts": 1224,
+    "injected_kills": 288
+  },
+  "cardinality": {
+    "mandatory": {
+      "assumptions": [],
+      "formula": "\u03a0 rows(sheet) over the mandatory sheets of the effective FW_Seq program",
+      "lower": 336,
+      "mode": "EXACT",
+      "reasons": [],
+      "upper": 336,
+      "value": 336
+    },
+    "post_sieve": {
+      "assumptions": [],
+      "formula": "[0, mandatory] (sieve predicate selectivity not evaluated)",
+      "lower": 0,
+      "mode": "BOUNDED",
+      "reasons": [
+        "1 constraint(s) declared"
+      ],
+      "upper": 336,
+      "value": 336
+    },
+    "final": {
+      "assumptions": [],
+      "formula": "post_sieve \u00d7 optional_multiplier",
+      "lower": 0,
+      "mode": "BOUNDED",
+      "reasons": [
+        "each FW_Optional sheet independently multiplies the post-sieve space",
+        "product includes BOUNDED factor(s); range multiplies componentwise (lower\u00d7lower, upper\u00d7upper)"
+      ],
+      "upper": 336,
+      "value": 336
+    }
+  },
+  "graph_hash": "sha256:e2da9a88f2766c6fe79bb565ea4cd6579bc2a18a97e3709892252b48046648e3",
+  "disk_free_bytes": 8386592768,
+  "source_sha256": {
+    "CONTRACT.md": "5a456c93a60d992a9aeddceb5cf57d661732fc0ecfaca3afd42fac3ae9670478",
+    "derive.py": "c793a8dbaacd7acf4e14654ee14e7647853349e7fa1a0a84bf13d233fe581e9a",
+    "architect-derived.json": "bbb3317de87c2a155e198073b0ac8608b8e2672752696a31a36e1f83c0716a01",
+    "planning/shape.toml": "ad1d90759163d6acbe7aab79545a2c768eab1931926078c5f46e5d454873daca",
+    "planning/plan/plan.json": "407d2500d0091807ba4c546ee93c9ae56414cca18858499fc50699df6dc6d578"
+  }
+}

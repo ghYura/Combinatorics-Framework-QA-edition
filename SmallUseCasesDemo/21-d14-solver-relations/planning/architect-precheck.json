@@ -1,0 +1,27 @@
+{
+  "spdx_license_identifier": "BUSL-1.1",
+  "status": "Derived and plan-checked; no campaign run",
+  "created": "2026-09-28T22:15:04.887802+03:00",
+  "dp_predictions_crosschecked": 288,
+  "independent_case_ids": 144,
+  "framework_cardinality": {
+    "mandatory": 144,
+    "post_sieve": 144,
+    "final": 144
+  },
+  "outputs_expected": {
+    "PASS": 72,
+    "DOMAIN_FAIL": 72
+  },
+  "solver_calls": 432,
+  "reference_subset_checks": 8064,
+  "disk_free_bytes": 8430067712,
+  "metamorphic_output_equal_but_target_failed": 54,
+  "source_sha256": {
+    "CONTRACT.md": "9d5d6024e0c49b95d46e587faa567c36ee3ca423fa2637a736a57e16457c4beb",
+    "derive.py": "6b3802d4626f48a692dc79b845971d6955b8b4db2c06c898ef80a7eeec209312",
+    "architect-derived.json": "0c78df7c00a434d3c49850aeaa1f597898a3c97095a2434c01a98c008ca17310",
+    "planning/shape.toml": "db0e94b6313e72545b209c9269a784b78bd32908f5af05ecadfb95ca71c28cef",
+    "planning/plan/plan.json": "525d074bbf88c3d138bea1480478ecc4a8f3e8ac31d1e30ddca3579cde9d7315"
+  }
+}

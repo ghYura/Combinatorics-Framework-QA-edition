@@ -1,0 +1,93 @@
+{
+  "version": 1,
+  "params": {
+    "MODE": {
+      "mode(\"independent\");": {
+        "wait": 0
+      },
+      "mode(\"after_A_offer\");": {
+        "wait": 1
+      }
+    },
+    "CAP": {
+      "cap(0);": {
+        "n": 0
+      },
+      "cap(1);": {
+        "n": 1
+      },
+      "cap(2);": {
+        "n": 2
+      }
+    },
+    "S1": {
+      "set_step(1,\"A\");": {
+        "a": 1
+      },
+      "set_step(1,\"B\");": {
+        "a": 0
+      }
+    },
+    "S2": {
+      "set_step(2,\"A\");": {
+        "a": 1
+      },
+      "set_step(2,\"B\");": {
+        "a": 0
+      }
+    },
+    "S3": {
+      "set_step(3,\"A\");": {
+        "a": 1
+      },
+      "set_step(3,\"B\");": {
+        "a": 0
+      }
+    },
+    "S4": {
+      "set_step(4,\"A\");": {
+        "a": 1
+      },
+      "set_step(4,\"B\");": {
+        "a": 0
+      }
+    }
+  },
+  "constraints": [
+    {
+      "id": "two_each",
+      "polarity": "require",
+      "sheets": [
+        "S1",
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "when": "S1.a + S2.a + S3.a + S4.a == 2",
+      "desc": "each agent delivers exactly two messages (A has a=1, B has a=0)"
+    },
+    {
+      "id": "causal_ready",
+      "polarity": "require",
+      "sheets": [
+        "MODE",
+        "S1"
+      ],
+      "when": "MODE.wait == 0 or S1.a == 1",
+      "desc": "after_A_offer: B.inspect only after A's offer, which for this fixture is exactly 'A delivers first'"
+    },
+    {
+      "id": "preemption_cap",
+      "polarity": "require",
+      "sheets": [
+        "CAP",
+        "S1",
+        "S2",
+        "S3",
+        "S4"
+      ],
+      "when": "int(S1.a != S2.a) + int(S2.a != S3.a and S1.a != S2.a) + int(S3.a != S4.a and S1.a != S3.a and S2.a != S3.a) <= CAP.n",
+      "desc": "preemptions (switches away from an agent whose commit is still undelivered) within the cap"
+    }
+  ]
+}
