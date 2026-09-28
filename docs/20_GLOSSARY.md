@@ -96,5 +96,6 @@
 - **SUT** — system under test (here, the example FastAPI app the candidates probe).
 - **Legacy handshake** — the pre-v2 filesystem protocol (`resultsDbURL`/`insert.sql`/`arguments`/
   `fwVar.shift`/`runmefirstonce.first`), retained as fallback.
-- **Canonical truth fixture** — the Core's deterministic multi-million-row invariants
-  (`fw_final=4,644,864`, `fw_opt4=33,674,483`).
+- **Canonical truth fixture** — `test14042026.xlsx` and the Core's measured multi-million-row
+  regression reference on it (`fw_final=4,644,864`, `fw_opt4=19,844,499` on the current build);
+  see `Core_trunk/README_CANONICAL_TRUTH.txt` for the build, method, history and the sheet-E convention.

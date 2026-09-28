@@ -108,11 +108,14 @@ assuming one mode.
 
 ## 7. Output invariants (don't "fix" a number blindly)
 
-On `test14042026.xlsx`, with default distinctify, the engine **must** produce `fw_final = 4,644,864`
-and `fw_opt4 = 33,674,483`, invariant across storage mode / PG version / JDK / lib version. A different
-number means the **input changed**, a **distinctify flag changed**, or a **regression** — investigate,
-don't overwrite `README_CANONICAL_TRUTH.txt`. (The historical `34,368,597` was a *different valid
-ordering* of the same emissions, closed by the Iter4 Step-10 content-sort.)
+On `test14042026.xlsx` the current build measured (2026-09-28, Core only, optional sizes 1..4)
+`fw_final = 4,644,864` and `fw_opt1..4 = 160 / 12,145 / 582,564 / 19,844,499`; each `fw_opt_k` is the
+k-th elementary symmetric polynomial of the 30 contributing optional sheets' row counts, so a changed
+total reduces to changed per-sheet counts. The build that introduced the reference (e38766b) gives
+`fw_opt4 = 33,674,483`: only sheets G, M, N differ (16 → 8 rows, the grouped `FW_Cartes(X)` fix).
+Sheet E = 13 is a declared **convention** (the Step-10 content sort), not a law. A different number on
+the same build means the **input changed**, a **distinctify flag changed**, or a **regression** —
+investigate, don't overwrite `README_CANONICAL_TRUTH.txt`; it records the build, method and history.
 
 ## 8. Determinism — the one subtle place
 
