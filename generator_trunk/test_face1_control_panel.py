@@ -198,3 +198,17 @@ def test_direct_command_covers_the_full_surface(tmp_path):
     # stress knobs only when runMode == stress
     verdict = sf._direct_command(dict(cfg, runMode="verdict"), tmp_path / "s", "d", "r", tmp_path / "r")
     assert "--base-url" not in verdict and "--slo-p99" not in verdict
+
+
+def test_executor_workers_is_local_only_and_emitted_above_one(tmp_path):
+    """The Python Executor worker pool reaches LOCAL mode as --executor-workers N (N > 1 only,
+    the launcher's default 1 stays implicit) and is never projected into a gateway job."""
+    base = {"lang": "py", "transport": "loose-files", "profile": "generated-default"}
+    cmd = sf._direct_command(dict(base, executorWorkers="4"), tmp_path / "s", "d", "r", tmp_path / "r")
+    assert cmd[cmd.index("--executor-workers") + 1] == "4"
+    for off in ("1", "", None):
+        assert "--executor-workers" not in sf._direct_command(
+            dict(base, executorWorkers=off), tmp_path / "s", "d", "r", tmp_path / "r")
+    job = sf._face_job("spec_version='1'\n", dict(base, executorWorkers="4"))
+    keys = set(job) | set(job.get("config_overrides") or {})
+    assert not any("worker" in key for key in keys), f"gateway job must not carry a worker pool: {sorted(keys)}"

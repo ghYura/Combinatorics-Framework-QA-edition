@@ -213,7 +213,8 @@ _GW_OVERRIDE_KEYS = {
 # (pairing, defaults, java/K dependencies) rather than the flat table above.
 _SPECIAL_RUN_FLAGS = {
     "--db", "--run-id", "--runs-root", "--lang", "--analyzer", "--analysis-mode",
-    "--candidate-sink", "--grpc-host", "--grpc-port", "--executor-pool", "--iterations",
+    "--candidate-sink", "--grpc-host", "--grpc-port", "--executor-pool", "--executor-workers",
+    "--iterations",
 }
 
 # Every flag Face 1 (local mode) can emit — the "control panel for everything"
@@ -487,6 +488,11 @@ def _direct_command(cfg: dict, spec_dir: Path, db: str, run_id: str, runs_root: 
     pool = _int_or_none(cfg.get("executorPool"))
     if pool and pool > 1:
         cmd += ["--executor-pool", str(pool)]
+    # Python Executor worker pool (py_executor --workers); LOCAL mode only — the
+    # gateway has no worker-pool field, so _face_job does not project it.
+    workers = _int_or_none(cfg.get("executorWorkers"))
+    if workers and workers > 1:
+        cmd += ["--executor-workers", str(workers)]
     for key, flag, kind in _RUN_FLAG_SPECS:
         v = cfg.get(key)
         if kind == "bool":
