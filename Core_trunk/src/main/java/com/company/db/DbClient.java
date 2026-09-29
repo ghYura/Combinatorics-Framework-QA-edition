@@ -39,6 +39,7 @@
 package com.company.db;
 
 import com.company.config.AppConfig;
+import com.company.keys.PgCopyBuffer;
 import com.mchange.v2.c3p0.ComboPooledDataSource;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -278,8 +279,22 @@ super(message, cause);
 public void copyIn(StringBuilder data, String tableName, String commaSepFields) {
 if (data == null || data.isEmpty()) return;
 
-String copySql = "COPY public." + tableName + " (" + commaSepFields + ") FROM STDIN";
 byte[] bytes = data.toString().getBytes(StandardCharsets.UTF_8);
+copyInBytes(bytes, 0, bytes.length, tableName, commaSepFields);
+}
+
+/**
+ * COPY straight from a byte buffer: the driver reads the SAME array the rows were formatted into
+ * (no {@code toString()}, no {@code getBytes()}, no intermediate copy).  Same gate, same connection
+ * handling and the same error policy as the {@link StringBuilder} overload.
+ */
+public void copyIn(PgCopyBuffer data, String tableName, String commaSepFields) {
+if (data == null || data.isEmpty()) return;
+copyInBytes(data.array(), 0, data.length(), tableName, commaSepFields);
+}
+
+private void copyInBytes(byte[] bytes, int off, int len, String tableName, String commaSepFields) {
+String copySql = "COPY public." + tableName + " (" + commaSepFields + ") FROM STDIN";
 
 try {
 copyGate.acquire();
@@ -290,7 +305,7 @@ return;
 }
 
 try (Connection conn = pool.getConnection();
-ByteArrayInputStream bais = new ByteArrayInputStream(bytes)) {
+ByteArrayInputStream bais = new ByteArrayInputStream(bytes, off, len)) {
 CopyManager cm = conn.unwrap(PGConnection.class).getCopyAPI();
 long rowsCopied = cm.copyIn(copySql, bais);
 log.trace("copyIn to '{}': {} rows", tableName, rowsCopied);

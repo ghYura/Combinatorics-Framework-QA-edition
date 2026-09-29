@@ -30,6 +30,9 @@ import com.company.daoModelService.FW_CUSTOM_VARService;
 import com.company.daoModelService.SheetNameService;
 import com.company.db.DbClient;
 import com.company.db.SchemaProvisioner;
+import com.company.experimental.ByteKeysExperimental;
+import com.company.keys.KeyCodec;
+import com.company.keys.KeyCodecs;
 import com.company.precompute.HeapWatchdog;
 import com.company.precompute.PrecomputeMemoryBudget;
 import com.company.store.IntermediateTableStore;
@@ -375,8 +378,22 @@ AppConfig.PrecomputeMode resolvedPrecompute = resolvePrecomputeMode(config, seq,
 // [Iter2 + Iter4.3] Pick intermediate-storage backend.  When precompute=JAVA
 // (resolved), forces in-JVM regardless of intermediate.storage.  Otherwise
 // intermediate.storage decides.
-IntermediateTableStore intermediateStore =
-        createIntermediateStore(config, db, schema, workbook, resolvedPrecompute);
+// [Keys] ONE codec per run, picked by the workbook's key plan (BYTE tier: byte[] rows, SHORT tier:
+// short[] rows).  The row type is erased to Object here on purpose: store, workers and assembler
+// are generic in it and only the codec ever looks inside a row, so the cast is safe by construction.
+@SuppressWarnings("unchecked")
+final KeyCodec<Object> keyCodec = (KeyCodec<Object>)
+        (workbook.keyPlan == null ? KeyCodecs.SHORT : KeyCodecs.of(workbook.keyPlan.tier));
+log.info("[Keys] key codec: {}[] rows, plan: {}", keyCodec.tier().name().toLowerCase(),
+        workbook.keyPlan == null ? "none" : workbook.keyPlan);
+// [Keys/EXPERIMENTAL] Everything below is a no-op unless the properties say core.keys.dispatch=auto:
+// a WARN banner on its own logger, then (byte tier only) a DB-side guard now and an audit after assembly.
+final AppConfig.KeysConfig keysCfg = (config.workbook == null) ? AppConfig.KeysConfig.DEFAULT : config.workbook.keys;
+ByteKeysExperimental.announce(keysCfg, workbook.keyPlan);
+final boolean byteKeyGuards = ByteKeysExperimental.guardsWanted(keysCfg, workbook.keyPlan);
+if (byteKeyGuards) ByteKeysExperimental.installGuards(db);
+IntermediateTableStore<Object> intermediateStore =
+        createIntermediateStore(keyCodec, config, db, schema, workbook, resolvedPrecompute);
 log.info("[Iter2] Intermediate storage mode: {} (precompute resolved: {})",
         intermediateStore.modeName(), resolvedPrecompute);
 
@@ -393,11 +410,11 @@ log.error("Failed to create fw_{}", key, e);
 }
 
 
-SheetWorker worker = new SheetWorker(config, db, schema, workbook, intermediateStore);
+SheetWorker<Object> worker = new SheetWorker<>(config, db, schema, workbook, intermediateStore);
 
 // [Iter4 Step 9] Holder for the FinalTableAssembler so the watchdog ABORT
 // callback (defined below, before FA is constructed) can reach into it.
-final java.util.concurrent.atomic.AtomicReference<FinalTableAssembler> assemblerRef =
+final java.util.concurrent.atomic.AtomicReference<FinalTableAssembler<Object>> assemblerRef =
         new java.util.concurrent.atomic.AtomicReference<>();
 
 // [Iter4.4] Heap watchdog — mode depends on RAW config (forced vs auto)
@@ -405,7 +422,7 @@ final java.util.concurrent.atomic.AtomicReference<FinalTableAssembler> assembler
 // for forced JAVA (clean fail before OOM); DRAIN_ON_CRITICAL for
 // auto-resolved JAVA (would drain to PG; drain mechanism is future work).
 HeapWatchdog.Mode watchdogMode = watchdogModeFor(config.precomputeMode, resolvedPrecompute);
-Runnable drainHook = buildDrainHook(intermediateStore, config, db, schema, workbook);
+Runnable drainHook = buildDrainHook(keyCodec, intermediateStore, config, db, schema, workbook);
 try (HeapWatchdog watchdog = new HeapWatchdog(
         watchdogMode,
         evt -> {
@@ -414,7 +431,7 @@ try (HeapWatchdog watchdog = new HeapWatchdog(
             // of its producer/consumer + opts cartesian loops instead of
             // grinding toward OOM.
             worker.cancel();
-            FinalTableAssembler fa = assemblerRef.get();
+            FinalTableAssembler<Object> fa = assemblerRef.get();
             if (fa != null) fa.cancel();
             log.error("[Iter4.4] SheetWorker.cancel() + FinalTableAssembler.cancel() called via watchdog abort signal");
         },
@@ -560,7 +577,7 @@ return;
 }
 
 
-FinalTableAssembler assembler = new FinalTableAssembler(
+FinalTableAssembler<Object> assembler = new FinalTableAssembler<>(
 config, db, schema, workbook, intermediateStore, resolvedPrecompute);
 assemblerRef.set(assembler);  // [Iter4 Step 9] expose to watchdog ABORT callback
 try {
@@ -575,6 +592,10 @@ createSqlFinal);
 log.error("Final assembly failed", e);
 return;
 }
+
+// [Keys/EXPERIMENTAL] byte tier only: every key array in the run's tables must lie inside the byte
+// window; a violation fails the run here, before the intermediate tables are swept away.
+if (byteKeyGuards) ByteKeysExperimental.enforce(ByteKeysExperimental.audit(db));
 
 
 // Strict: CREATE OR REPLACE cannot hit a benign duplicate; any failure
@@ -879,23 +900,23 @@ private static AppConfig.PrecomputeMode resolvePrecomputeMode(
  *    forced mode aborts on HIGH instead of draining).
  *  - resolvedPrecompute=DB              → intermediate.storage decides between
  *    PG and Java for the intermediate fw_/fw2_ tables independently. */
-private static IntermediateTableStore createIntermediateStore(
-        AppConfig config, DbClient db, SchemaProvisioner schema,
+private static IntermediateTableStore<Object> createIntermediateStore(
+        KeyCodec<Object> codec, AppConfig config, DbClient db, SchemaProvisioner schema,
         ParsedWorkbook workbook, AppConfig.PrecomputeMode resolvedPrecompute) {
     if (resolvedPrecompute == AppConfig.PrecomputeMode.JAVA) {
-        JavaIntermediateTableStore javaStore = new JavaIntermediateTableStore();
+        JavaIntermediateTableStore<Object> javaStore = new JavaIntermediateTableStore<>(codec);
         if (config.precomputeMode == AppConfig.PrecomputeMode.AUTO) {
-            return new SwitchableIntermediateTableStore(javaStore);
+            return new SwitchableIntermediateTableStore<>(javaStore);
         }
         return javaStore;
     }
     switch (config.intermediateStorage) {
         case MEMORY:
-            return new JavaIntermediateTableStore();
+            return new JavaIntermediateTableStore<>(codec);
         case PG:
         default:
-            return new PgIntermediateTableStore(
-                    db, schema,
+            return new PgIntermediateTableStore<>(
+                    codec, db, schema,
                     config.threading.counter4copyMax,
                     workbook.shortStringSheetKey2SheetNameHM);
     }
@@ -906,21 +927,21 @@ private static IntermediateTableStore createIntermediateStore(
  *  store and swaps the SwitchableStore wrapper to point at PG.  Returns a
  *  no-op when the store isn't a SwitchableStore (forced-JAVA / db path). */
 private static Runnable buildDrainHook(
-        IntermediateTableStore store, AppConfig config, DbClient db,
+        KeyCodec<Object> codec, IntermediateTableStore<Object> store, AppConfig config, DbClient db,
         SchemaProvisioner schema, ParsedWorkbook workbook) {
-    if (!(store instanceof SwitchableIntermediateTableStore sw)) {
+    if (!(store instanceof SwitchableIntermediateTableStore<Object> sw)) {
         return () -> log.warn("[Iter4.5/drain] store is not switchable ({}) — no drain available",
                 store.modeName());
     }
     return () -> {
-        IntermediateTableStore current = sw.current();
-        if (!(current instanceof JavaIntermediateTableStore javaStore)) {
+        IntermediateTableStore<Object> current = sw.current();
+        if (!(current instanceof JavaIntermediateTableStore<Object> javaStore)) {
             log.warn("[Iter4.5/drain] already drained — current store is {}", current.modeName());
             return;
         }
         log.warn("[Iter4.5/drain] migrating in-memory store → PG");
-        IntermediateTableStore pgStore = new PgIntermediateTableStore(
-                db, schema, config.threading.counter4copyMax,
+        IntermediateTableStore<Object> pgStore = new PgIntermediateTableStore<>(
+                codec, db, schema, config.threading.counter4copyMax,
                 workbook.shortStringSheetKey2SheetNameHM);
         try {
             javaStore.drainAllTo(pgStore);

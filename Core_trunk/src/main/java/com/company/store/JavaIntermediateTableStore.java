@@ -25,6 +25,8 @@
 
 package com.company.store;
 
+import com.company.keys.KeyCodec;
+
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -56,43 +58,52 @@ import org.apache.logging.log4j.Logger;
  *       SELECT-DISTINCT semantics (TableDataDistinctor).</li>
  * </ul>
  *
- * <p>Memory: every row's combo is retained as a short[] reference. Caller is
+ * <p>Memory: every row's combo is retained as a reference to a primitive array —
+ * {@code byte[]} in byte-tier runs, {@code short[]} otherwise (see {@link KeyCodec}). Caller is
  * responsible for ensuring the array isn't mutated after append (matches the
  * existing fwKeyShort accumulator convention). At 350 MB per 25 M rows × 7-cell
  * short[] this is feasible on a default -Xmx4g but worth monitoring on large
- * workbooks.</p>
+ * workbooks; byte[] rows cost 8-9 % less per row at 5-12 keys and up to 23 % less at 30.</p>
  */
-public final class JavaIntermediateTableStore implements IntermediateTableStore {
+public final class JavaIntermediateTableStore<A> implements IntermediateTableStore<A> {
 
     private static final Logger log = LogManager.getLogger(JavaIntermediateTableStore.class);
 
-    private final ConcurrentHashMap<Short, TableData> tables = new ConcurrentHashMap<>();
+    private final KeyCodec<A> codec;
 
-    private static final class Row {
+    private final ConcurrentHashMap<Short, TableData<A>> tables = new ConcurrentHashMap<>();
+
+    public JavaIntermediateTableStore(KeyCodec<A> codec) {
+        if (codec == null) throw new IllegalArgumentException("codec must not be null");
+        this.codec = codec;
+    }
+
+    private static final class Row<A> {
         final long combiId;
         final Long parentCombiId;  // null in fw_<k>
-        final short[] combo;
-        Row(long combiId, Long parentCombiId, short[] combo) {
+        final A combo;
+        Row(long combiId, Long parentCombiId, A combo) {
             this.combiId = combiId; this.parentCombiId = parentCombiId; this.combo = combo;
         }
     }
 
-    private static final class TableData {
+    private static final class TableData<A> {
         // Synchronized lists for per-key concurrent appends (sheets are independent
         // virtual threads; same-key writes are serialized by SheetWorker's loop).
-        final List<Row> fw  = Collections.synchronizedList(new ArrayList<>());
-        final List<Row> fw2 = Collections.synchronizedList(new ArrayList<>());
+        final List<Row<A>> fw  = Collections.synchronizedList(new ArrayList<>());
+        final List<Row<A>> fw2 = Collections.synchronizedList(new ArrayList<>());
         // Existence flags — set on createFwTable / createFw2Table or first append.
         volatile boolean fwExists  = false;
         volatile boolean fw2Exists = false;
     }
 
-    private TableData tableFor(short key) {
-        return tables.computeIfAbsent(key, k -> new TableData());
+    private TableData<A> tableFor(short key) {
+        return tables.computeIfAbsent(key, k -> new TableData<>());
     }
 
     @Override public String modeName() { return "memory"; }
     @Override public boolean isPgBacked() { return false; }
+    @Override public KeyCodec<A> codec()   { return codec; }
 
     // ── lifecycle ────────────────────────────────────────────────────────
 
@@ -107,17 +118,17 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
     // ── writes ───────────────────────────────────────────────────────────
 
     @Override
-    public void appendFwRow(short key, long combiId, short[] combo) {
-        TableData td = tableFor(key);
+    public void appendFwRow(short key, long combiId, A combo) {
+        TableData<A> td = tableFor(key);
         td.fwExists = true;
-        td.fw.add(new Row(combiId, null, combo));
+        td.fw.add(new Row<>(combiId, null, combo));
     }
 
     @Override
-    public void appendFw2Row(short key, long combiId, Long parentCombiId, short[] combo) {
-        TableData td = tableFor(key);
+    public void appendFw2Row(short key, long combiId, Long parentCombiId, A combo) {
+        TableData<A> td = tableFor(key);
         td.fw2Exists = true;
-        td.fw2.add(new Row(combiId, parentCombiId, combo));
+        td.fw2.add(new Row<>(combiId, parentCombiId, combo));
     }
 
     @Override public void flushFw(short key)  { /* memory: noop */ }
@@ -126,46 +137,46 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
     // ── reads ────────────────────────────────────────────────────────────
 
     @Override
-    public List<short[]> readFwCombos(short key) {
+    public List<A> readFwCombos(short key) {
         return collectCombos(listOf(key, false), null);
     }
 
     @Override
-    public List<short[]> readFw2Combos(short key) {
+    public List<A> readFw2Combos(short key) {
         return collectCombos(listOf(key, true), null);
     }
 
     @Override
-    public List<short[]> readFwCombosWithCardinality(short key, int cardinality) {
+    public List<A> readFwCombosWithCardinality(short key, int cardinality) {
         return collectCombos(listOf(key, false), cardinality);
     }
 
     @Override
-    public List<short[]> readFw2CombosWithCardinality(short key, int cardinality) {
+    public List<A> readFw2CombosWithCardinality(short key, int cardinality) {
         return collectCombos(listOf(key, true), cardinality);
     }
 
     @Override
-    public Map<Long, short[]> readFwAsMap(short key) {
-        List<Row> rows = listOf(key, false);
-        Map<Long, short[]> out = new HashMap<>(Math.max(16, rows.size()));
+    public Map<Long, A> readFwAsMap(short key) {
+        List<Row<A>> rows = listOf(key, false);
+        Map<Long, A> out = new HashMap<>(Math.max(16, rows.size()));
         synchronized (rows) {
-            for (Row r : rows) out.put(r.combiId, r.combo);
+            for (Row<A> r : rows) out.put(r.combiId, r.combo);
         }
         return out;
     }
 
-    private List<Row> listOf(short key, boolean fw2) {
-        TableData td = tables.get(key);
+    private List<Row<A>> listOf(short key, boolean fw2) {
+        TableData<A> td = tables.get(key);
         if (td == null) return Collections.emptyList();
         return fw2 ? td.fw2 : td.fw;
     }
 
-    private static List<short[]> collectCombos(List<Row> src, Integer cardinality) {
-        List<short[]> out = new ArrayList<>();
+    private List<A> collectCombos(List<Row<A>> src, Integer cardinality) {
+        List<A> out = new ArrayList<>();
         synchronized (src) {
-            for (Row r : src) {
-                if (cardinality != null && r.combo.length != cardinality.intValue()) continue;
+            for (Row<A> r : src) {
+                if (cardinality != null && codec.length(r.combo) != cardinality.intValue()) continue;
                 out.add(r.combo);
             }
         }
@@ -176,27 +187,27 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     @Override
     public long count(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return 0L;
-        List<Row> l = fw2 ? td.fw2 : td.fw;
+        List<Row<A>> l = fw2 ? td.fw2 : td.fw;
         synchronized (l) { return l.size(); }
     }
 
     @Override
     public long maxCombiId(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return 0L;
-        List<Row> l = fw2 ? td.fw2 : td.fw;
+        List<Row<A>> l = fw2 ? td.fw2 : td.fw;
         long max = 0L;
         synchronized (l) {
-            for (Row r : l) if (r.combiId > max) max = r.combiId;
+            for (Row<A> r : l) if (r.combiId > max) max = r.combiId;
         }
         return max;
     }
 
     @Override
     public boolean exists(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return false;
         return fw2 ? td.fw2Exists : td.fwExists;
     }
@@ -210,16 +221,16 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     @Override
     public void distinctify(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return;
-        List<Row> src = fw2 ? td.fw2 : td.fw;
+        List<Row<A>> src = fw2 ? td.fw2 : td.fw;
         // Dedup by combos, preserve first occurrence (matches legacy SELECT DISTINCT /
         // MIN(combi_id) GROUP BY data_cols). combi_id is NOT a distinctifying field
         // because TableDataDistinctor excludes it via the excludedCols filter.
-        LinkedHashMap<ComboKey, Row> dedup;
+        LinkedHashMap<ComboKey<A>, Row<A>> dedup;
         synchronized (src) {
             dedup = new LinkedHashMap<>(src.size());
-            for (Row r : src) dedup.putIfAbsent(new ComboKey(r.combo), r);
+            for (Row<A> r : src) dedup.putIfAbsent(new ComboKey<>(codec, r.combo), r);
             src.clear();
             src.addAll(dedup.values());
         }
@@ -227,17 +238,17 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     @Override
     public void deleteRows(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return;
-        List<Row> l = fw2 ? td.fw2 : td.fw;
+        List<Row<A>> l = fw2 ? td.fw2 : td.fw;
         synchronized (l) { l.clear(); }
     }
 
     @Override
     public void dropTable(short key, boolean fw2) {
-        TableData td = tables.get(key);
+        TableData<A> td = tables.get(key);
         if (td == null) return;
-        List<Row> l = fw2 ? td.fw2 : td.fw;
+        List<Row<A>> l = fw2 ? td.fw2 : td.fw;
         synchronized (l) { l.clear(); }
         if (fw2) td.fw2Exists = false; else td.fwExists = false;
         // Don't remove the TableData entry — caller may still query exists/empty
@@ -246,13 +257,13 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     @Override
     public void swapFw2ToFw(short key) throws SQLException {
-        TableData td = tableFor(key);
+        TableData<A> td = tableFor(key);
         synchronized (td.fw) {
             synchronized (td.fw2) {
                 td.fw.clear();
-                for (Row r : td.fw2) {
+                for (Row<A> r : td.fw2) {
                     // fw_ rows have null parentCombiId (combos column is the array)
-                    td.fw.add(new Row(r.combiId, null, r.combo));
+                    td.fw.add(new Row<>(r.combiId, null, r.combo));
                 }
                 td.fw2.clear();
                 td.fwExists  = true;
@@ -263,14 +274,14 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     @Override
     public void moveFwToFw2(short key) throws SQLException {
-        TableData td = tableFor(key);
+        TableData<A> td = tableFor(key);
         synchronized (td.fw) {
             synchronized (td.fw2) {
                 // PG creates fw2_ if missing then INSERT INTO fw2_ (combi_id, combos_1)
                 // SELECT combi_id, combos FROM fw_, then DELETE FROM fw_.
                 td.fw2Exists = true;
-                for (Row r : td.fw) {
-                    td.fw2.add(new Row(r.combiId, null, r.combo));
+                for (Row<A> r : td.fw) {
+                    td.fw2.add(new Row<>(r.combiId, null, r.combo));
                 }
                 td.fw.clear();
             }
@@ -293,17 +304,17 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
      *  <p>After this returns, the in-memory state is left intact — caller can
      *  drop the JavaIntermediateTableStore reference (GC reclaims the heap)
      *  OR keep it for inspection.  Recommend dropping to free memory.</p> */
-    public void drainAllTo(IntermediateTableStore target) throws SQLException {
+    public void drainAllTo(IntermediateTableStore<A> target) throws SQLException {
         if (target == null) throw new IllegalArgumentException("target must be non-null");
         if (target == this) throw new IllegalArgumentException("cannot drain to self");
         long totalRows = 0L;
-        for (Map.Entry<Short, TableData> entry : tables.entrySet()) {
+        for (Map.Entry<Short, TableData<A>> entry : tables.entrySet()) {
             Short key = entry.getKey();
-            TableData td = entry.getValue();
+            TableData<A> td = entry.getValue();
             if (td.fwExists) {
                 target.createFwTable(key);
                 synchronized (td.fw) {
-                    for (Row r : td.fw) {
+                    for (Row<A> r : td.fw) {
                         target.appendFwRow(key, r.combiId, r.combo);
                         totalRows++;
                     }
@@ -313,7 +324,7 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
             if (td.fw2Exists) {
                 target.createFw2Table(key);
                 synchronized (td.fw2) {
-                    for (Row r : td.fw2) {
+                    for (Row<A> r : td.fw2) {
                         target.appendFw2Row(key, r.combiId, r.parentCombiId, r.combo);
                         totalRows++;
                     }
@@ -327,18 +338,22 @@ public final class JavaIntermediateTableStore implements IntermediateTableStore 
 
     // ── helpers ──────────────────────────────────────────────────────────
 
-    /** Wrapper around short[] giving proper hashCode/equals (Arrays.* semantics)
+    /** Wrapper around a row array giving proper hashCode/equals (Arrays.* semantics via the codec)
      *  so it can serve as a LinkedHashMap key during distinctify. */
-    private static final class ComboKey {
-        final short[] arr;
+    private static final class ComboKey<A> {
+        final KeyCodec<A> codec;
+        final A arr;
         final int hash;
-        ComboKey(short[] arr) {
+        ComboKey(KeyCodec<A> codec, A arr) {
+            this.codec = codec;
             this.arr = arr;
-            this.hash = Arrays.hashCode(arr);
+            this.hash = codec.arrayHash(arr);
         }
         @Override public int hashCode() { return hash; }
         @Override public boolean equals(Object o) {
-            return (o instanceof ComboKey ck) && Arrays.equals(arr, ck.arr);
+            return (o instanceof ComboKey<?> ck) && hash == ck.hash && codec.arrayEquals(arr, castArr(ck));
         }
+        @SuppressWarnings("unchecked")
+        private A castArr(ComboKey<?> ck) { return (A) ck.arr; }
     }
 }

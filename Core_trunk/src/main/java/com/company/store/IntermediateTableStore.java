@@ -25,6 +25,8 @@
 
 package com.company.store;
 
+import com.company.keys.KeyCodec;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -49,8 +51,13 @@ import java.util.Map;
  * for reads of one key after that key's writes complete (signalled via
  * SheetWorker.sheetDone CompletableFuture). Writes to the SAME key are
  * serialised by the SheetWorker / BraceOperationHandler call pattern.</p>
+ *
+ * <p>Generic in the row array type {@code A}: {@code byte[]} for byte-tier runs, {@code short[]}
+ * otherwise; {@link #codec()} says which.</p>
+ *
+ * @param <A> the primitive array type of a row of cell keys
  */
-public interface IntermediateTableStore {
+public interface IntermediateTableStore<A> {
 
     /** Human-readable mode label for logging, e.g. {@code "pg"} or {@code "memory"}. */
     String modeName();
@@ -59,6 +66,9 @@ public interface IntermediateTableStore {
      *  occasionally need this to gate PG-only constructs (e.g. brace handler
      *  tmp tables, Hibernate statement-inspector retargets). */
     boolean isPgBacked();
+
+    /** The codec that types (and encodes) this store's rows. */
+    KeyCodec<A> codec();
 
     // ── lifecycle ────────────────────────────────────────────────────────
 
@@ -76,11 +86,11 @@ public interface IntermediateTableStore {
      *  (existing semantics: {@code fwId.incrementAndGet()}). The caller MUST
      *  NOT mutate {@code combo} after this call (implementations retain the
      *  reference). */
-    void appendFwRow(short key, long combiId, short[] combo);
+    void appendFwRow(short key, long combiId, A combo);
 
     /** Append a row to fw2_&lt;key&gt;. {@code parentCombiId} may be null
      *  (encoded in PG as {@code \N}). */
-    void appendFw2Row(short key, long combiId, Long parentCombiId, short[] combo);
+    void appendFw2Row(short key, long combiId, Long parentCombiId, A combo);
 
     /** Flush pending writes to the underlying medium (PG: COPY-flush any
      *  buffered rows; memory: noop). Should be called at the end of each
@@ -91,20 +101,20 @@ public interface IntermediateTableStore {
     // ── reads ────────────────────────────────────────────────────────────
 
     /** All combos from fw_&lt;key&gt;, in combi_id (insertion) order. */
-    List<short[]> readFwCombos(short key);
+    List<A> readFwCombos(short key);
 
     /** All combos from fw2_&lt;key&gt;, in combi_id order. */
-    List<short[]> readFw2Combos(short key);
+    List<A> readFw2Combos(short key);
 
     /** Combos from fw_&lt;key&gt; filtered by length == cardinality. */
-    List<short[]> readFwCombosWithCardinality(short key, int cardinality);
+    List<A> readFwCombosWithCardinality(short key, int cardinality);
 
     /** Combos from fw2_&lt;key&gt; filtered by length == cardinality. */
-    List<short[]> readFw2CombosWithCardinality(short key, int cardinality);
+    List<A> readFw2CombosWithCardinality(short key, int cardinality);
 
     /** Map combi_id → combo for fw_&lt;key&gt;. Used by SheetWorker.runSubsequentPass
      *  in place of FwService.getFWfromPreloadedMap. */
-    Map<Long, short[]> readFwAsMap(short key);
+    Map<Long, A> readFwAsMap(short key);
 
     // ── diagnostics ──────────────────────────────────────────────────────
 

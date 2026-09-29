@@ -587,13 +587,85 @@ public static final class WorkbookConfig {
 public final boolean autoGenerateMissingSheetsFromFwSeq;
 public final boolean autoGenerateMissingFwSheetNames;
 public final String  virtualSheetNamePrefix;
+/** Key-width dispatch and label-origin policy ({@code core.keys.*}). Never null. */
+public final KeysConfig keys;
 
 public WorkbookConfig(boolean autoGenerateMissingSheetsFromFwSeq,
 boolean autoGenerateMissingFwSheetNames,
 String  virtualSheetNamePrefix) {
+this(autoGenerateMissingSheetsFromFwSeq, autoGenerateMissingFwSheetNames,
+virtualSheetNamePrefix, KeysConfig.DEFAULT);
+}
+
+public WorkbookConfig(boolean autoGenerateMissingSheetsFromFwSeq,
+boolean autoGenerateMissingFwSheetNames,
+String  virtualSheetNamePrefix,
+KeysConfig keys) {
 this.autoGenerateMissingSheetsFromFwSeq = autoGenerateMissingSheetsFromFwSeq;
 this.autoGenerateMissingFwSheetNames    = autoGenerateMissingFwSheetNames;
 this.virtualSheetNamePrefix             = virtualSheetNamePrefix;
+this.keys                               = (keys == null) ? KeysConfig.DEFAULT : keys;
+}
+}
+
+
+/**
+ * Policy for {@link com.company.excel.DataTypeDispatcher}: which integer width the
+ * cell keys ("the digits of a combination row") are allowed to use, and where the
+ * label counter starts.  Properties:
+ * <pre>
+ *   core.keys.dispatch        = short | auto            (default short; auto = EXPERIMENTAL byte keys)
+ *   core.keys.strategy        = identity | anchor | optimal   (default identity)
+ *   core.keys.scope           = all | cells             (default all)
+ *   core.keys.anchorSheet     = &lt;sheet name&gt;            (optional; strategy=anchor)
+ *   core.keys.minGainPercent  = 0..100                  (default 5)
+ *   core.keys.audit           = true | false            (default true; EXPERIMENTAL byte tier only)
+ * </pre>
+ * The defaults are the legacy behaviour: short keys, numbered S+1..S+C.  The byte tier
+ * is an experiment that exists only when {@code core.keys.dispatch=auto} is set in the
+ * properties; nothing in code switches it on.
+ */
+public static final class KeysConfig {
+/** {@code SHORT} (default): legacy width (short), overflow-guarded.
+ *  {@code AUTO}: EXPERIMENTAL — byte keys when the workbook needs at most 255 of them, short
+ *  otherwise.  Selectable only through {@code core.keys.dispatch=auto}. */
+public enum Dispatch { AUTO, SHORT }
+/** How the label counter is placed inside the chosen width.
+ *  {@code IDENTITY}: legacy numbering while it fits, otherwise the cheapest window.
+ *  {@code ANCHOR}: the first cell of the most output-heavy sheet becomes key 0 and the
+ *  counter runs backward into negatives before it.
+ *  {@code OPTIMAL}: the window that minimises the predicted emitted characters. */
+public enum Strategy { IDENTITY, ANCHOR, OPTIMAL }
+/** What the byte-range gate counts: {@code ALL} = sheets + cells + virtual sheets (the
+ *  legacy shared counter), {@code CELLS} = only the cell keys that enter arrays. */
+public enum Scope { ALL, CELLS }
+
+public static final KeysConfig DEFAULT =
+new KeysConfig(Dispatch.SHORT, Strategy.IDENTITY, Scope.ALL, null, 5.0);
+
+public final Dispatch dispatch;
+public final Strategy strategy;
+public final Scope    scope;
+/** Optional explicit anchor sheet name (strategy=anchor); null = pick by estimate. */
+public final String   anchorSheet;
+/** A relabelling is adopted only if its predicted saving is at least this many percent. */
+public final double   minGainPercent;
+/** EXPERIMENTAL byte tier only: install the DB-side key guard and audit the tables after assembly. */
+public final boolean  audit;
+
+public KeysConfig(Dispatch dispatch, Strategy strategy, Scope scope,
+String anchorSheet, double minGainPercent) {
+this(dispatch, strategy, scope, anchorSheet, minGainPercent, true);
+}
+
+public KeysConfig(Dispatch dispatch, Strategy strategy, Scope scope,
+String anchorSheet, double minGainPercent, boolean audit) {
+this.dispatch       = (dispatch == null) ? Dispatch.SHORT : dispatch;
+this.strategy       = (strategy == null) ? Strategy.IDENTITY : strategy;
+this.scope          = (scope == null) ? Scope.ALL : scope;
+this.anchorSheet    = (anchorSheet == null || anchorSheet.isBlank()) ? null : anchorSheet.trim();
+this.minGainPercent = minGainPercent;
+this.audit          = audit;
 }
 }
 
@@ -733,7 +805,36 @@ private static WorkbookConfig parseWorkbook(Properties p) {
 return new WorkbookConfig(
 getBoolOrDefault(p, "workbook.autoGenerateMissingSheetsFromFwSeq", true),
 getBoolOrDefault(p, "workbook.autoGenerateMissingFwSheetNames",    true),
-getStringOrDefault(p, "workbook.virtualSheetNamePrefix", "FW_VIRTUAL_")
+getStringOrDefault(p, "workbook.virtualSheetNamePrefix", "FW_VIRTUAL_"),
+parseKeys(p)
+);
+}
+
+private static KeysConfig parseKeys(Properties p) {
+double minGain = 5.0;
+String rawGain = p.getProperty("core.keys.minGainPercent");
+if (rawGain != null && !rawGain.isBlank()) {
+try {
+minGain = Double.parseDouble(rawGain.trim());
+} catch (NumberFormatException e) {
+throw new IllegalArgumentException(
+"'core.keys.minGainPercent': not a number: '" + rawGain.trim() + "'");
+}
+if (minGain < 0.0 || minGain > 100.0) {
+throw new IllegalArgumentException(
+"'core.keys.minGainPercent': must be within 0..100, got " + minGain);
+}
+}
+return new KeysConfig(
+parseEnum(p.getProperty("core.keys.dispatch"), KeysConfig.Dispatch.class,
+KeysConfig.Dispatch.SHORT, "core.keys.dispatch"),
+parseEnum(p.getProperty("core.keys.strategy"), KeysConfig.Strategy.class,
+KeysConfig.Strategy.IDENTITY, "core.keys.strategy"),
+parseEnum(p.getProperty("core.keys.scope"), KeysConfig.Scope.class,
+KeysConfig.Scope.ALL, "core.keys.scope"),
+p.getProperty("core.keys.anchorSheet"),
+minGain,
+getBoolOrDefault(p, "core.keys.audit", true)
 );
 }
 

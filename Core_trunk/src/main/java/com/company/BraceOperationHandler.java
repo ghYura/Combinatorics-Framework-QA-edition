@@ -30,6 +30,7 @@ import com.company.db.DbClient;
 import com.company.db.SchemaProvisioner;
 import com.company.excel.ParsedWorkbook;
 import com.company.excel.WorkbookParser;
+import com.company.keys.KeyCodec;
 import com.company.store.IntermediateTableStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -41,7 +42,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public final class BraceOperationHandler {
+public final class BraceOperationHandler<A> {
 
 private static final Logger log = LogManager.getLogger(BraceOperationHandler.class);
 
@@ -50,20 +51,23 @@ private final DbClient       db;
 private final SchemaProvisioner schema;
 private final ParsedWorkbook workbook;
 /** [Iter2] All fw_/fw2_ intermediate I/O routes through here. */
-private final IntermediateTableStore store;
+private final IntermediateTableStore<A> store;
+/** Types and parses the rows this handler reads and writes ({@code byte[]} or {@code short[]}); null only in tests that never touch rows. */
+private final KeyCodec<A> codec;
 
 
 private final java.util.function.Consumer<Short> sheetWaiter;
 
 public BraceOperationHandler(AppConfig config, DbClient db,
 SchemaProvisioner schema, ParsedWorkbook workbook,
-IntermediateTableStore store,
+IntermediateTableStore<A> store,
 java.util.function.Consumer<Short> sheetWaiter) {
 this.config      = config;
 this.db          = db;
 this.schema      = schema;
 this.workbook    = workbook;
 this.store       = store;
+this.codec       = (store == null) ? null : store.codec();
 this.sheetWaiter = sheetWaiter;
 }
 
@@ -74,9 +78,9 @@ public boolean execute(
 String directive,
 Short key,
 Map<Short, List<Short>> toCombinatoricsHMcopy,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId,
-Map<String, ArrayList<short[]>> mapTable2combs,
+Map<String, ArrayList<A>> mapTable2combs,
 Map<Short, String> key2tableMap,
 Map<Short, String> key2tableMapOpt,
 Set<Short> reuseSet,
@@ -167,7 +171,7 @@ sheetWaiter.accept(keyExcl2);
 
 // [Iter2] BraceOperand abstracts the prior tmp_brace_ table machinery.
 // In PG mode the operand wraps a (possibly temp) table name; in memory
-// mode it wraps an in-heap List<short[]> filtered/grouped as needed.
+// mode it wraps an in-heap List<A> filtered/grouped as needed.
 BraceOperand operandA = (keyExcl1 != null)
 ? prepareBraceOperand(key, "a", keyExcl1, excl1Nested, excl1Grouped)
 : null;
@@ -198,7 +202,7 @@ if (operandB != null) operandB.dispose();
 
 
 fwKeyShort.clear();
-fwKeyShort.add(new short[]{});
+fwKeyShort.add(codec.empty());
 
 // [Iter2] Was: schema.createFw2Table + INSERT INTO fw2_ SELECT combi_id, combos FROM fw_ + DELETE FROM fw_.
 // Now: store.moveFwToFw2 encapsulates the same effect (PG: 3 SQL statements;
@@ -214,7 +218,7 @@ log.error("FW_( brace: failed to create fw2_ copy for key={}", key, e);
 // retarget.  Now: store.readFw2Combos directly (same source-of-truth).
 try {
 com.company.utils.CustomInterceptor2.setCurrentTable("fw2_" + key);
-for (short[] combo : store.readFw2Combos(key)) {
+for (A combo : store.readFw2Combos(key)) {
 fwKeyShort.add(combo);
 }
 } catch (Exception e) {
@@ -421,31 +425,9 @@ private void appendRow(AtomicLong fwId, Short outerKey, String arrayContent) {
 // Now: parse the comma-separated cell-key string to short[], dispatch
 // through store.appendFwRow (PG mode: store buffers + COPY; memory mode:
 // list.add).
-short[] combo = parseCommaSeparatedToShortArray(arrayContent);
-if (combo.length == 0) return;
+A combo = codec.parseCsv(arrayContent);
+if (codec.length(combo) == 0) return;
 store.appendFwRow(outerKey, fwId.incrementAndGet(), combo);
-}
-
-private static short[] parseCommaSeparatedToShortArray(String csv) {
-if (csv == null || csv.isEmpty()) return new short[0];
-String[] toks = csv.split(",");
-short[] out = new short[toks.length];
-int j = 0;
-for (String t : toks) {
-String s = t.trim();
-if (s.isEmpty()) continue;
-try {
-out[j++] = Short.parseShort(s);
-} catch (NumberFormatException e) {
-// Skip non-numeric tokens (shouldn't occur in normal brace output).
-}
-}
-if (j != out.length) {
-short[] trimmed = new short[j];
-System.arraycopy(out, 0, trimmed, 0, j);
-return trimmed;
-}
-return out;
 }
 
 
@@ -458,7 +440,7 @@ private static final String TMP_BRACE_PREFIX = "public.tmp_brace_";
 // any temporary state".  Two impls:
 //   - PgBraceOperand: wraps a table name (might be a tmp_brace_ table that
 //     must be DROP-ed on dispose; might be the durable fw2_<k>/fw_<k>).
-//   - JavaBraceOperand: wraps an in-memory List<short[]>; dispose is noop.
+//   - JavaBraceOperand: wraps an in-memory List<A>; dispose is noop.
 private interface BraceOperand {
     List<Short[]> readAll();
     List<Short[]> readWithCardinality(int cardinality);
@@ -495,25 +477,21 @@ private final class PgBraceOperand implements BraceOperand {
     }
 }
 
-private static final class JavaBraceOperand implements BraceOperand {
-    private final List<short[]> rows;
-    JavaBraceOperand(List<short[]> rows) { this.rows = rows; }
+private static final class JavaBraceOperand<A> implements BraceOperand {
+    private final KeyCodec<A> codec;
+    private final List<A> rows;
+    JavaBraceOperand(KeyCodec<A> codec, List<A> rows) { this.codec = codec; this.rows = rows; }
     public List<Short[]> readAll() {
         List<Short[]> out = new ArrayList<>(rows.size());
-        for (short[] r : rows) out.add(boxArray(r));
+        for (A r : rows) out.add(codec.box(r));
         return out;
     }
     public List<Short[]> readWithCardinality(int cardinality) {
         List<Short[]> out = new ArrayList<>();
-        for (short[] r : rows) if (r.length == cardinality) out.add(boxArray(r));
+        for (A r : rows) if (codec.length(r) == cardinality) out.add(codec.box(r));
         return out;
     }
     public void dispose() { /* no temp state */ }
-    private static Short[] boxArray(short[] s) {
-        Short[] o = new Short[s.length];
-        for (int i = 0; i < s.length; i++) o[i] = s[i];
-        return o;
-    }
 }
 
 /** [Iter2] Build a {@link BraceOperand} for innerKey.  Mode-aware:
@@ -532,7 +510,7 @@ private BraceOperand prepareJavaBraceOperand(Short innerKey, boolean grouped) {
     // Source resolution mirrors PG path's resolveSourceTableForInner + Fast-fix B:
     // prefer fw2_<k> if it has rows, else fw_<k>.
     boolean useFw2 = !store.isEmpty(innerKey, true);
-    List<short[]> src;
+    List<A> src;
     if (useFw2) {
         src = store.readFw2Combos(innerKey);
     } else if (!store.isEmpty(innerKey, false)) {
@@ -542,20 +520,12 @@ private BraceOperand prepareJavaBraceOperand(Short innerKey, boolean grouped) {
     } else {
         log.warn("[Issue2/memory] inner operand has neither fw2_{} nor fw_{} — empty",
                 innerKey, innerKey);
-        return new JavaBraceOperand(Collections.emptyList());
+        return new JavaBraceOperand<>(codec, Collections.emptyList());
     }
     if (grouped) {
-        int total = 0;
-        for (short[] r : src) total += r.length;
-        short[] mega = new short[total];
-        int idx = 0;
-        for (short[] r : src) {
-            System.arraycopy(r, 0, mega, idx, r.length);
-            idx += r.length;
-        }
-        return new JavaBraceOperand(Collections.singletonList(mega));
+        return new JavaBraceOperand<>(codec, Collections.singletonList(codec.concat(src)));
     }
-    return new JavaBraceOperand(src);
+    return new JavaBraceOperand<>(codec, src);
 }
 
 private BraceOperand preparePgBraceOperand(Short outerKey, String slot,
@@ -658,7 +628,7 @@ return sourceTable.contains(".fw2_") ? "combos_1" : "combos";
 private void cleanupExcludedTables(Short keyExcl1, Short keyExcl2,
 Set<Short> reuseSet,
 Set<Short> reuseTableOnlySet,
-Map<String, ArrayList<short[]>> mapTable2combs) {
+Map<String, ArrayList<A>> mapTable2combs) {
 cleanupOperand(keyExcl1, reuseSet, reuseTableOnlySet, mapTable2combs);
 cleanupOperand(keyExcl2, reuseSet, reuseTableOnlySet, mapTable2combs);
 }
@@ -680,7 +650,7 @@ cleanupOperand(keyExcl2, reuseSet, reuseTableOnlySet, mapTable2combs);
 void cleanupOperand(Short key,
 Set<Short> reuseSet,
 Set<Short> reuseTableOnlySet,
-Map<String, ArrayList<short[]>> mapTable2combs) {
+Map<String, ArrayList<A>> mapTable2combs) {
 if (key == null) return;
 final boolean keepRows  = reuseSet.contains(key);
 final boolean keepTable = keepRows || reuseTableOnlySet.contains(key);

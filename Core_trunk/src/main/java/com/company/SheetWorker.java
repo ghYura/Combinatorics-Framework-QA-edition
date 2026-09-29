@@ -103,10 +103,10 @@ import com.company.config.AppConfig;
 import com.company.db.DbClient;
 import com.company.db.SchemaProvisioner;
 import com.company.excel.ParsedWorkbook;
+import com.company.keys.KeyCodec;
 import com.company.store.IntermediateTableStore;
 import com.company.utils.CustomInterceptor2;
 import com.company.models.FW;
-import one.util.streamex.IntStreamEx;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -121,7 +121,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 
-public final class SheetWorker {
+public final class SheetWorker<A> {
 
 private static final Logger log = LogManager.getLogger(SheetWorker.class);
 
@@ -136,7 +136,10 @@ private final SchemaProvisioner schema;
 private final ParsedWorkbook    workbook;
 
 /** [Iter2] All fw_/fw2_ intermediate I/O goes through this. */
-private final IntermediateTableStore store;
+private final IntermediateTableStore<A> store;
+
+/** Types the rows this worker builds and reads: {@code byte[]} for byte-tier runs, {@code short[]} otherwise. */
+private final KeyCodec<A> codec;
 
 
 private final Map<Short, String>              key2tableMap;
@@ -145,10 +148,10 @@ private final Map<Short, String>              key2tableMap;
 private final Map<Short, String>              key2tableMapOptional;
 
 
-private final Map<String, ArrayList<short[]>> mapTable2combs;
+private final Map<String, ArrayList<A>> mapTable2combs;
 
 
-private final BraceOperationHandler braceHandler;
+private final BraceOperationHandler<A> braceHandler;
 
 
 private volatile Map<Short, List<Short>> allSourceDataSnapshot;
@@ -185,18 +188,19 @@ private volatile CompletableFuture<Void> drainBarrier;
 
 public SheetWorker(AppConfig config, DbClient db,
 SchemaProvisioner schema, ParsedWorkbook workbook,
-IntermediateTableStore store) {
+IntermediateTableStore<A> store) {
 this.config               = config;
 this.db                   = db;
 this.schema               = schema;
 this.workbook             = workbook;
 this.store                = store;
+this.codec                = store.codec();
 this.key2tableMap         = new ConcurrentSkipListMap<>();
 this.key2tableMapOptional = new ConcurrentSkipListMap<>();
 this.mapTable2combs       = new ConcurrentHashMap<>();
 
 
-this.braceHandler         = new BraceOperationHandler(
+this.braceHandler         = new BraceOperationHandler<>(
 config, db, schema, workbook, store, this::awaitSheetCompletion);
 }
 
@@ -407,7 +411,7 @@ log.warn("Error waiting for sheet {} completion: {}", key, e.getMessage());
 
 public Map<Short, String>              getKey2tableMap()         { return key2tableMap; }
 public Map<Short, String>              getKey2tableMapOptional()  { return key2tableMapOptional; }
-public Map<String, ArrayList<short[]>> getMapTable2combs()       { return mapTable2combs; }
+public Map<String, ArrayList<A>> getMapTable2combs()       { return mapTable2combs; }
 
 
 
@@ -451,8 +455,8 @@ final SheetState sheetState = new SheetState();
 
 
 
-ArrayList<short[]> fwKeyShort = new ArrayList<>();
-fwKeyShort.add(new short[]{});
+ArrayList<A> fwKeyShort = new ArrayList<>();
+fwKeyShort.add(codec.empty());
 
 
 
@@ -578,7 +582,7 @@ mapTable2combs.remove("fw_" + key);
 
 
 if (!isExclude) {
-mapTable2combs.put(finalTable, (ArrayList<short[]>) fwKeyShort.clone());
+mapTable2combs.put(finalTable, (ArrayList<A>) fwKeyShort.clone());
 }
 fwKeyShort.clear();
 
@@ -614,7 +618,7 @@ log.info("Sheet {} done → table {}", key, finalTable);
 
 private boolean runDirective(
 Short key, int pass, String directive, boolean isCombi2,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId, AtomicLong fwId2, AtomicLong fComboId,
 Map<Short, List<Short>> toCombinatoricsHM,
 Map<Short, List<Short>> toCombinatoricsHMoptional,
@@ -882,7 +886,7 @@ return new GeneratorSpec<>(gen, algoType, key, keyShort2, explicitM, isCartesFir
 
 private boolean runFirstPass(
 Short key, GeneratorSpec<Short> spec,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId) {
 
 final boolean useParallel =
@@ -922,20 +926,20 @@ return false;
 private void consumeFirstPassChunk(
 Stream<List<Short>> chunk,
 Short key,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId) {
 
 
 // [Iter2] First-pass chunk emit goes through the store.  In PG mode the
-// store still amortises writes via its internal StringBuilder + COPY-IN
+// store still amortises writes via its internal COPY byte buffer + COPY-IN
 // (batchSize == config.threading.counter4copyMax); in memory mode the row
 // goes straight into the in-heap list.  Identical wire-format for fwKeyShort
 // (used by mapTable2combs / legacy diagnostics).
 chunk.forEach(row -> {
 final int n = row.size();
-final short[] combo = new short[n];
+final A combo = codec.newArray(n);
 int idx = 0;
-for (Short s : row) combo[idx++] = s.shortValue();
+for (Short s : row) codec.set(combo, idx++, s);
 
 final long cid = fwId.incrementAndGet();
 
@@ -954,7 +958,7 @@ store.flushFw(key);
 
 private boolean runSubsequentPass(
 Short key, GeneratorSpec<Short> spec,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId2, AtomicLong fComboId,
 SheetState sheetState) throws Exception {
 
@@ -966,7 +970,7 @@ CustomInterceptor2.setCurrentTable("fw_" + key);
 
 synchronized (fwKeyShort) {
 fwKeyShort.clear();
-fwKeyShort.add(new short[]{});
+fwKeyShort.add(codec.empty());
 }
 
 // [Iter2] Replaces:
@@ -975,7 +979,7 @@ fwKeyShort.add(new short[]{});
 //   fwService.getFWfromPreloadedMap(j) inside the j-loop
 // Pre-load fw_<key> rows ONCE via store; the j-loop maps into fwRowsByCombiId.
 final long maxId = store.maxCombiId(key, false);
-final java.util.Map<Long, short[]> fwRowsByCombiId = store.readFwAsMap(key);
+final java.util.Map<Long, A> fwRowsByCombiId = store.readFwAsMap(key);
 
 final int mParam = spec.rawM;
 
@@ -1006,13 +1010,10 @@ List<FW> inListFWasList;
     // implementation — the canonical truth the algorithm should always
     // produce, regardless of who computed the distinctify.
     inListFWasList = new ArrayList<>(fwRowsByCombiId.size());
-    for (Map.Entry<Long, short[]> e : fwRowsByCombiId.entrySet()) {
-        short[] sc = e.getValue();
+    for (Map.Entry<Long, A> e : fwRowsByCombiId.entrySet()) {
         FW fwr = new FW();
         fwr.setCombiId(e.getKey());
-        int[] ic = new int[sc.length];
-        for (int i = 0; i < sc.length; i++) ic[i] = sc[i];
-        fwr.setCombo(ic);
+        fwr.setCombo(codec.toInts(e.getValue()));
         inListFWasList.add(fwr);
     }
     inListFWasList.sort((a, b) -> {
@@ -1135,14 +1136,15 @@ curStr = curStr.replaceAll(", ", ", " + sheetState.separatorValue + ", ");
 }
 
 try {
-short[] parsed = IntStreamEx.of(
+// A NumberFormatException (unparseable text, or a code outside the byte tier's range) takes the
+// core.replace.unparseablePolicy path below, exactly like any other combination that stopped being codes.
+final A parsed = codec.fromInts(
 Arrays.stream(curStr.replaceAll("[{}\\[\\]]", "").split(", "))
 .map(String::trim).filter(s -> !s.isEmpty())
-.mapToInt(Integer::parseInt).toArray()
-).toShortArray();
+.mapToInt(Integer::parseInt).toArray());
 
 
-if (parsed.length == 0) return;
+if (codec.length(parsed) == 0) return;
 
 synchronized (fwKeyShort) { fwKeyShort.add(parsed); }
 
@@ -1200,13 +1202,14 @@ for (long j = 1L; j <= maxId; j++) {
 if (cancelled) return true;
 
 // [Iter2] Replaces fwService.getFWfromPreloadedMap(j).
-short[] combo = fwRowsByCombiId.get(j);
-if (combo == null || combo.length == 0) continue;
+A combo = fwRowsByCombiId.get(j);
+if (combo == null || codec.length(combo) == 0) continue;
 
 fComboId.set(j);
 
-final List<Short> inList = new ArrayList<>(combo.length);
-for (short v : combo) inList.add(v);
+final int comboLen = codec.length(combo);
+final List<Short> inList = new ArrayList<>(comboLen);
+for (int q = 0; q < comboLen; q++) inList.add(codec.get(combo, q));
 
 
 
@@ -1276,7 +1279,7 @@ return true;
 private void consumeSubsequentPassChunk(
 Stream<List<Short>> chunk,
 Short key,
-ArrayList<short[]> fwKeyShort,
+ArrayList<A> fwKeyShort,
 AtomicLong fwId2,
 long parentId,
 int separatorValue) {
@@ -1285,25 +1288,26 @@ int separatorValue) {
 // store.appendFw2Row.  Store throttles into PG batches internally (PG mode)
 // or appends to in-memory list (memory mode).
 chunk.forEach(w -> {
-short[] combo;
+A combo;
 if (separatorValue != Integer.MIN_VALUE) {
 int n = w.size();
 if (n == 0) return;
 if (n > 1) {
-combo = new short[n * 2 - 1];
+combo = codec.newArray(n * 2 - 1);
 int i = 0;
 for (Short s : w) {
-combo[i * 2] = s.shortValue();
-if (i < n - 1) combo[i * 2 + 1] = (short) separatorValue;
+codec.set(combo, i * 2, s);
+if (i < n - 1) codec.set(combo, i * 2 + 1, (short) separatorValue);
 i++;
 }
 } else {
-combo = new short[]{ w.get(0).shortValue() };
+combo = codec.newArray(1);
+codec.set(combo, 0, w.get(0));
 }
 } else {
-combo = new short[w.size()];
+combo = codec.newArray(w.size());
 int i = 0;
-for (Short s : w) combo[i++] = s.shortValue();
+for (Short s : w) codec.set(combo, i++, s);
 }
 
 synchronized (fwKeyShort) {

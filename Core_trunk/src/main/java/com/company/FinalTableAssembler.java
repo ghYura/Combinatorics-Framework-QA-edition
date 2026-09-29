@@ -35,6 +35,8 @@ import com.company.db.sql.SqlSelfHealingExecutor;
 import com.company.db.sql.TimeoutSqlExecutor;
 import com.company.excel.ParsedWorkbook;
 import com.company.helpers.TableDataDistinctorFnl;
+import com.company.keys.KeyCodec;
+import com.company.keys.PgCopyBuffer;
 import com.company.store.IntermediateTableStore;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -54,7 +56,7 @@ import java.util.concurrent.*;
 import java.util.stream.Collectors;
 
 
-public final class FinalTableAssembler {
+public final class FinalTableAssembler<A> {
 
 private static final Logger log = LogManager.getLogger(FinalTableAssembler.class);
 
@@ -63,7 +65,11 @@ private final DbClient        db;
 private final SchemaProvisioner schema;
 private final ParsedWorkbook  workbook;
 /** [Iter2] Source of per-sheet intermediate rows. */
-private final IntermediateTableStore store;
+private final IntermediateTableStore<A> store;
+/** Encodes rows into COPY bytes ({@code byte[]} or {@code short[]} rows); taken from the store. */
+private final KeyCodec<A> codec;
+/** COPY text of a NULL column value. */
+private static final byte[] NULL_MARK = {'\\', 'N'};
 /** [Iter4.3] Resolved precompute decision: AUTO collapsed to JAVA or DB by
  *  {@link com.company.precompute.PrecomputeMemoryBudget} before assembler is
  *  constructed.  Drives the fw_final_base baseline path (Java COPY vs SQL). */
@@ -88,7 +94,7 @@ public void cancel() {
 
 public FinalTableAssembler(AppConfig config, DbClient db,
 SchemaProvisioner schema, ParsedWorkbook workbook,
-IntermediateTableStore store) {
+IntermediateTableStore<A> store) {
 this(config, db, schema, workbook, store, AppConfig.PrecomputeMode.DB);
 }
 
@@ -98,13 +104,14 @@ this(config, db, schema, workbook, store, AppConfig.PrecomputeMode.DB);
  *  to pre-iter4 behaviour). */
 public FinalTableAssembler(AppConfig config, DbClient db,
 SchemaProvisioner schema, ParsedWorkbook workbook,
-IntermediateTableStore store,
+IntermediateTableStore<A> store,
 AppConfig.PrecomputeMode resolvedPrecompute) {
 this.config   = config;
 this.db       = db;
 this.schema   = schema;
 this.workbook = workbook;
 this.store    = store;
+this.codec    = store.codec();
 this.resolvedPrecompute = (resolvedPrecompute == null) ? AppConfig.PrecomputeMode.DB : resolvedPrecompute;
 }
 
@@ -115,7 +122,7 @@ Map<Short, List<Short>> toCombinatoricsHM,
 Map<Short, List<Short>> toCombinatoricsHMoptional,
 Map<Short, String>      key2tableMap,
 Map<Short, String>      key2tableMapOptional,
-Map<String, ArrayList<short[]>> mapTable2combs,
+Map<String, ArrayList<A>> mapTable2combs,
 String createSqlFinal) throws InterruptedException, ExecutionException {
 
 ExecutorService exec = Executors.newFixedThreadPool(2);
@@ -141,7 +148,7 @@ exec.shutdown();
 private void runFnlThread(
 Map<Short, List<Short>> toCombinatoricsHM,
 Map<Short, String>      key2tableMap,
-Map<String, ArrayList<short[]>> mapTable2combs) {
+Map<String, ArrayList<A>> mapTable2combs) {
 
 log.info("fnlThread started");
 if (cancelled) { log.warn("fnlThread: cancelled before start"); return; }
@@ -268,7 +275,7 @@ private void runOptsThread(
 Map<Short, List<Short>> toCombinatoricsHM,
 Map<Short, List<Short>> toCombinatoricsHMoptional,
 Map<Short, String>      key2tableMapOptional,
-Map<String, ArrayList<short[]>> mapTable2combs,
+Map<String, ArrayList<A>> mapTable2combs,
 String createSqlFinal) {
 
 log.info("optsThread started");
@@ -487,13 +494,14 @@ private void runFnlThreadCoreInserts(String sqlCoreBase, String sqlCore) {
 //
 // fw_final contents are byte-identical to the legacy path (modulo row
 // order, which was already unordered in SQL): NULLIF baseline read directly
-// from fw_final_base; same combo encoding via AppUtil.appendPgArray.
+// from fw_final_base; same combo text, now written as bytes by KeyCodec.encode
+// into a PgCopyBuffer whose array goes to the COPY stream without a String detour.
 private void runFnlThreadJavaPipeline(
         String sqlCoreBase,
         String commaSepFields,
         String[] commaSepFieldsArr,
         java.util.List<String> tableNameList,
-        java.util.Map<String, java.util.ArrayList<short[]>> mapTable2combs,
+        java.util.Map<String, java.util.ArrayList<A>> mapTable2combs,
         long limitVar) {
 
     final TimeoutSqlExecutor     timeoutExec = new TimeoutSqlExecutor(db);
@@ -514,12 +522,12 @@ private void runFnlThreadJavaPipeline(
     // [Refactor 18052026 / step #11 + Iter2]: store returns post-distinctify
     // authoritative rows.  Moving this above the baseline computation is safe
     // for PG mode too — the per-sheet tables don't change while fnlThread runs.
-    final java.util.List<java.util.ArrayList<short[]>> perSheetRows = new java.util.ArrayList<>();
+    final java.util.List<java.util.ArrayList<A>> perSheetRows = new java.util.ArrayList<>();
     for (String t : tableNameList) {
         boolean fw2 = t.startsWith("fw2_");
         short k = parseKeyFromTableName(t);
-        java.util.List<short[]> raw = fw2 ? store.readFw2Combos(k) : store.readFwCombos(k);
-        java.util.ArrayList<short[]> rows = new java.util.ArrayList<>(raw);
+        java.util.List<A> raw = fw2 ? store.readFw2Combos(k) : store.readFwCombos(k);
+        java.util.ArrayList<A> rows = new java.util.ArrayList<>(raw);
         if (rows.isEmpty()) {
             log.error("[Iter2] store source {} is empty — aborting pipeline (no cartesian source)", t);
             return;
@@ -530,23 +538,23 @@ private void runFnlThreadJavaPipeline(
     final int n = perSheetRows.size();
 
     // ── Step B: baseline (mode-dependent) ─────────────────────────────────
-    final String[] baseRowEncoded = new String[tableNameList.size()];
+    final byte[][] baseRowEncoded = new byte[tableNameList.size()][];
     if (pureJavaMode) {
         // [Iter4.3 pure-Java] Skip sqlCoreBase entirely.  Compute baseline as
         // row[0] of each per-sheet list — same semantics as the SQL
         // "always-true JOIN + LIMIT 1" trick which picks the first row of
         // each source — then COPY-IN the assembled baseline row to
         // fw_final_base.  Avoids two SQL roundtrips per fnlThread run.
-        StringBuilder baseRow = new StringBuilder(64 * n);
+        PgCopyBuffer baseRow = new PgCopyBuffer(64 * n);
         for (int i = 0; i < n; i++) {
-            short[] r0 = perSheetRows.get(i).get(0);
-            StringBuilder enc = new StringBuilder(r0.length * 4 + 2);
-            AppUtil.appendPgArray(enc, r0);
-            baseRowEncoded[i] = enc.toString();
-            if (i > 0) baseRow.append('\t');
-            baseRow.append(enc);
+            A r0 = perSheetRows.get(i).get(0);
+            PgCopyBuffer enc = new PgCopyBuffer(codec.length(r0) * 4 + 2);
+            codec.encode(enc, r0);
+            baseRowEncoded[i] = enc.toByteArray();
+            if (i > 0) baseRow.tab();
+            baseRow.appendBytes(baseRowEncoded[i]);
         }
-        baseRow.append('\n');
+        baseRow.newline();
         db.copyIn(baseRow, "fw_final_base", commaSepFields);
         log.info("[Iter4.3 pure-Java] fw_final_base baseline COPY'd from Java (skipped sqlCoreBase SQL)");
         try {
@@ -577,9 +585,9 @@ private void runFnlThreadJavaPipeline(
                 for (int i = 0; i < tableNameList.size(); i++) {
                     java.sql.Array sqlArr = rs.getArray(i + 1);
                     Object javaArr = (sqlArr == null) ? null : sqlArr.getArray();
-                    StringBuilder sb = new StringBuilder();
-                    appendPgArrayOfShortOrInteger(sb, javaArr);
-                    baseRowEncoded[i] = sb.toString();
+                    PgCopyBuffer sb = new PgCopyBuffer(16);
+                    codec.encode(sb, codec.fromJdbc(javaArr));
+                    baseRowEncoded[i] = sb.toByteArray();
                 }
             }
         } catch (SQLException e) {
@@ -593,7 +601,7 @@ private void runFnlThreadJavaPipeline(
     // (independent of MAX(combi_id), which can be sparse post-DELETE
     // distinctify).  Honour the user's limitVar cap as the hard ceiling.
     java.math.BigInteger trueCartesian = java.math.BigInteger.ONE;
-    for (java.util.ArrayList<short[]> rs : perSheetRows) {
+    for (java.util.ArrayList<A> rs : perSheetRows) {
         trueCartesian = trueCartesian.multiply(java.math.BigInteger.valueOf(rs.size()));
     }
     final long truncatedLimit;
@@ -607,24 +615,25 @@ private void runFnlThreadJavaPipeline(
             trueCartesian, limitVar, truncatedLimit);
 
     // 4. [Refactor 18052026 / step #8] Pre-encode every per-sheet row ONCE.
-    //    Hot loop becomes a String[][] indexed lookup instead of per-row
-    //    StringBuilder allocation + AppUtil.appendPgArray.  For a typical
+    //    Hot loop becomes a byte[][] indexed lookup (the pre-encoded ASCII of
+    //    each row) instead of per-row StringBuilder allocation + text formatting.  For a typical
     //    chunk with ~50 per-sheet rows × 7 sheets = ~350 strings of ~10
     //    chars each = ~3.5KB total — trivial RAM, but eliminates 100Ks of
     //    allocations per chunk.  Also pre-computes the NULLIF baseline
     //    indicator per (sheet, row) so the inner loop is two array
     //    look-ups + an append.
-    final String[][] perSheetEncoded = new String[n][];
+    final byte[][][] perSheetEncoded = new byte[n][][];
     final boolean[][] perSheetIsBase = new boolean[n][];
+    final PgCopyBuffer scratch = new PgCopyBuffer(256);
     for (int i = 0; i < n; i++) {
-        java.util.ArrayList<short[]> rows = perSheetRows.get(i);
-        String[] enc = new String[rows.size()];
+        java.util.ArrayList<A> rows = perSheetRows.get(i);
+        byte[][] enc = new byte[rows.size()][];
         boolean[] isBase = new boolean[rows.size()];
         for (int j = 0; j < rows.size(); j++) {
-            StringBuilder tmp = new StringBuilder(rows.get(j).length * 4 + 2);
-            AppUtil.appendPgArray(tmp, rows.get(j));
-            enc[j] = tmp.toString();
-            isBase[j] = baseRowEncoded[i] != null && baseRowEncoded[i].equals(enc[j]);
+            scratch.clear();
+            codec.encode(scratch, rows.get(j));
+            enc[j] = scratch.toByteArray();
+            isBase[j] = baseRowEncoded[i] != null && java.util.Arrays.equals(baseRowEncoded[i], enc[j]);
         }
         perSheetEncoded[i] = enc;
         perSheetIsBase[i]  = isBase;
@@ -644,7 +653,7 @@ private void runFnlThreadJavaPipeline(
     final int consumerCount = Math.max(2, Math.min(config.pool.maxConcurrentCopies, config.pool.maxSize));
     final int producerCount = 1;  // see note above
     final int queueDepth    = (producerCount + consumerCount) * 4;
-    final java.util.concurrent.BlockingQueue<String> queue =
+    final java.util.concurrent.BlockingQueue<PgCopyBuffer> queue =
             new java.util.concurrent.ArrayBlockingQueue<>(queueDepth);
     final java.util.concurrent.atomic.AtomicLong rowsEmittedShared = new java.util.concurrent.atomic.AtomicLong();
     final java.util.concurrent.atomic.AtomicLong rowsCopied        = new java.util.concurrent.atomic.AtomicLong();
@@ -667,7 +676,7 @@ private void runFnlThreadJavaPipeline(
     Runnable consumerTask = () -> {
         for (;;) {
             if (cancelled) return;  // [Iter4 Step 9]
-            String batch;
+            PgCopyBuffer batch;
             try {
                 batch = queue.poll(1, java.util.concurrent.TimeUnit.SECONDS);
             } catch (InterruptedException ie) {
@@ -679,11 +688,9 @@ private void runFnlThreadJavaPipeline(
                 if (cancelled) return;
                 continue;
             }
-            StringBuilder sb = new StringBuilder(batch.length());
-            sb.append(batch);
             try {
-                db.copyIn(sb, "fw_final", commaSepFields);
-                rowsCopied.addAndGet(countNewlines(batch));
+                db.copyIn(batch, "fw_final", commaSepFields);
+                rowsCopied.addAndGet(batch.rows());
             } catch (RuntimeException ex) {
                 log.error("[Refactor-#1] consumer COPY-IN failed: {}", ex.getMessage());
             }
@@ -705,7 +712,7 @@ private void runFnlThreadJavaPipeline(
             if (producersAlive.decrementAndGet() == 0) producerDone.set(true);
             return;
         }
-        StringBuilder batchBuf = new StringBuilder(batchSize * 64);
+        PgCopyBuffer batchBuf = new PgCopyBuffer(batchSize * 64);
         int batchRows = 0;
         long localEmitted = 0L;
 
@@ -728,26 +735,27 @@ private void runFnlThreadJavaPipeline(
                 if ((claim & 0xFFFFL) == 0 && cancelled) break OUTER;  // [Iter4 Step 9] every 64K rows
 
                 // Emit row: dim 0
-                if (perSheetIsBase[0][i0]) batchBuf.append("\\N");
-                else batchBuf.append(perSheetEncoded[0][i0]);
+                if (perSheetIsBase[0][i0]) batchBuf.appendBytes(NULL_MARK);
+                else batchBuf.appendBytes(perSheetEncoded[0][i0]);
                 // dims 1..n-1
                 for (int i = 1; i < n; i++) {
-                    batchBuf.append('\t');
+                    batchBuf.tab();
                     int j = sub[i - 1];
-                    if (perSheetIsBase[i][j]) batchBuf.append("\\N");
-                    else batchBuf.append(perSheetEncoded[i][j]);
+                    if (perSheetIsBase[i][j]) batchBuf.appendBytes(NULL_MARK);
+                    else batchBuf.appendBytes(perSheetEncoded[i][j]);
                 }
-                batchBuf.append('\n');
+                batchBuf.newline();
                 batchRows++; localEmitted++;
 
                 if (batchRows >= batchSize) {
                     try {
-                        queue.put(batchBuf.toString());
+                        batchBuf.rows(batchRows);
+                        queue.put(batchBuf);          // the consumer now owns this buffer; the producer starts a new one
                     } catch (InterruptedException ie) {
                         Thread.currentThread().interrupt();
                         break OUTER;
                     }
-                    batchBuf.setLength(0);
+                    batchBuf = new PgCopyBuffer(batchSize * 64);
                     batchRows = 0;
                 }
 
@@ -766,7 +774,7 @@ private void runFnlThreadJavaPipeline(
         }
 
         if (batchBuf.length() > 0) {
-            try { queue.put(batchBuf.toString()); }
+            try { batchBuf.rows(batchRows); queue.put(batchBuf); }
             catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
         }
 
@@ -811,12 +819,6 @@ private void runFnlThreadJavaPipeline(
             rowsEmittedShared.get(), rowsCopied.get());
 }
 
-private static int countNewlines(String s) {
-    int c = 0;
-    for (int i = 0; i < s.length(); i++) if (s.charAt(i) == '\n') c++;
-    return c;
-}
-
 /** [Iter2] Extract the {@code <N>} key from a table name like {@code fw_42}
  *  or {@code fw2_42}.  Used by store-routed reads in the fnl/opt pipelines. */
 private static short parseKeyFromTableName(String name) {
@@ -832,68 +834,6 @@ private static short parseKeyFromTableName(String name) {
     }
 }
 
-// [Refactor-#11] Convert a JDBC-returned PG array (typically Short[] for
-// int2[], Integer[] for int4[]) into the canonical short[] this pipeline
-// works with.  NULL elements are coerced to 0 (the engine doesn't emit
-// null array elements anywhere, so this branch shouldn't fire in practice).
-private static short[] toShortArrayFromJdbc(Object javaArr) {
-    if (javaArr == null) return new short[0];
-    if (javaArr instanceof Short[] sa) {
-        short[] out = new short[sa.length];
-        for (int i = 0; i < sa.length; i++) out[i] = sa[i] == null ? (short) 0 : sa[i];
-        return out;
-    }
-    if (javaArr instanceof Integer[] ia) {
-        short[] out = new short[ia.length];
-        for (int i = 0; i < ia.length; i++) out[i] = ia[i] == null ? (short) 0 : ia[i].shortValue();
-        return out;
-    }
-    if (javaArr instanceof Long[] la) {
-        short[] out = new short[la.length];
-        for (int i = 0; i < la.length; i++) out[i] = la[i] == null ? (short) 0 : la[i].shortValue();
-        return out;
-    }
-    if (javaArr.getClass().isArray()) {
-        int len = java.lang.reflect.Array.getLength(javaArr);
-        short[] out = new short[len];
-        for (int i = 0; i < len; i++) {
-            Object v = java.lang.reflect.Array.get(javaArr, i);
-            out[i] = (v == null) ? (short) 0 : ((Number) v).shortValue();
-        }
-        return out;
-    }
-    return new short[0];
-}
-
-private static void appendPgArrayOfShortOrInteger(StringBuilder sb, Object arr) {
-    sb.append('{');
-    if (arr instanceof Short[] sa) {
-        for (int i = 0; i < sa.length; i++) {
-            if (i > 0) sb.append(',');
-            sb.append(sa[i] == null ? "NULL" : sa[i].toString());
-        }
-    } else if (arr instanceof Integer[] ia) {
-        for (int i = 0; i < ia.length; i++) {
-            if (i > 0) sb.append(',');
-            sb.append(ia[i] == null ? "NULL" : ia[i].toString());
-        }
-    } else if (arr instanceof Long[] la) {
-        for (int i = 0; i < la.length; i++) {
-            if (i > 0) sb.append(',');
-            sb.append(la[i] == null ? "NULL" : la[i].toString());
-        }
-    } else if (arr != null && arr.getClass().isArray()) {
-        int len = java.lang.reflect.Array.getLength(arr);
-        for (int i = 0; i < len; i++) {
-            if (i > 0) sb.append(',');
-            Object v = java.lang.reflect.Array.get(arr, i);
-            sb.append(v == null ? "NULL" : v.toString());
-        }
-    }
-    sb.append('}');
-}
-
-
 private void runOptsThreadCorePhase(
         int i,
         Map<Short, String> optTableColumns,
@@ -901,7 +841,7 @@ private void runOptsThreadCorePhase(
         BlockingQueue<DbClient> dbPool,
         ExecutorService asyncExec,
         Map<Short, String> key2tableMapOptional,
-        Map<String, ArrayList<short[]>> mapTable2combs) {
+        Map<String, ArrayList<A>> mapTable2combs) {
 
 
     try {
@@ -1083,14 +1023,14 @@ return idx;
 private void runCartesianPasses(
 List<String> tableNames, List<String> comboCols,
 String[] fields, List<Long> maxCombiIdList, int idxCutoff,
-long limitVar, Map<String, ArrayList<short[]>> mapTable2combs,
+long limitVar, Map<String, ArrayList<A>> mapTable2combs,
 String commaSepFields) {
 
 int cores = Runtime.getRuntime().availableProcessors();
 List<StringBuilder> sqlPerCore = new ArrayList<>();
 for (int k = 0; k < cores; k++) sqlPerCore.add(new StringBuilder());
 
-StringBuilder sb2   = new StringBuilder();
+PgCopyBuffer sb2    = new PgCopyBuffer(1 << 16);
 long cartLong       = 0L;
 int  cartCount      = 0;
 int  coreIdx        = 0;
@@ -1130,14 +1070,10 @@ List<long[]> offsetCombinations = buildOffsetCombinations(remainingIds);
 
 for (long[] offsets : offsetCombinations) {
 for (int i = 0; i < offsets.length; i++) {
-AppUtil.appendPgArray(sb2,
-mapTable2combs.get(tableNames.get(i)).get((int) offsets[i]));
-sb2.append('\t');
+if (i > 0) sb2.tab();
+codec.encode(sb2, mapTable2combs.get(tableNames.get(i)).get((int) offsets[i]));
 }
-if (sb2.length() > 0) {
-sb2.setLength(sb2.length() - 1);
-sb2.append('\n');
-}
+if (offsets.length > 0) sb2.newline();
 
 String varSql = buildVariantSql(tableNames, comboCols, fields,
 offsets, idxCutoff, commaSepFields, limitVar, coreIdx);
@@ -1149,12 +1085,12 @@ cartCount++;
 if (cartLong >= 40_000) { flushSqlFiles(sqlPerCore, sqlFiles, true); cartLong = 0; }
 if (cartCount >= 100_000) {
 db.copyIn(sb2, "fw_final", commaSepFields);
-sb2.setLength(0); cartCount = 0;
+sb2.clear(); cartCount = 0;
 }
 }
 
 flushSqlFiles(sqlPerCore, sqlFiles, false);
-if (sb2.length() > 0) db.copyIn(sb2, "fw_final", commaSepFields);
+if (!sb2.isEmpty()) db.copyIn(sb2, "fw_final", commaSepFields);
 invokePsql(sqlFiles);
 }
 
@@ -1257,7 +1193,7 @@ catch (IOException e) { log.warn("Could not delete {}", f); }
 
 private void runOptionalInsert(List<Short> combo,
 Map<Short, String> key2tableMapOptional,
-Map<String, ArrayList<short[]>> mapTable2combs,
+Map<String, ArrayList<A>> mapTable2combs,
 String targetTable, DbClient client) {
 
 
@@ -1294,7 +1230,7 @@ fieldNames.add("\"combos" + key + "_" + sheetName + "\"");
 // arranged by the optsThread caller.
 //
 // Data integrity: source rows read from PG (post-distinctify, authoritative
-// — no fwKeyShort sentinel issues), encoded via the same AppUtil.appendPgArray
+// — no fwKeyShort sentinel issues), encoded via the same KeyCodec text format
 // format that PG would emit for array_out in the legacy SELECT projection.
 // COPY-IN target column list = same `fieldNames` legacy INSERT specified.
 
@@ -1302,26 +1238,27 @@ fieldNames.add("\"combos" + key + "_" + sheetName + "\"");
 //    Pre-encoding is done ONCE per row and reused for every cartesian
 //    iteration that row participates in — eliminates per-row allocation.
 final int nDim = tableNames.size();
-final String[][] perSheetEncoded = new String[nDim][];
+final byte[][][] perSheetEncoded = new byte[nDim][][];
 java.math.BigInteger trueCartesian = java.math.BigInteger.ONE;
 for (int i = 0; i < nDim; i++) {
 String t = tableNames.get(i);
 // [Iter2] Route through the store (same data either mode — see runFnlThreadJavaPipeline).
 boolean fw2 = t.startsWith("fw2_");
 short k = parseKeyFromTableName(t);
-java.util.List<short[]> raw = fw2 ? store.readFw2Combos(k) : store.readFwCombos(k);
-java.util.List<String> enc = new java.util.ArrayList<>(raw.size());
-for (short[] sa : raw) {
-StringBuilder tmp = new StringBuilder(sa.length * 4 + 2);
-AppUtil.appendPgArray(tmp, sa);
-enc.add(tmp.toString());
+java.util.List<A> raw = fw2 ? store.readFw2Combos(k) : store.readFwCombos(k);
+java.util.List<byte[]> enc = new java.util.ArrayList<>(raw.size());
+PgCopyBuffer tmp = new PgCopyBuffer(64);
+for (A sa : raw) {
+tmp.clear();
+codec.encode(tmp, sa);
+enc.add(tmp.toByteArray());
 }
 if (enc.isEmpty()) {
 log.warn("[Iter2] store source {} is empty — skipping combo {} → {}",
 t, combo, targetTable);
 return;
 }
-perSheetEncoded[i] = enc.toArray(new String[0]);
+perSheetEncoded[i] = enc.toArray(new byte[0][]);
 trueCartesian = trueCartesian.multiply(
 java.math.BigInteger.valueOf(perSheetEncoded[i].length));
 }
@@ -1369,7 +1306,7 @@ final String commaSepFields = fieldsBuf.toString();
 
 // 5. Cartesian iteration + batched COPY-IN on the slot connection.
 final int batchSize = Math.max(1_000, config.threading.counter4copyMax);
-StringBuilder batchBuf = new StringBuilder(batchSize * 64);
+PgCopyBuffer batchBuf = new PgCopyBuffer(batchSize * 64);
 int batchRows = 0;
 long emitted = 0L;
 int[] idx = new int[nDim];
@@ -1378,16 +1315,16 @@ OUTER:
 while (emitted < limitVar) {
 if ((emitted & 0xFFFFL) == 0 && cancelled) break OUTER;  // [Iter4 Step 9] every 64K rows
 for (int i = 0; i < nDim; i++) {
-if (i > 0) batchBuf.append('\t');
-batchBuf.append(perSheetEncoded[i][idx[i]]);
+if (i > 0) batchBuf.tab();
+batchBuf.appendBytes(perSheetEncoded[i][idx[i]]);
 }
-batchBuf.append('\n');
+batchBuf.newline();
 batchRows++;
 emitted++;
 
 if (batchRows >= batchSize) {
 client.copyIn(batchBuf, targetTable, commaSepFields);
-batchBuf.setLength(0);
+batchBuf.clear();
 batchRows = 0;
 }
 
@@ -1405,7 +1342,7 @@ break;
 if (carry == 1) break;
 }
 
-if (batchBuf.length() > 0) {
+if (!batchBuf.isEmpty()) {
 client.copyIn(batchBuf, targetTable, commaSepFields);
 }
 
