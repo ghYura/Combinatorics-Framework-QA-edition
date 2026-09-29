@@ -89,8 +89,13 @@ public final class PrecomputeMemoryBudget {
 
     // ── tuning constants ────────────────────────────────────────────────
 
-    /** Short[] row reference overhead: object header (16) + ArrayList slot (4) + padding. */
+    /** Key-array row reference overhead: object header (16) + ArrayList slot (4) + padding. */
     private static final long ROW_REF_OVERHEAD_BYTES = 32L;
+
+    /** Bytes one stored key occupies in a resident row: 1 on the byte tier, 2 on the short tier. */
+    private static long keyBytes(ParsedWorkbook pw) {
+        return (pw == null || pw.keyPlan == null) ? 2L : (long) pw.keyPlan.tier.bytesPerKey;
+    }
 
     /** Fraction of -Xmx usable for data without provoking G1/ZGC Full GC. */
     private static final double GC_HEADROOM_FRACTION = 0.65;
@@ -134,6 +139,7 @@ public final class PrecomputeMemoryBudget {
         long budget = (long) (maxHeap * GC_HEADROOM_FRACTION);
         long osFree = queryOsFreeRam();
 
+        final long keyBytes = keyBytes(pw);
         Map<Short, Stage> perSheet = computePerSheetStages(seq, pw);
         BigInteger perSheetBytes = BigInteger.ZERO;
         Map<Short, BigInteger> perSheetBytesMap = new LinkedHashMap<>();
@@ -148,8 +154,8 @@ public final class PrecomputeMemoryBudget {
         // streaming-aware estimate (the actual peak when the pipeline runs).
         // Decision uses the streaming estimate — matches reality of the pure-Java
         // and PG-mode fnl pipelines (both stream via producer/consumer).
-        BigInteger fwFinalFullBytes     = estimateFwFinal(seq, perSheet, cfg);
-        BigInteger fwOptFullBytes       = estimateFwOpt(seq, perSheet, cfg);
+        BigInteger fwFinalFullBytes     = estimateFwFinal(seq, perSheet, cfg, keyBytes);
+        BigInteger fwOptFullBytes       = estimateFwOpt(seq, perSheet, cfg, keyBytes);
         BigInteger fwFinalStreamedBytes = estimateFwFinalStreamed(seq, perSheet, cfg);
         BigInteger fwOptStreamedBytes   = estimateFwOptStreamed(seq, perSheet, cfg);
 
@@ -337,10 +343,14 @@ public final class PrecomputeMemoryBudget {
         BigInteger rowCount = BigInteger.ONE;   // 1 logical "row" = the whole source list
         int        rowLen   = 0;                // length of that initial row = source.size()
         String     trace    = "";
+        final long keyBytes;                    // resident bytes per key: 1 (byte tier) or 2 (short tier)
+
+        Stage() { this(2L); }
+        Stage(long keyBytes) { this.keyBytes = keyBytes; }
 
         long bytesEstimate() {
-            // bytes = rows × (cols × 2  +  per-row overhead)
-            BigInteger cellBytes = rowCount.multiply(BigInteger.valueOf(2L * Math.max(1, rowLen)));
+            // bytes = rows × (cols × keyBytes  +  per-row overhead)
+            BigInteger cellBytes = rowCount.multiply(BigInteger.valueOf(keyBytes * Math.max(1, rowLen)));
             BigInteger overheadBytes = rowCount.multiply(BigInteger.valueOf(ROW_REF_OVERHEAD_BYTES));
             BigInteger total = cellBytes.add(overheadBytes);
             return total.compareTo(BigInteger.valueOf(Long.MAX_VALUE)) > 0
@@ -357,7 +367,7 @@ public final class PrecomputeMemoryBudget {
             List<Short> srcList = pw.sheetData.get(key);
             int srcSize = (srcList == null) ? 0 : srcList.size();
 
-            Stage st = new Stage();
+            Stage st = new Stage(keyBytes(pw));
             st.rowCount = BigInteger.ONE;
             st.rowLen   = srcSize;
             StringBuilder trace = new StringBuilder().append("src(L=").append(srcSize).append(")");
@@ -568,7 +578,7 @@ public final class PrecomputeMemoryBudget {
 
     private static BigInteger estimateFwFinal(SeqParser.SeqParseResult seq,
                                               Map<Short, Stage> stages,
-                                              AppConfig cfg) {
+                                              AppConfig cfg, long keyBytes) {
         BigInteger rows = BigInteger.ONE;
         int len = 0;
         for (Short k : seq.toCombinatoricsHM.keySet()) {
@@ -579,12 +589,12 @@ public final class PrecomputeMemoryBudget {
         }
         BigInteger cap = BigInteger.valueOf(cfg.threading.limitVarGivenLessThan);
         if (rows.compareTo(cap) > 0) rows = cap;
-        return stageBytes(rows, len);
+        return stageBytes(rows, len, keyBytes);
     }
 
     private static BigInteger estimateFwOpt(SeqParser.SeqParseResult seq,
                                             Map<Short, Stage> stages,
-                                            AppConfig cfg) {
+                                            AppConfig cfg, long keyBytes) {
         List<Short> optKeys = new ArrayList<>(seq.toCombinatoricsHMoptional.keySet());
         if (optKeys.isEmpty()) return BigInteger.ZERO;
         Set<Integer> ks = Set.copyOf(cfg.optional.includeOptionalCombiPairsToDB);
@@ -615,18 +625,18 @@ public final class PrecomputeMemoryBudget {
             }
             if (maxCombo.compareTo(combLimit) > 0) maxCombo = combLimit;
             BigInteger combosCount = binom(optKeys.size(), i);
-            BigInteger perTable = combosCount.multiply(stageBytes(maxCombo, maxLen));
+            BigInteger perTable = combosCount.multiply(stageBytes(maxCombo, maxLen, keyBytes));
             total = total.add(perTable);
         }
         return total;
     }
 
     private static BigInteger stageBytes(Stage st) {
-        return stageBytes(st.rowCount, st.rowLen);
+        return stageBytes(st.rowCount, st.rowLen, st.keyBytes);
     }
 
-    private static BigInteger stageBytes(BigInteger rows, int len) {
-        BigInteger cellBytes = rows.multiply(BigInteger.valueOf(2L * Math.max(1, len)));
+    private static BigInteger stageBytes(BigInteger rows, int len, long keyBytes) {
+        BigInteger cellBytes = rows.multiply(BigInteger.valueOf(keyBytes * Math.max(1, len)));
         BigInteger overhead = rows.multiply(BigInteger.valueOf(ROW_REF_OVERHEAD_BYTES));
         return cellBytes.add(overhead);
     }

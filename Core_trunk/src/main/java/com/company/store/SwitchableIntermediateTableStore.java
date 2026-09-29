@@ -25,6 +25,8 @@
 
 package com.company.store;
 
+import com.company.keys.KeyCodec;
+
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
@@ -48,11 +50,11 @@ import java.util.Map;
  * (typically via {@link JavaIntermediateTableStore#drainAllTo} BEFORE
  * swapping).</p>
  */
-public final class SwitchableIntermediateTableStore implements IntermediateTableStore {
+public final class SwitchableIntermediateTableStore<A> implements IntermediateTableStore<A> {
 
-    private volatile IntermediateTableStore delegate;
+    private volatile IntermediateTableStore<A> delegate;
 
-    public SwitchableIntermediateTableStore(IntermediateTableStore initial) {
+    public SwitchableIntermediateTableStore(IntermediateTableStore<A> initial) {
         if (initial == null) throw new IllegalArgumentException("initial delegate must be non-null");
         this.delegate = initial;
     }
@@ -60,13 +62,13 @@ public final class SwitchableIntermediateTableStore implements IntermediateTable
     /** Currently-active delegate.  Useful for the drain coordinator that needs
      *  to call type-specific methods on the old delegate (e.g.
      *  {@code ((JavaIntermediateTableStore) sw.current()).drainAllTo(...)}). */
-    public IntermediateTableStore current() {
+    public IntermediateTableStore<A> current() {
         return delegate;
     }
 
     /** Atomic delegate replacement.  CALLER MUST quiesce concurrent users
      *  before invoking — this method does not block on in-flight calls. */
-    public void swap(IntermediateTableStore newDelegate) {
+    public void swap(IntermediateTableStore<A> newDelegate) {
         if (newDelegate == null) throw new IllegalArgumentException("new delegate must be non-null");
         this.delegate = newDelegate;
     }
@@ -75,28 +77,29 @@ public final class SwitchableIntermediateTableStore implements IntermediateTable
 
     @Override public String  modeName()    { return "switchable[" + delegate.modeName() + "]"; }
     @Override public boolean isPgBacked()  { return delegate.isPgBacked(); }
+    @Override public KeyCodec<A> codec()   { return delegate.codec(); }
 
     @Override public void createFwTable(short k)  throws SQLException { delegate.createFwTable(k); }
     @Override public void createFw2Table(short k) throws SQLException { delegate.createFw2Table(k); }
 
-    @Override public void appendFwRow(short k, long combiId, short[] combo) {
+    @Override public void appendFwRow(short k, long combiId, A combo) {
         delegate.appendFwRow(k, combiId, combo);
     }
-    @Override public void appendFw2Row(short k, long combiId, Long parentCombiId, short[] combo) {
+    @Override public void appendFw2Row(short k, long combiId, Long parentCombiId, A combo) {
         delegate.appendFw2Row(k, combiId, parentCombiId, combo);
     }
     @Override public void flushFw(short k)  { delegate.flushFw(k); }
     @Override public void flushFw2(short k) { delegate.flushFw2(k); }
 
-    @Override public List<short[]> readFwCombos(short k)  { return delegate.readFwCombos(k); }
-    @Override public List<short[]> readFw2Combos(short k) { return delegate.readFw2Combos(k); }
-    @Override public List<short[]> readFwCombosWithCardinality(short k, int c) {
+    @Override public List<A> readFwCombos(short k)  { return delegate.readFwCombos(k); }
+    @Override public List<A> readFw2Combos(short k) { return delegate.readFw2Combos(k); }
+    @Override public List<A> readFwCombosWithCardinality(short k, int c) {
         return delegate.readFwCombosWithCardinality(k, c);
     }
-    @Override public List<short[]> readFw2CombosWithCardinality(short k, int c) {
+    @Override public List<A> readFw2CombosWithCardinality(short k, int c) {
         return delegate.readFw2CombosWithCardinality(k, c);
     }
-    @Override public Map<Long, short[]> readFwAsMap(short k) { return delegate.readFwAsMap(k); }
+    @Override public Map<Long, A> readFwAsMap(short k) { return delegate.readFwAsMap(k); }
 
     @Override public long    count(short k, boolean fw2)       { return delegate.count(k, fw2); }
     @Override public long    maxCombiId(short k, boolean fw2)  { return delegate.maxCombiId(k, fw2); }

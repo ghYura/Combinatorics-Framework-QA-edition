@@ -25,8 +25,9 @@
 
 package com.company.store;
 
-import com.company.AppUtil;
 import com.company.db.DbClient;
+import com.company.keys.KeyCodec;
+import com.company.keys.PgCopyBuffer;
 import com.company.db.SchemaProvisioner;
 import com.company.helpers.TableDataDistinctor;
 
@@ -51,17 +52,18 @@ import org.apache.logging.log4j.Logger;
  * dispatch through a single abstraction. {@link JavaIntermediateTableStore}
  * is the other half.
  *
- * <p>Per-key StringBuilder buffers throttle row appends into COPY batches of
+ * <p>Per-key byte buffers ({@link PgCopyBuffer}) throttle row appends into COPY batches of
  * {@code batchSize} (= {@code core.counter4copyMax} from fw.properties).
  * Buffers are flushed on {@link #flushFw}/{@link #flushFw2} OR automatically
  * when the row count reaches {@code batchSize}.</p>
  */
-public final class PgIntermediateTableStore implements IntermediateTableStore {
+public final class PgIntermediateTableStore<A> implements IntermediateTableStore<A> {
 
     private static final Logger log = LogManager.getLogger(PgIntermediateTableStore.class);
 
     private static final String COMBOS_DATA_TYPE = "int2[]";
 
+    private final KeyCodec<A> codec;
     private final DbClient db;
     private final SchemaProvisioner schema;
     private final int batchSize;
@@ -70,16 +72,18 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
     private final ConcurrentHashMap<Long, BufferEntry> buffers = new ConcurrentHashMap<>();
 
     private static final class BufferEntry {
-        // [Iter2-postfix] sb is reassigned on flush — swap-out pattern keeps
+        // [Iter2-postfix] buf is reassigned on flush — swap-out pattern keeps
         // the buffer monitor held only for the append + swap, not the JDBC
         // copyIn that follows.  See appendFwRow comment for rationale.
-        StringBuilder sb = new StringBuilder();
-        int count = 0;
+        PgCopyBuffer buf = new PgCopyBuffer(0);   // small until the first flush, exactly like the StringBuilder it replaces:
+        int count = 0;                            // most sheets never reach batchSize rows, so no per-sheet batch-size allocation
     }
 
-    public PgIntermediateTableStore(DbClient db, SchemaProvisioner schema,
+    public PgIntermediateTableStore(KeyCodec<A> codec, DbClient db, SchemaProvisioner schema,
                                     int batchSize, Map<Short, String> key2sheetName) {
         if (db == null || schema == null) throw new IllegalArgumentException("db/schema must not be null");
+        if (codec == null) throw new IllegalArgumentException("codec must not be null");
+        this.codec = codec;
         this.db = db;
         this.schema = schema;
         this.batchSize = Math.max(1, batchSize);
@@ -88,6 +92,7 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
 
     @Override public String modeName() { return "pg"; }
     @Override public boolean isPgBacked() { return true; }
+    @Override public KeyCodec<A> codec()   { return codec; }
 
     // ── lifecycle ────────────────────────────────────────────────────────
 
@@ -104,7 +109,7 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
     // ── writes ───────────────────────────────────────────────────────────
 
     @Override
-    public void appendFwRow(short key, long combiId, short[] combo) {
+    public void appendFwRow(short key, long combiId, A combo) {
         BufferEntry be = buffers.computeIfAbsent(bufKey(key, false), k -> new BufferEntry());
         // [Iter2-postfix] Critical: do NOT call db.copyIn inside the synchronized
         // block.  On JDK 21, a virtual thread inside `synchronized` is PINNED to
@@ -115,14 +120,14 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
         // all threads hung.  Swap-out the StringBuilder under the lock; flush
         // OUTSIDE the lock so the virtual thread can correctly unmount during
         // the JDBC wait.
-        StringBuilder toFlush = null;
+        PgCopyBuffer toFlush = null;
         synchronized (be) {
-            be.sb.append(combiId).append('\t');
-            AppUtil.appendPgArray(be.sb, combo);
-            be.sb.append('\n');
+            be.buf.appendLong(combiId).tab();
+            codec.encode(be.buf, combo);
+            be.buf.newline();
             if (++be.count >= batchSize) {
-                toFlush = be.sb;
-                be.sb = new StringBuilder(batchSize * 64);
+                toFlush = be.buf;
+                be.buf = new PgCopyBuffer(batchSize * 64);
                 be.count = 0;
             }
         }
@@ -132,20 +137,20 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
     }
 
     @Override
-    public void appendFw2Row(short key, long combiId, Long parentCombiId, short[] combo) {
+    public void appendFw2Row(short key, long combiId, Long parentCombiId, A combo) {
         BufferEntry be = buffers.computeIfAbsent(bufKey(key, true), k -> new BufferEntry());
         // [Iter2-postfix] See appendFwRow for the carrier-pinning rationale.
-        StringBuilder toFlush = null;
+        PgCopyBuffer toFlush = null;
         synchronized (be) {
-            be.sb.append(combiId).append('\t');
-            if (parentCombiId == null) be.sb.append("\\N");
-            else be.sb.append(parentCombiId.longValue());
-            be.sb.append('\t');
-            AppUtil.appendPgArray(be.sb, combo);
-            be.sb.append('\n');
+            be.buf.appendLong(combiId).tab();
+            if (parentCombiId == null) be.buf.appendAscii("\\N");
+            else be.buf.appendLong(parentCombiId.longValue());
+            be.buf.tab();
+            codec.encode(be.buf, combo);
+            be.buf.newline();
             if (++be.count >= batchSize) {
-                toFlush = be.sb;
-                be.sb = new StringBuilder(batchSize * 64);
+                toFlush = be.buf;
+                be.buf = new PgCopyBuffer(batchSize * 64);
                 be.count = 0;
             }
         }
@@ -162,11 +167,11 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
         if (be == null) return;
         // [Iter2-postfix] Same swap-out pattern as appendFwRow — flush outside
         // the lock to avoid pinning the virtual thread's carrier.
-        StringBuilder toFlush = null;
+        PgCopyBuffer toFlush = null;
         synchronized (be) {
-            if (be.sb.length() > 0) {
-                toFlush = be.sb;
-                be.sb = new StringBuilder(batchSize * 64);
+            if (be.buf.length() > 0) {
+                toFlush = be.buf;
+                be.buf = new PgCopyBuffer(batchSize * 64);
                 be.count = 0;
             }
         }
@@ -180,28 +185,28 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
     // ── reads ────────────────────────────────────────────────────────────
 
     @Override
-    public List<short[]> readFwCombos(short key) {
+    public List<A> readFwCombos(short key) {
         return readCombos(table(key, false), "combos", null);
     }
 
     @Override
-    public List<short[]> readFw2Combos(short key) {
+    public List<A> readFw2Combos(short key) {
         return readCombos(table(key, true), "combos_1", null);
     }
 
     @Override
-    public List<short[]> readFwCombosWithCardinality(short key, int cardinality) {
+    public List<A> readFwCombosWithCardinality(short key, int cardinality) {
         return readCombos(table(key, false), "combos", cardinality);
     }
 
     @Override
-    public List<short[]> readFw2CombosWithCardinality(short key, int cardinality) {
+    public List<A> readFw2CombosWithCardinality(short key, int cardinality) {
         return readCombos(table(key, true), "combos_1", cardinality);
     }
 
     @Override
-    public Map<Long, short[]> readFwAsMap(short key) {
-        Map<Long, short[]> result = new HashMap<>();
+    public Map<Long, A> readFwAsMap(short key) {
+        Map<Long, A> result = new HashMap<>();
         String sql = "SELECT combi_id, combos FROM public." + table(key, false) + " ORDER BY combi_id";
         try (Connection conn = db.getConnection();
              Statement st = conn.createStatement();
@@ -209,7 +214,7 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
             while (rs.next()) {
                 long cid = rs.getLong(1);
                 Array sqlArr = rs.getArray(2);
-                short[] combo = (sqlArr == null) ? new short[0] : toShortArray(sqlArr.getArray());
+                A combo = (sqlArr == null) ? codec.empty() : codec.fromJdbc(sqlArr.getArray());
                 result.put(cid, combo);
             }
         } catch (SQLException e) {
@@ -218,8 +223,8 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
         return result;
     }
 
-    private List<short[]> readCombos(String tableName, String column, Integer cardinality) {
-        List<short[]> result = new ArrayList<>();
+    private List<A> readCombos(String tableName, String column, Integer cardinality) {
+        List<A> result = new ArrayList<>();
         StringBuilder sql = new StringBuilder("SELECT ").append(column)
                 .append(" FROM public.").append(tableName);
         if (cardinality != null) {
@@ -232,7 +237,7 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
             while (rs.next()) {
                 Array sqlArr = rs.getArray(1);
                 if (sqlArr == null) continue;
-                result.add(toShortArray(sqlArr.getArray()));
+                result.add(codec.fromJdbc(sqlArr.getArray()));
             }
         } catch (SQLException e) {
             log.error("readCombos({}, {}, card={}) failed: {}",
@@ -330,35 +335,5 @@ public final class PgIntermediateTableStore implements IntermediateTableStore {
 
     private static Long bufKey(short key, boolean fw2) {
         return Long.valueOf((fw2 ? 1L << 32 : 0L) | (key & 0xFFFFL));
-    }
-
-    /** Convert JDBC PG array to short[] — mirrors FinalTableAssembler.toShortArrayFromJdbc. */
-    private static short[] toShortArray(Object javaArr) {
-        if (javaArr == null) return new short[0];
-        if (javaArr instanceof Short[] sa) {
-            short[] out = new short[sa.length];
-            for (int i = 0; i < sa.length; i++) out[i] = sa[i] == null ? (short) 0 : sa[i];
-            return out;
-        }
-        if (javaArr instanceof Integer[] ia) {
-            short[] out = new short[ia.length];
-            for (int i = 0; i < ia.length; i++) out[i] = ia[i] == null ? (short) 0 : ia[i].shortValue();
-            return out;
-        }
-        if (javaArr instanceof Long[] la) {
-            short[] out = new short[la.length];
-            for (int i = 0; i < la.length; i++) out[i] = la[i] == null ? (short) 0 : la[i].shortValue();
-            return out;
-        }
-        if (javaArr.getClass().isArray()) {
-            int len = java.lang.reflect.Array.getLength(javaArr);
-            short[] out = new short[len];
-            for (int i = 0; i < len; i++) {
-                Object v = java.lang.reflect.Array.get(javaArr, i);
-                out[i] = (v == null) ? (short) 0 : ((Number) v).shortValue();
-            }
-            return out;
-        }
-        return new short[0];
     }
 }

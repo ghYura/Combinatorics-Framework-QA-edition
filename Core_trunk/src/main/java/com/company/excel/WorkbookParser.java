@@ -37,6 +37,7 @@ import com.company.models.SheetFW_EXIT_CODE;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.poi.openxml4j.exceptions.InvalidFormatException;
+import org.apache.poi.ss.usermodel.Cell;
 import org.apache.poi.ss.usermodel.CellType;
 import org.apache.poi.ss.usermodel.DataFormatter;
 import org.apache.poi.ss.usermodel.Row;
@@ -135,6 +136,12 @@ log.info("{} FW_* control sheets, {} data sheets",
 b.numOfFwSheets, b.shortSheetHM.size());
 
 var dataFormatter = new DataFormatter();
+
+// [Keys] DataTypeDispatcher: one lean counting pass BEFORE the first key is issued decides
+// the key width (short by default; byte only as the core.keys.dispatch=auto experiment) and where the label counter
+// starts.  The legacy short[] counter wrapped silently past 32767; this fails fast instead.
+b.keyPlan = DataTypeDispatcher.dispatch(allSheets, b.stringSheetHM.get("FW_Seq"), wbCfg);
+
 parseCellValues(b, allSheets, dataFormatter);
 
 preScanFwSeq(b, wbCfg, dataFormatter);
@@ -164,6 +171,49 @@ log.info("[Issue1] preScanFwSeq: FW_Seq sheet missing — nothing to scan");
 return;
 }
 
+for (VirtualSheet vs : discoverVirtualSheets(seqSheet, b.name2key.keySet(),
+wbCfg.virtualSheetNamePrefix, fmt)) {
+short k = b.registerVirtualSheet(vs.name);
+if (vs.headlessRowIdx != null) {
+b.fwSeqRowSyntheticTarget.put(vs.headlessRowIdx, k);
+log.info("[Issue1] preScanFwSeq: headless row {} → synthesised target '{}' (key={})",
+vs.headlessRowIdx, vs.name, k);
+} else if (vs.fromOperand) {
+log.info("[Issue1] preScanFwSeq: FW_(...) operand '{}' missing → virtual key={}", vs.name, k);
+} else {
+log.info("[Issue1] preScanFwSeq: column-0 missing sheet '{}' → virtual key={}", vs.name, k);
+}
+}
+log.info("[Issue1] preScanFwSeq complete: {} virtual sheets registered, {} headless rows synthesised",
+b.virtualSheetNames.size(), b.fwSeqRowSyntheticTarget.size());
+}
+
+
+/** One sheet {@link #discoverVirtualSheets} decided to auto-register, in registration order. */
+static final class VirtualSheet {
+final String name;
+/** Row index of the headless FW_Seq row this sheet is the synthetic target of, else null. */
+final Integer headlessRowIdx;
+/** True when found as a missing operand inside an FW_(...) joiner. */
+final boolean fromOperand;
+VirtualSheet(String name, Integer headlessRowIdx, boolean fromOperand) {
+this.name = name; this.headlessRowIdx = headlessRowIdx; this.fromOperand = fromOperand;
+}
+}
+
+/**
+ * The sheets FW_Seq references that the workbook does not contain, in the exact order
+ * {@link #preScanFwSeq} registers them.  Pure: no key is issued and nothing is mutated, so
+ * {@link DataTypeDispatcher} can count them before the first key exists while the parser
+ * registers them from the very same list.
+ *
+ * @param knownNames the real (non-FW_) sheet names; copied, the caller's set is not touched
+ */
+static List<VirtualSheet> discoverVirtualSheets(Sheet seqSheet, Set<String> knownNames,
+String virtualNamePrefix, DataFormatter fmt) {
+List<VirtualSheet> found = new ArrayList<>();
+Set<String> known = new LinkedHashSet<>(knownNames);
+
 int rowIdx = 0;
 for (Row row : seqSheet) {
 List<String> rowCells = new ArrayList<>();
@@ -177,21 +227,19 @@ String firstVal = rowCells.get(0);
 boolean headless = firstVal.startsWith("FW_");
 
 if (headless) {
-String virtualName = wbCfg.virtualSheetNamePrefix + (rowIdx + 1);
+String virtualName = virtualNamePrefix + (rowIdx + 1);
 int suffix = 1;
-while (b.name2key.containsKey(virtualName)) {
+while (known.contains(virtualName)) {
 suffix++;
-virtualName = wbCfg.virtualSheetNamePrefix + (rowIdx + 1) + "_" + suffix;
+virtualName = virtualNamePrefix + (rowIdx + 1) + "_" + suffix;
 }
-short k = b.registerVirtualSheet(virtualName);
-b.fwSeqRowSyntheticTarget.put(rowIdx, k);
-log.info("[Issue1] preScanFwSeq: headless row {} → synthesised target '{}' (key={})",
-rowIdx, virtualName, k);
-} else if (!b.name2key.containsKey(firstVal)) {
+known.add(virtualName);
+found.add(new VirtualSheet(virtualName, rowIdx, false));
+} else if (!known.contains(firstVal)) {
 
 
-short k = b.registerVirtualSheet(firstVal);
-log.info("[Issue1] preScanFwSeq: column-0 missing sheet '{}' → virtual key={}", firstVal, k);
+known.add(firstVal);
+found.add(new VirtualSheet(firstVal, null, false));
 }
 
 
@@ -212,16 +260,15 @@ for (String p : FW_SEQ_NON_TARGET_PREFIXES) {
 if (operand.startsWith(p)) { directiveLike = true; break; }
 }
 if (directiveLike) continue;
-if (!b.name2key.containsKey(operand)) {
-short k = b.registerVirtualSheet(operand);
-log.info("[Issue1] preScanFwSeq: FW_(...) operand '{}' missing → virtual key={}", operand, k);
+if (!known.contains(operand)) {
+known.add(operand);
+found.add(new VirtualSheet(operand, null, true));
 }
 }
 }
 rowIdx++;
 }
-log.info("[Issue1] preScanFwSeq complete: {} virtual sheets registered, {} headless rows synthesised",
-b.virtualSheetNames.size(), b.fwSeqRowSyntheticTarget.size());
+return found;
 }
 
 
@@ -281,7 +328,12 @@ var kvService = new KeyValueService();
 var exitCodeService = new SheetFW_EXIT_CODEService();
 var strRefiner = new StringButQuotesRefiner();
 
-short[] keyCounter = { b.maxSheetNumber };
+// [Keys] labels come from the DataTypeDispatcher plan (legacy numbering S+1.. whenever it
+// fits); keyCounter[0] keeps holding "the key issued last" exactly as before.
+final DataTypeDispatcher.Plan keyPlan = (b.keyPlan != null) ? b.keyPlan
+: DataTypeDispatcher.dispatch(allSheets, b.stringSheetHM.get("FW_Seq"), null);
+final DataTypeDispatcher.KeyLabeler labeler = keyPlan.newLabeler();
+short[] keyCounter = { (short) (keyPlan.firstLabel - 1) };
 
 for (var sheet : allSheets) {
 
@@ -313,7 +365,7 @@ String formulaText = cell.getCellFormula();
 log.info("Formula detected at row {}, col {}. Writing formula text to collection: '{}'",
 row.getRowNum(), cell.getColumnIndex(), formulaText);
 System.out.println(CodeLineNumber.getLineNumber()+" [Y Warning]: Excel-Formula detected and being written as text to Collection");
-keyCounter[0]++;
+keyCounter[0] = labeler.next();
 b.shortStringCellValueHM.put(keyCounter[0], formulaText);
 NumberToValue1 nvFormula = buildNumberToValue(keyCounter[0], formulaText);
 kvService.addKV(nvFormula);
@@ -336,7 +388,7 @@ currentFile = new File(cellValue.replaceFirst("FW_File=", ""));
 log.debug("[{}] file='{}'", CodeLineNumber.getLineNumber(), currentFile);
 if (currentFile != null) {
 String content = ReadFileToString.stringFromFile(currentFile.getPath());
-keyCounter[0]++;
+keyCounter[0] = labeler.next();
 b.shortStringCellValueHM.put(keyCounter[0], content);
 NumberToValue1 nv = buildNumberToValue(keyCounter[0], content);
 kvService.addKV(nv);
@@ -380,7 +432,7 @@ nv.setRefined(true);
 kvService.updateKV(nv);
 
 } else if (cellValue.startsWith("FW_EMPTY_STRING")) {
-keyCounter[0]++;
+keyCounter[0] = labeler.next();
 b.shortStringCellValueHM.put(keyCounter[0], "");
 NumberToValue1 nv = buildNumberToValue(keyCounter[0], "");
 kvService.addKV(nv);
@@ -394,7 +446,7 @@ CodeLineNumber.getLineNumber(), cellValue);
 
 
 } else if (isFwVarExitCode(cellValue)) {
-keyCounter[0]++;
+keyCounter[0] = labeler.next();
 String resolved = cellValue.replaceAll("FW_EXIT_CODE",
 String.valueOf(b.name2key.get(curSheetName)));
 b.shortStringCellValueHM.put(keyCounter[0], resolved);
@@ -429,7 +481,7 @@ log.debug("  duplicatedCellValueHM: {}", duplicatedCellValueHM);
 }
 }
 }
-keyCounter[0]++;
+keyCounter[0] = labeler.next();
 b.shortStringCellValueHM.put(keyCounter[0], cellValue);
 NumberToValue1 nv = buildNumberToValue(keyCounter[0], cellValue);
 kvService.addKV(nv);
@@ -464,7 +516,14 @@ log.debug("\\ Current sheet '{}' iteration ended // — {} cell keys collected",
 curSheetName, lstK2cellV.size());
 }
 
-b.maxSheetNumber = keyCounter[0];
+if (!labeler.exhausted()) {
+throw new IllegalStateException("DataTypeDispatcher census mismatch: counted " + keyPlan.cells
++ " keys but the parse issued " + labeler.issued()
++ " — WorkbookParser.keysConsumedBy and parseCellValues have diverged");
+}
+// Sheet-key line: virtual (auto-registered) sheets continue after the last cell key exactly
+// as before; only when that would overflow a short do they start right after the real sheets.
+b.maxSheetNumber = (short) keyPlan.virtualKeyBase();
 }
 
 
@@ -474,6 +533,25 @@ return cellValue.startsWith("FW_")
 && !cellValue.startsWith("FW_EXIT_CODE")
 && !cellValue.startsWith("FW_VAR")
 && !cellValue.startsWith("FW_CUSTOM_VAR");
+}
+
+/**
+ * How many keys {@link #parseCellValues} issues for this cell — the single predicate the
+ * {@link DataTypeDispatcher} census and the parser share.  A formula always issues one; so
+ * does every non-string cell (numbers, booleans, blanks and errors never format to text that
+ * starts with {@code FW_}); a string issues one unless it is an {@code FW_} directive that
+ * materialises no value (only {@code FW_File=} and {@code FW_EMPTY_STRING} do).
+ */
+static int keysConsumedBy(Cell cell) {
+if (cell.getCellType() != CellType.STRING) return 1;
+return keysConsumedBy(cell.getStringCellValue());
+}
+
+static int keysConsumedBy(String cellValue) {
+if (isFwDirectiveCell(cellValue)) {
+return (cellValue.startsWith("FW_File=") || cellValue.startsWith("FW_EMPTY_STRING")) ? 1 : 0;
+}
+return 1;
 }
 
 private static boolean isFwVarExitCode(String cellValue) {

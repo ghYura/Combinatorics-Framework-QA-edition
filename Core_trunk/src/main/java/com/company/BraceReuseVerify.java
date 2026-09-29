@@ -25,6 +25,8 @@
 
 package com.company;
 
+import com.company.keys.KeyCodec;
+import com.company.keys.KeyCodecs;
 import com.company.store.JavaIntermediateTableStore;
 
 import java.util.ArrayList;
@@ -50,14 +52,22 @@ public final class BraceReuseVerify {
     private BraceReuseVerify() {}
 
     public static void main(String[] args) throws Exception {
-        JavaIntermediateTableStore store = new JavaIntermediateTableStore();
-        Map<String, ArrayList<short[]>> mapTable2combs = new HashMap<>();
+        // the cleanup semantics do not depend on the key width: run them for both codecs
+        int failed = run(KeyCodecs.SHORT) + run(KeyCodecs.BYTE);
+        if (failed == 0) System.out.println("✅ ALL BRACE-REUSE CHECKS PASSED");
+        else { System.out.println("❌ " + failed + " BRACE-REUSE CHECK(S) FAILED"); System.exit(1); }
+    }
+
+    private static <A> int run(KeyCodec<A> codec) throws Exception {
+        System.out.println("── " + codec.arrayClass().getSimpleName() + " rows ──");
+        JavaIntermediateTableStore<A> store = new JavaIntermediateTableStore<>(codec);
+        Map<String, ArrayList<A>> mapTable2combs = new HashMap<>();
         for (short key = 1; key <= 4; key++) {
             store.createFwTable(key);
             store.createFw2Table(key);
             for (long id = 1; id <= 3; id++) {
-                store.appendFwRow(key, id, new short[]{ (short) (key * 10 + id) });
-                store.appendFw2Row(key, id + 10, id, new short[]{ (short) (key * 10 + id), (short) id });
+                store.appendFwRow(key, id, codec.fromInts(new int[]{ (int) (key * 10 + id) }));
+                store.appendFw2Row(key, id + 10, id, codec.fromInts(new int[]{ (int) (key * 10 + id), (int) id }));
             }
             mapTable2combs.put("fw_" + key, new ArrayList<>());
             mapTable2combs.put("fw2_" + key, new ArrayList<>());
@@ -66,7 +76,7 @@ public final class BraceReuseVerify {
         Set<Short> reuseSet = Set.of(reuse, both);
         Set<Short> reuseTableOnlySet = Set.of(tableOnly, both);
 
-        BraceOperationHandler handler = new BraceOperationHandler(null, null, null, null, store, null);
+        BraceOperationHandler<A> handler = new BraceOperationHandler<>(null, null, null, null, store, null);
         for (short key = 1; key <= 4; key++) {
             handler.cleanupOperand(key, reuseSet, reuseTableOnlySet, mapTable2combs);
         }
@@ -85,9 +95,7 @@ public final class BraceReuseVerify {
         failed += assertCond("fw_4 / fw2_4 keep 3 rows each", store.count(both, false) == 3 && store.count(both, true) == 3);
         System.out.println("E. operands leave mapTable2combs");
         failed += assertCond("mapTable2combs is empty", mapTable2combs.isEmpty());
-
-        if (failed == 0) System.out.println("✅ ALL BRACE-REUSE CHECKS PASSED");
-        else { System.out.println("❌ " + failed + " BRACE-REUSE CHECK(S) FAILED"); System.exit(1); }
+        return failed;
     }
 
     private static int assertCond(String label, boolean cond) {

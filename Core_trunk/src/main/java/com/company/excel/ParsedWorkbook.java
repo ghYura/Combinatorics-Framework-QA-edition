@@ -77,6 +77,11 @@ public final Set<String> virtualSheetNames;
 public final Map<Integer, Short> fwSeqRowSyntheticTarget;
 
 
+/** Width the cell keys use (short by default; byte only with the core.keys.dispatch=auto experiment) and where their labels start;
+ *  decided by {@link DataTypeDispatcher} before the first key was issued. */
+public final DataTypeDispatcher.Plan keyPlan;
+
+
 
 
 private ParsedWorkbook(Builder b) {
@@ -92,6 +97,7 @@ this.maxSheetNumber                    = b.maxSheetNumber;
 
 this.virtualSheetNames                 = Collections.unmodifiableSet(new LinkedHashSet<>(b.virtualSheetNames));
 this.fwSeqRowSyntheticTarget           = Collections.unmodifiableMap(new LinkedHashMap<>(b.fwSeqRowSyntheticTarget));
+this.keyPlan                           = b.keyPlan;
 
 }
 
@@ -112,6 +118,7 @@ final Map<Integer, Short>      fwSeqRowSyntheticTarget          = new LinkedHash
 
 int   numOfFwSheets  = 0;
 short maxSheetNumber = 0;
+DataTypeDispatcher.Plan keyPlan;
 
 ParsedWorkbook build() {
 return new ParsedWorkbook(this);
@@ -120,6 +127,10 @@ return new ParsedWorkbook(this);
 
 
 short registerVirtualSheet(String name) {
+if (maxSheetNumber >= Short.MAX_VALUE) {
+throw new IllegalStateException("sheet-key overflow: cannot register virtual sheet '" + name
++ "' — the key line already ends at " + Short.MAX_VALUE);
+}
 maxSheetNumber = (short) (maxSheetNumber + 1);
 key2name.put(maxSheetNumber, name);
 name2key.put(name, maxSheetNumber);

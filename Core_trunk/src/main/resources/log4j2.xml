@@ -31,6 +31,21 @@
     <Console name="Console" target="SYSTEM_OUT">
       <PatternLayout pattern="%d{HH:mm:ss.SSS} %-5level %t [%c{1}] - %msg%n"/>
     </Console>
+    <!-- EXPERIMENTAL byte-width cell keys (core.keys.dispatch=auto).  Only
+         com.company.experimental.ByteKeysExperimental logs to the logger named below.  A Routing
+         appender builds its File appender on the FIRST event, so neither the logs/ directory nor the
+         file exists unless an experimental run logs something: a default run creates nothing (a plain
+         File appender would create the directory at startup, even with createOnDemand). -->
+    <Routing name="ExperimentalByteKeys">
+      <Routes pattern="experimental">
+        <Route key="experimental">
+          <File name="ExperimentalByteKeysFile" fileName="logs/experimental-byte-keys.log"
+                createOnDemand="true" append="true">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level %t [%c{1}] - %msg%n"/>
+          </File>
+        </Route>
+      </Routes>
+    </Routing>
   </Appenders>
   <Loggers>
     <Root level="INFO">
@@ -39,5 +54,9 @@
     <Logger name="com.company" level="INFO"/>
     <Logger name="org.hibernate" level="WARN"/>
     <Logger name="com.mchange" level="WARN"/>
+    <!-- Additive: the experiment's messages still reach the console through the root logger. -->
+    <Logger name="fw.experimental.byteKeys" level="INFO" additivity="true">
+      <AppenderRef ref="ExperimentalByteKeys"/>
+    </Logger>
   </Loggers>
 </Configuration>
