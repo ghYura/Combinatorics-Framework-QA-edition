@@ -610,7 +610,7 @@ const T = {
     cfg_lang:"Candidate language", cfg_transport:"Candidate transport", cfg_grpcport:"gRPC port",
     cfg_iters:"Iterations (seed loop)",
     cfg_backend:"Execution backend", cfg_runmode:"Run mode", cfg_sieve:"Apply sieve", cfg_draw:"Draw bonds (Face 2)",
-    cfg_drawx:"Draw · exact impact", cfg_pool:"Executor pool",
+    cfg_drawx:"Draw · exact impact", cfg_pool:"Executor pool", cfg_pyworkers:"Python Executor workers",
     sec_core:"Core & backend", sec_core_h:"who runs it · language · identity",
     sec_analysis:"Analysis & seed bias", sec_analysis_h:"goal direction, exploration, feedback loop",
     sec_constraints:"Constraints · Sieve (Face 2)", sec_constraints_h:"forbid / require value combinations",
@@ -623,6 +623,7 @@ const T = {
     cp_gw:"◐ Gateway backend — multi-tenant safe subset (db &amp; ports gateway-owned)",
     cp_localonly:"local mode only", cp_gwid:"gateway-assigned", cp_na:"n/a here",
     cp_needgoals:"needs goals", cp_needjava:"java only", cp_needjavaloose:"java · loose-files · K=1",
+    cp_needpyloose:"python · loose-files · K=1",
     cp_needgrpc:"grpc only", cp_needprobe:"api-probe only", cp_needtrusted:"trusted-local only", cp_default:"(default)",
     db_pw:"passwords set", db_env_note:"credentials never reach the browser",
     mode_na:"— (add goals to enable)",
@@ -745,7 +746,7 @@ const T = {
     cfg_lang:"Язык кандидатов", cfg_transport:"Транспорт кандидатов", cfg_grpcport:"gRPC порт",
     cfg_iters:"Итерации (seed-петля)",
     cfg_backend:"Бэкенд запуска", cfg_runmode:"Режим прогона", cfg_sieve:"Применить сито", cfg_draw:"Рисовать связи (Грань 2)",
-    cfg_drawx:"Рисовать · точный эффект", cfg_pool:"Пул исполнителей",
+    cfg_drawx:"Рисовать · точный эффект", cfg_pool:"Пул исполнителей", cfg_pyworkers:"Воркеры Python-исполнителя",
     sec_core:"Ядро и бэкенд", sec_core_h:"кто и на каком языке запускает",
     sec_analysis:"Анализ и seed-смещение", sec_analysis_h:"направление целей, разведка, обратная связь",
     sec_constraints:"Ограничения · Сито (Грань 2)", sec_constraints_h:"запрет / требование сочетаний",
@@ -758,6 +759,7 @@ const T = {
     cp_gw:"◐ Gateway — безопасное подмножество (БД и порты — за gateway)",
     cp_localonly:"только локальный режим", cp_gwid:"назначает gateway", cp_na:"недоступно",
     cp_needgoals:"нужны цели", cp_needjava:"только java", cp_needjavaloose:"java · loose-files · K=1",
+    cp_needpyloose:"python · loose-files · K=1",
     cp_needgrpc:"только grpc", cp_needprobe:"только api-probe", cp_needtrusted:"только trusted-local", cp_default:"(по умолч.)",
     db_pw:"пароли заданы", db_env_note:"учётные данные не попадают в браузер",
     mode_na:"— (добавьте цели)",
@@ -941,7 +943,7 @@ let S = load() || fresh();
 let DRAG = null;   // {list:'dim'|'opt', id} while a reorder drag is in flight
 function freshRun(){return {backend:"local",lang:"py",runMode:"",db:"",runId:"r1",iterations:"1",
   mode:"",profile:"",candidateOrigin:"",trustedLocalAcknowledgement:"",transport:"loose-files",grpcPort:"50061",
-  sieve:false,draw:false,drawExact:false,executorPool:"1",repeat:"1"};}
+  sieve:false,draw:false,drawExact:false,executorPool:"1",executorWorkers:"1",repeat:"1"};}
 function fresh(){return {lang:"en",theme:"light",step:0,name:"",note:"",dims:[],opts:[],goals:[],verdicts:[],invite:{domain:"learn",goal:"",risks:[],stress:[],constraints:[]},run:freshRun()};}
 function ensureRun(){ if(!S.run) S.run=freshRun(); const r=S.run, d=freshRun();
   for(const k in d){ if(r[k]===undefined) r[k]=d[k]; }
@@ -1448,6 +1450,7 @@ const FIELDS=[
  // Concurrency & transport
  {f:"transport",fl:"--candidate-sink",sect:"conc",ty:"select",ch:CH_SINK,tk:"cfg_transport",gw:true},
  {f:"executorPool",fl:"--executor-pool",sect:"conc",ty:"num",tk:"cfg_pool",gw:true,min:1,dep:()=>isJava()&&S.run.transport==="loose-files",dmsg:"cp_needjavaloose"},
+ {f:"executorWorkers",fl:"--executor-workers",sect:"conc",ty:"num",tk:"cfg_pyworkers",gw:false,min:1,dep:()=>!isJava()&&S.run.transport==="loose-files",dmsg:"cp_needpyloose"},
  {f:"grpcHost",fl:"--grpc-host",sect:"conc",ty:"text",gw:false,dep:isGrpc,dmsg:"cp_needgrpc",ph:"127.0.0.1"},
  {f:"grpcPort",fl:"--grpc-port",sect:"conc",ty:"num",tk:"cfg_grpcport",gw:true,dep:isGrpc,dmsg:"cp_needgrpc"},
  {f:"executorCompiler",fl:"--executor-compiler",sect:"conc",ty:"select",ch:CH_COMPILER,gw:true,dep:isJava,dmsg:"cp_needjava"},
@@ -1540,7 +1543,8 @@ function buildFlags(){
   if(S.run.transport&&S.run.transport!=="loose-files") parts.push(`--candidate-sink ${S.run.transport}`);
   if(isGrpc()){ if(!gw&&S.run.grpcHost) parts.push(`--grpc-host ${S.run.grpcHost}`); if(+S.run.grpcPort) parts.push(`--grpc-port ${+S.run.grpcPort}`); }
   if(+S.run.executorPool>1) parts.push(`--executor-pool ${+S.run.executorPool}`);
-  const SKIP={backend:1,lang:1,transport:1,grpcHost:1,grpcPort:1,executorPool:1,mode:1,iterations:1,db:1,runId:1};
+  if(!gw&&+S.run.executorWorkers>1) parts.push(`--executor-workers ${+S.run.executorWorkers}`);
+  const SKIP={backend:1,lang:1,transport:1,grpcHost:1,grpcPort:1,executorPool:1,executorWorkers:1,mode:1,iterations:1,db:1,runId:1};
   for(const fd of FIELDS){
     if(SKIP[fd.f]||fd.sect==="stress"||!fd.fl) continue;
     if(gw&&!fd.gw) continue;
