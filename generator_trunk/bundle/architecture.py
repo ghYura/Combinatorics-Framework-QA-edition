@@ -61,6 +61,7 @@ from __future__ import annotations
 
 import ast
 import hashlib
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Iterable, Iterator, Mapping, Sequence
@@ -518,10 +519,30 @@ def dependency_violations(layers: "Sequence[str] | None" = None) -> "list[Import
     return bad
 
 
+def _git_ignores(entry: Path) -> bool:
+    """True when git itself ignores *entry* (``.gitignore``, ``.git/info/exclude``
+    or a global excludes file).
+
+    The CI workflow checks the canonical sibling SUT out INSIDE the workspace and
+    lists it in ``.git/info/exclude`` precisely to keep it out of the framework's
+    source identity. A tree git excludes is not a tree of this repository, so it
+    needs no layer. Where git cannot answer (no executable, not a work tree) nothing
+    counts as ignored and the plain directory listing applies."""
+    rel = repo_relative(entry) + ("/" if entry.is_dir() else "")
+    try:
+        done = subprocess.run(["git", "-C", str(REPO_ROOT), "check-ignore", "-q", "--", rel],
+                              capture_output=True, timeout=30)
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return done.returncode == 0          # 0 = ignored, 1 = not ignored, 128 = git could not tell
+
+
 def unclassified_paths() -> "list[str]":
     """Top-level repository trees and ``generator_trunk`` entries that no layer
     claims. Keeping this empty is what stops a new tree from quietly acquiring
-    an undeclared position in the architecture."""
+    an undeclared position in the architecture. A tree that git ignores (such as
+    the sibling SUT checkout CI places in the workspace) is not part of the
+    repository and is not reported."""
     # Not part of the architecture: documentation, legal/deploy/config assets,
     # repository maintenance tooling, build output, and the `generator_trunk`
     # container itself (its children are classified one level down).
@@ -543,7 +564,7 @@ def unclassified_paths() -> "list[str]":
             if entry.is_file() and not (
                     entry.suffix == ".py" or entry.name.endswith(".schema.json")):
                 continue
-            if classify_path(entry) == UNCLASSIFIED:
+            if classify_path(entry) == UNCLASSIFIED and not _git_ignores(entry):
                 missing.append(rel)
     return missing
 

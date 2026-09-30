@@ -39,6 +39,7 @@ plans and the control plane still loads.
 from __future__ import annotations
 
 import json
+import shutil
 import subprocess
 import sys
 import textwrap
@@ -72,6 +73,21 @@ def test_every_repository_tree_is_classified() -> None:
     """A new top-level tree must declare its layer. Without this, code could
     acquire an undeclared architectural position simply by being added."""
     assert arch.unclassified_paths() == []
+
+
+@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
+def test_a_git_excluded_tree_is_not_an_unclassified_tree(tmp_path, monkeypatch) -> None:
+    """CI checks the sibling SUT out inside the workspace and lists it in
+    .git/info/exclude to keep it outside the framework's source identity; the
+    layer gate must honour that, while a genuinely new tree is still reported."""
+    subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
+    (tmp_path / "SUT").mkdir()
+    (tmp_path / "SUT" / "module.py").write_text("x = 1\n", encoding="utf-8")
+    (tmp_path / "stray_tree").mkdir()
+    with open(tmp_path / ".git" / "info" / "exclude", "a", encoding="utf-8") as fh:
+        fh.write("/SUT/\n")
+    monkeypatch.setattr(arch, "REPO_ROOT", tmp_path)
+    assert arch.unclassified_paths() == ["stray_tree"]
 
 
 def test_engine_layers_never_reach_the_ai_platform_specifically() -> None:
