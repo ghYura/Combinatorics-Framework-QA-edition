@@ -641,6 +641,13 @@ jobs:
       - name: Build the reactor from a clean state
         run: mvn -B --no-transfer-progress clean package
 
+      - name: Pull the sandbox image the container-backend tests need
+        # Executor_trunk/test_py_executor_sandbox.py runs its container tests only when the Docker
+        # CLI is present AND the sandbox image is already local; otherwise it skips them as
+        # MISSING_AUTHORIZED_BACKEND, and the release gate refuses a run that skipped its
+        # sandbox evidence. `python:3-slim` is the backend's default image (BUNDLE_SANDBOX_IMAGE).
+        run: docker pull python:3-slim
+
       - name: Full suite with classified skips
         # Deliberately continue to the release step so a failed run still emits
         # inspectable evidence. `bundle release --pytest-output` parses the final
