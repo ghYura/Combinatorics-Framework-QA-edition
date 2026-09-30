@@ -26,6 +26,7 @@
 
 """Focused tests for BundleSeed -> seed-bias planning."""
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -144,13 +145,13 @@ def test_non_objective_champions_do_not_drive_bias_signal():
 
 _AZ = stages.SRC / "Analyzer_trunk"
 _ANALYZER_READY = (
-    (_AZ / "target/heuristic-analyzer-flatlaf-1.0.0.jar").exists()
-    and (_AZ / "target/analyzekv/AnalyzeKv.class").exists()
-    and (_AZ / "analyzer_cp.txt").exists()
+    shutil.which("java") is not None
+    and (_AZ / "target/heuristic-analyzer-flatlaf-1.0.0.jar").is_file()
+    and stages.resolve_analyzer_driver(_AZ) is not None
 )
 
 
-@pytest.mark.skipif(not _ANALYZER_READY, reason="Analyzer jar/AnalyzeKv build not present")
+@pytest.mark.skipif(not _ANALYZER_READY, reason="MISSING_AUTHORIZED_BACKEND: Analyzer Java runtime / jar / compiled driver not present")
 def test_stage_analyzer_seed_out_writes_bundle_seed(tmp_path):
     src = tmp_path / "src"
     src.mkdir()
@@ -167,7 +168,7 @@ def test_stage_analyzer_seed_out_writes_bundle_seed(tmp_path):
     assert "latency_ms" in doc["observedRanges"]
     assert doc["sourceRunId"] == "seed-stage-test"
 
-@pytest.mark.skipif(not _ANALYZER_READY, reason="Analyzer jar/AnalyzeKv build not present")
+@pytest.mark.skipif(not _ANALYZER_READY, reason="MISSING_AUTHORIZED_BACKEND: Analyzer Java runtime / jar / compiled driver not present")
 def test_formal_provenance_failure_leaves_no_seed(tmp_path):
     src = tmp_path / "src"
     src.mkdir()

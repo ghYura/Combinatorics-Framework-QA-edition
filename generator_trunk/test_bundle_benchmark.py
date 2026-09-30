@@ -56,8 +56,7 @@ _PG = bm._pg_ok(_CFG.main_db_port, _CFG) and bm._pg_ok(_CFG.results_db_port, _CF
 _READER = (Path(_CFG.reader_jar) if _CFG.reader_jar else bm.stages.READER_JAR).exists()
 _CORE = (Path(_CFG.core_jar) if _CFG.core_jar else bm.stages.CORE_JAR).exists()
 _PYEXEC = (Path(_CFG.py_executor) if _CFG.py_executor else bm.stages.PY_EXECUTOR).exists()
-_ANALYZER = (bm.SRC / "Analyzer_trunk/target/analyzekv/AnalyzeKv.class").exists() and \
-            (bm.SRC / "Analyzer_trunk/analyzer_cp.txt").exists()
+_ANALYZER = _JAVA and bm.stages.resolve_analyzer_driver(bm.SRC / "Analyzer_trunk") is not None
 _PIPELINE = _JAVA and _PG and _READER and _CORE and _PYEXEC
 _DOCKER = bm._docker_ok()
 
@@ -223,7 +222,9 @@ def test_ai_campaign_honors_single_scenario_database_override(tmp_path):
 
 
 # ---- REAL execution of every stage (infra-gated) -------------------------- #
-@pytest.mark.skipif(not _ANALYZER, reason="Analyzer build not present")
+@pytest.mark.skipif(
+    not _ANALYZER,
+    reason="MISSING_AUTHORIZED_BACKEND: Analyzer Java runtime / compiled driver not present")
 def test_analyzer_runs_for_real(tmp_path):
     rep = bm.run_benchmark("10K", ["analyzer"], scratch=tmp_path, cfg=_CFG)
     s = rep["stages"][0]

@@ -198,24 +198,44 @@ public final class GuiOptionsVerify {
         //        should have been called and either a 'python_opt_val'
         //        (scipy success) or 'python_eval_error' key should have
         //        landed in kvPairs.
-        int pyTouched = 0, pyOptVal = 0, pyError = 0;
+        int pyTouched = 0, pyOptVal = 0, pySuccess = 0, pyError = 0;
         for (LineResult r : cap.results) {
             boolean any = false;
             for (String k : r.features.kvPairs.keySet()) {
-                if (k.startsWith("python_")) { any = true; if (k.equals("python_opt_val")) pyOptVal++; if (k.contains("error")) pyError++; }
+                if (k.startsWith("python_")) {
+                    any = true;
+                    if (k.equals("python_opt_val")) pyOptVal++;
+                    if (k.contains("error") || k.endsWith("_err")) pyError++;
+                }
             }
+            if ("True".equals(r.features.kvPairs.get("python_opt_success"))) pySuccess++;
             if (any) pyTouched++;
         }
         System.out.printf(Locale.ROOT,
                 "%nPython-eval path: %d/%d lines carry python_* keys  (python_opt_val=%d  python_eval_error=%d)%n",
                 pyTouched, cap.results.size(), pyOptVal, pyError);
-        // The corpus has 6 dedicated python-eval lines; each MUST come back
+        // The corpus has 8 dedicated python-eval lines; each MUST come back
         // with python_opt_val from scipy.optimize.minimize. The 12 telemetry
         // lines also pass the trigger but the helper finds nothing to
         // minimise there (which is the intended pass-through behaviour).
-        failures += check("scipy returned a real optimum on every dedicated python-eval line (≥6)",
-                pyOptVal >= 6);
-        failures += check("python_eval_error never raised", pyError == 0);
+        failures += check("scipy returned a real optimum on every dedicated python-eval line (8)",
+                pyOptVal == 8);
+        failures += check("scipy successfully minimized every dedicated python-eval line (8)",
+                pySuccess == 8);
+        failures += check("Python evaluation and optimization never raised an error", pyError == 0);
+        boolean internalNamespaceLeaked = false;
+        for (LineResult r : cap.results) {
+            if (r.originalLine.startsWith("mu = 0.5")) {
+                failures += check("shipped mu/sigma objective resolves payload variables and reaches zero",
+                        Math.abs(parse(r.features.kvPairs.get("python_opt_val"))) < 1e-6);
+            }
+            if (r.originalLine.startsWith("center = [2.0]")) {
+                failures += check("objective resolves vector and scalar variables assigned before and after its lambda",
+                        Math.abs(parse(r.features.kvPairs.get("python_opt_val")) - 0.1) < 1e-6);
+            }
+            internalNamespaceLeaked |= r.features.kvPairs.containsKey("__builtins__");
+        }
+        failures += check("internal eval namespace is excluded from metrics", !internalNamespaceLeaked);
 
         // ── 3e. Multi-target optimisation diagnostic stream surfaced. ────
         boolean sawPareto = false, sawSimpson = false, sawAuto = false, sawConfODE = false;
@@ -275,7 +295,7 @@ public final class GuiOptionsVerify {
         // trio across the value space; values are chosen so the per-mode
         // tests have unambiguous winners.
         //
-        // After those 12 telemetry lines we append 6 dedicated
+        // After those 12 telemetry lines we append 8 dedicated
         // "python-eval lines": each is structured as a literal Python
         // assignment list `key = expr; key = expr;`.  That is exactly the
         // shape the bundled scipy helper script (yurii_universal_opt.py)
@@ -297,7 +317,7 @@ public final class GuiOptionsVerify {
             {0.10,   4200,         3.0},     // best for min(cost)
             {0.08,   4500,         2.5},
         };
-        List<String> out = new ArrayList<>(tuples.length + 6);
+        List<String> out = new ArrayList<>(tuples.length + 8);
         int i = 0;
         for (double[] t : tuples) {
             // Plain telemetry — also has '=' and ';' so the python path is
@@ -314,6 +334,14 @@ public final class GuiOptionsVerify {
                     "objective = lambda x: (x[0]-%f)**2 + 0.1; params = {'start_point': [0.0]}",
                     a));
         }
+        // Shipped example from samples/comprehensive_input.txt: lambda
+        // globals must resolve the assignments from the same payload.
+        out.add("mu = 0.5 ; sigma = 0.1 ; objective = lambda x: ((x - mu) / sigma) ** 2 ; minimize = True");
+        // A shared namespace also covers vector constants, comprehension
+        // scopes, and assignments made after the lambda is created.
+        out.add("center = [2.0]; floor = 0.1; objective = lambda x: "
+                + "(x[0] - [v + offset for v in center][0])**2 + floor; "
+                + "offset = 0.5; params = {'start_point': [0.0]}");
         return out;
     }
 

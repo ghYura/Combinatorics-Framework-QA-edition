@@ -1098,9 +1098,9 @@ def spec_cardinality_plan(spec: "Spec") -> SpecCardinalityPlan:
     same Cartes operand sizing) but keeps every stage's confidence tier and
     formula instead of returning one bare integer — see `SpecCardinalityPlan`.
 
-    A legacy XLSX spec, or a TOML spec whose `seq_extra` re-declares a slot with a verb
-    chain, is sized from its effective FW_Seq program instead (`_program_cardinality_plan`):
-    its first verb alone would understate it while claiming EXACT."""
+    A legacy XLSX spec, or a TOML spec with a verb chain, grouping, separator or brace,
+    is sized from its effective FW_Seq program instead (`_program_cardinality_plan`):
+    its first verb alone does not describe the final distinct rows."""
     if uses_program_sizing(spec):
         return _program_cardinality_plan(spec)
     sheet_n = {s.sheet: len(s.values) for s in spec.slots}
@@ -1474,9 +1474,20 @@ def _redeclares_slot_with_verbs(spec: "Spec") -> bool:
 
 
 def uses_program_sizing(spec: "Spec") -> bool:
-    """Size this spec from its effective program instead of per-slot verbs."""
+    """Size structural programs from the emitted FW_Seq, not each slot's first verb.
+
+    Grouping re-combines prior rows, separators can remove empty rows, and braces
+    consume result tables (including nested results). Their final support cannot be
+    inferred from the independent first-verb product, even without a verb chain.
+    Simple slots retain the closed-form route and its exact sieve pre-counts.
+    """
     return (getattr(spec, "source_format", "toml") == "xlsx" or _redeclares_slot_with_verbs(spec)
-            or any(getattr(s, "chain", ()) for s in (getattr(spec, "slots", None) or [])))
+            or any(getattr(s, "chain", ()) or getattr(s, "group_replace", ())
+                   or getattr(s, "separator", None)
+                   or _BRACE_RE.fullmatch(_first_line(getattr(s, "verb", "")))
+                   for s in (getattr(spec, "slots", None) or []))
+            or any(_BRACE_RE.fullmatch(_first_line(c))
+                   for row in (getattr(spec, "seq_extra", None) or []) for c in row))
 
 
 @dataclass(frozen=True)

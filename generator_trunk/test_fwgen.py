@@ -221,7 +221,8 @@ def test_group_cardinality_is_bounded_by_its_emissions_not_exact():
 def test_brace_over_a_grouped_operand_is_bounded_not_unknown():
     """A grouped operand is not exactly sizable, but it IS bounded: the brace can
     never produce more rows than the group's emission ceiling times the other
-    operand. Measured end to end for this shape: 12, ceiling 32."""
+    operand. Measured end to end for this shape: 12; the program ceiling is 30
+    because the empty grouped selection is dropped before the join."""
     spec = fg.parse_spec({
         "slots": [{"sheet": "A", "verb": "FW_Subsets", "values": ["a1", "a2"],
                    "flags": ["FW_Exclude"], "group_replace": [["zzz", "zzz"]]},
@@ -231,7 +232,7 @@ def test_brace_over_a_grouped_operand_is_bounded_not_unknown():
     }, "grouped-brace")
     plan = fg.spec_cardinality_plan(spec)
     assert plan.mandatory.mode == fg.CardinalityMode.BOUNDED
-    assert plan.mandatory.upper == 32, plan.mandatory      # 16 emissions x 2
+    assert plan.mandatory.upper == 30, plan.mandatory      # 15 nonempty group selections x 2
     assert plan.mandatory.upper >= 12, "must bound the measured 12"
 
 
@@ -249,7 +250,11 @@ def test_chained_braces_are_not_counted_twice():
     }, "chained")
     # (2x2) x 3 = 12 -- not 4 x 12 = 48
     assert fg.estimate_core_combos(spec) == 12
-    assert fg.spec_cardinality_plan(spec).mandatory.mode == fg.CardinalityMode.EXACT
+    plan = fg.spec_cardinality_plan(spec)
+    # The intermediate brace's row lengths are not certified, so the program
+    # planner bounds the final DISTINCT instead of claiming concatenation is injective.
+    assert plan.mandatory.mode == fg.CardinalityMode.BOUNDED
+    assert plan.mandatory.upper == 12
 
 
 def test_verb_rows_agrees_with_verb_output_count():

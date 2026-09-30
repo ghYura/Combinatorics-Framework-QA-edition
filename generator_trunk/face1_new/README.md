@@ -40,11 +40,13 @@ F = <empty>
 G = FW_Combi(1)
 ```
 
-`FW_Reuse` or `FW_ReuseTableOnly` must be the next **non-empty** cell after `FW_Exclude`. Any number of empty cells may occur between them. Empty columns are never compacted during export.
+`FW_Reuse` and `FW_ReuseTableOnly` are row flags; their directive-column position does not change the lifetime of an operand. `FW_Reuse` keeps its rows for later joins, while `FW_ReuseTableOnly` clears its rows after a join and retains the empty table. When both flags are present, `FW_Reuse` keeps the rows, matching Core. A reuse flag on an ordinary row is harmless, as in compact generated workbooks. Empty columns are never compacted during export.
 
 `FW_Group` and a multi-line `FW_Group`/`FW_ReplaceRE` cell may appear in any directive column. They are not forced to the first or last position, and multiple Group cells in the same row are supported.
 
-An `FW_(...)` cell is valid only in the row immediately following two consecutive rows that both contain `FW_Exclude`. Its left and right operands must name those previous two target sheets in order. If the operands use `FW_Reuse` or `FW_ReuseTableOnly`, both rows must use the same mode. The templates pane includes an “Insert valid 3-row brace pattern” action for this grammar.
+An `FW_(...)` cell names excluded operand result tables, which may be separated from the join by other rows. Each operand has its own reuse mode. A result consumed by more than one join must retain its rows with `FW_Reuse`; validation rejects missing operands, result dependency cycles and reuse of cleaned rows. Nested `FW_()` and `FW_()G` resolve the most recent prior brace targets. The templates pane includes an “Insert valid 3-row brace pattern” action as a convenient starting layout.
+
+The exported workbook is also the Bundle launcher's planning input. Preflight and budgets use its complete ordered program and passive helper sheets, so their metadata describes the same workbook that Core executes.
 
 The brace palette includes all five multiplicities in compact and full nine-field forms, plus nested `FW_()` and grouped `FW_()G` operand forms. Dropping a brace binds `LEFT`/`RIGHT` to the two preceding target rows; nested markers remain intact for Core to resolve.
 

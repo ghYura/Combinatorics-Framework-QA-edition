@@ -515,11 +515,18 @@ def _modal_guardrails(page: Face1Page, profile: str, probe: _Probe) -> None:
 
     page.open_tab("run")
     page.open_expansion("scenarios")
+    page.select_option("test_suite", "Verified examples")
     page.click_button("scenario_inspect")
     dialog = page.visible_dialog()
     probe.that("mandatory Core product" in dialog.text,
                "scenario inspector did not show its computed plan")
     page.click_button("dialog_close", scope=dialog)
+    page.click_button("scenario_run")
+    page.wait_notification("Cannot run example:")
+    probe.that(not _displayed(page.driver.find_elements(
+        By.CSS_SELECTOR, page.selectors.value("page", "visible_dialog_css"))),
+        "scenario confirmation bypassed the required execution policy")
+    page.select_option("execution_policy", "Generated / untrusted — sandboxed (recommended)")
     page.click_button("scenario_run")
     dialog = page.visible_dialog()
     probe.that("not a simulation" in dialog.text, "scenario confirmation omits real-run disclosure")

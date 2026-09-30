@@ -133,22 +133,27 @@ python generator_trunk/bundle_run.py <spec> --core-props /tmp/strict.properties 
 The Reader needs no equivalent keys: it never applies `FW_ReplaceRE` (verified — zero references in
 `Reader_trunk`). The rewrite is entirely a Core, `fw2_`-stage concern.
 
-## Known limitations
+## Failure propagation and grouped rendering
 
-Two things these policies do **not** fix, recorded so their absence is a decision rather than an
-oversight.
+**Sheet failures abort the run.** `processAll` completes failed sheets' dependency futures
+exceptionally and raises on the calling thread after joining the workers. A brace refuses a failed
+or timed-out operand, and final assembly does not start after a sheet failure. Core's main entry
+point propagates fatal errors, so its process exits nonzero and Bundle stops before Reader.
+The `fail`/`strict` rewrite policies use this same path. A program that deliberately ends with an
+empty result still follows the existing empty-sheet behavior; an empty result is distinct from an
+exception while processing it.
 
-**`processAll` swallows per-sheet exceptions.** Each sheet runs in its own virtual thread under
-`catch (Exception e) { log.error(...) }`, with no failure record and no effect on the exit code — so
-a sheet can fail outright while the run still reports success. That is why the `fail` policies do not
-simply throw: they record the violation and re-raise it on the calling thread after the join, which
-confines the fix to `core.replace.*`. The general swallow is untouched and remains a live issue.
+**`FW_Group` applies rewrites to the following grouped verb.** The sub-combination path applies
+verbs per existing row when no group is pending; it is not a second `FW_Group` execution path.
+The previous limitation here was an incorrect reading of those branches. The executable
+`com.company.excel.SheetWorkerWorkflowVerify` includes a group placed after a completed per-row
+pass and verifies that its rewrite is applied, for both short and byte keys.
 
-**`group_replace` is applied on only one of the two `FW_Group` execution paths.** The rewrite loop
-lives in the generator-stream path; a second, sub-combo path writes `fw2_` rows without consulting
-`replacerHM`. A spec that takes the second path has its rewrites silently ignored. This predates the
-policies and is unchanged by them — `diagnostics=summary` will simply print nothing for such a sheet,
-which is itself the tell.
+**Grouped Cartes keeps its named operand as bare codes.** Its code-string is
+`[[row codes], x]`, or `[x, [row codes]]` for `_first`, matching the original renderer. Previously
+the operand was wrapped as `[x]`. That kept the row count unchanged but altered regex matches:
+a digit-comma separator rewrite on `_first` missed the boundary after `x`. The verifier checks
+all eight rows of a bounded `2 × 2 × 2` example, including the separators, in both directions.
 
 ## Related
 

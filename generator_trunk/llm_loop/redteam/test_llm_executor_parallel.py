@@ -25,15 +25,14 @@
 
 """Acceptance tests for the parallel, resumable red-team Executor (spec section 15).
 
-Runs WITHOUT PostgreSQL and WITHOUT Ollama. The DB integration test is gated/skipped
-when no local results cluster is reachable. No real external network is used.
+Runs WITHOUT PostgreSQL and WITHOUT Ollama. The DB integration test requires
+explicit live-DB opt-in and an owned database prefix. No real external network is used.
 """
 from __future__ import annotations
 
 import http.server
 import json
 import threading
-import time
 from pathlib import Path
 
 import pytest
@@ -152,16 +151,75 @@ def test_non_resume_run_is_fresh_not_implicit_reuse(tmp_path):
 
 
 # ------------------------- 15.3 real concurrency proof ---------------------- #
-def test_delayed_mock_proves_concurrency(tmp_path):
-    delay = 5
-    t0 = time.monotonic()
-    assert X.main(base_args(tmp_path / "s1", workers=1, run_id="c1", mock_delay_ms=delay)) == 0
-    serial = time.monotonic() - t0
-    t0 = time.monotonic()
-    assert X.main(base_args(tmp_path / "s4", workers=4, run_id="c4", mock_delay_ms=delay)) == 0
-    parallel = time.monotonic() - t0
-    # 288 candidates x 5ms sleeps overlap across 4 workers — require >= 2x on this PC.
-    assert serial >= 2.0 * parallel, f"serial={serial:.2f}s parallel={parallel:.2f}s"
+def test_delayed_mock_proves_concurrency(tmp_path, monkeypatch):
+    # Hold each worker's first actual provider call until all four enter it.
+    # Serial workers cannot cross this barrier; coordinator setup latency has
+    # no bearing on the result. The recorded call intervals also prove overlap.
+    workers = 4
+    probe_dir = tmp_path / "overlap"
+    probe_dir.mkdir()
+    wrapper = tmp_path / "worker_overlap_probe.py"
+    wrapper.write_text('''
+import json
+import os
+import sys
+import time
+from pathlib import Path
+
+probe_dir = Path(sys.argv.pop(1))
+expected_workers = int(sys.argv.pop(1))
+script = Path(sys.argv.pop(1))
+sys.path.insert(0, str(script.parent))
+import llm_executor as executor
+
+worker = int(sys.argv[sys.argv.index("--worker-index") + 1])
+original_generate = executor.MockVictim.generate
+first_call = True
+
+def synchronized_generate(self, prompt):
+    global first_call
+    if not first_call:
+        return original_generate(self, prompt)
+    first_call = False
+    entered_ns = time.monotonic_ns()
+    ready = probe_dir / f"worker-{worker}.ready"
+    ready.touch()
+    deadline = time.monotonic() + 10
+    while len(list(probe_dir.glob("*.ready"))) != expected_workers:
+        if time.monotonic() >= deadline:
+            raise TimeoutError("worker provider calls did not overlap")
+        time.sleep(0.01)
+    result = original_generate(self, prompt)
+    (probe_dir / f"worker-{worker}.json").write_text(json.dumps({
+        "entered_ns": entered_ns,
+        "finished_ns": time.monotonic_ns(),
+        "pid": os.getpid(),
+    }))
+    return result
+
+executor.MockVictim.generate = synchronized_generate
+raise SystemExit(executor.main(sys.argv[1:]))
+''')
+
+    original_pool = worker_pool.run_workers
+
+    def run_instrumented_workers(specs, **kwargs):
+        instrumented = [dict(spec, cmd=[
+            spec["cmd"][0], str(wrapper), str(probe_dir), str(workers),
+            *spec["cmd"][1:],
+        ]) for spec in specs]
+        return original_pool(instrumented, **kwargs)
+
+    monkeypatch.setattr(worker_pool, "run_workers", run_instrumented_workers)
+    assert X.main(base_args(tmp_path / "parallel", workers=workers,
+                            run_id="concurrency", mock_delay_ms=5)) == 0
+    intervals = [json.loads(path.read_text())
+                 for path in sorted(probe_dir.glob("worker-*.json"))]
+    assert len(intervals) == workers
+    assert len({record["pid"] for record in intervals}) == workers
+    assert max(record["entered_ns"] for record in intervals) < min(
+        record["finished_ns"] for record in intervals
+    ), intervals
 
 
 # --------------------------- 15.4 crash and resume -------------------------- #
@@ -333,40 +391,39 @@ def test_optional_db_setup_failure_is_recorded(tmp_path, monkeypatch):
 
 
 def test_db_integration_idempotent_if_local_postgres(tmp_path):
-    name = "redteam_test_v2"
-    args0 = base_args(tmp_path, workers=2, run_id="dbi", db_mode="required")
-    args0 += ["--db-name", name]
+    import live_db_guard
+
     try:
-        rc = X.main(args0)
-    except SystemExit:
-        pytest.skip("local results PostgreSQL not available")
-    if rc != 0:
-        pytest.skip("local results PostgreSQL not available")
-    # query inserted count
-    import importlib
-    params = X.db_params(type("A", (), {"db_name": name})())
-    try:
-        cx = X.db_connect(params)
-    except Exception:
-        pytest.skip("cannot reconnect to verify")
-    cu = cx.cursor()
-    cu.execute("SELECT count(*) FROM redteam_findings_v2 WHERE run_id=%s", ("dbi",))
-    first = cu.fetchone()[0]
-    cu.close(); cx.close()
-    assert first == 288
-    # Fresh replay executes every candidate again; ON CONFLICT, not checkpoint skipping,
-    # must preserve uniqueness.
-    replay_args = base_args(tmp_path, workers=2, run_id="dbi", db_mode="required") + ["--db-name", name]
-    assert X.main(replay_args) == 0
-    replay_summary = json.loads((tmp_path / "r.json").read_text())
-    assert replay_summary["db"]["attempted"] == 288
-    assert replay_summary["db"]["already_present"] == 288
-    cx = X.db_connect(params); cu = cx.cursor()
-    cu.execute("SELECT count(*) FROM redteam_findings_v2 WHERE run_id=%s", ("dbi",))
-    assert cu.fetchone()[0] == 288
-    cu.execute('DROP TABLE redteam_findings_v2')
-    cx.commit(); cu.close(); cx.close()
-    importlib.invalidate_caches()
+        prefix = live_db_guard.live_db_prefix()
+    except live_db_guard.LiveDbNotEnabled as exc:
+        pytest.skip(str(exc))
+    params = X.db_params(type("A", (), {"db_name": "postgres"})())
+
+    def connect(port, database):
+        return X.db_connect(dict(params, port=port), database=database)
+
+    with live_db_guard.OwnedDatabases(prefix, connect) as databases:
+        name = databases.create("redteam", int(params["port"]))
+
+        def inserted_count():
+            cx = X.db_connect(params, database=name)
+            try:
+                cu = cx.cursor()
+                cu.execute("SELECT count(*) FROM redteam_findings_v2 WHERE run_id=%s", ("dbi",))
+                return cu.fetchone()[0]
+            finally:
+                cx.close()
+
+        args0 = base_args(tmp_path, workers=2, run_id="dbi", db_mode="required")
+        assert X.main(args0 + ["--db-name", name]) == 0
+        assert inserted_count() == 288
+        # Fresh replay executes every candidate again; ON CONFLICT, not checkpoint skipping,
+        # must preserve uniqueness.
+        assert X.main(args0 + ["--db-name", name]) == 0
+        replay_summary = json.loads((tmp_path / "r.json").read_text())
+        assert replay_summary["db"]["attempted"] == 288
+        assert replay_summary["db"]["already_present"] == 288
+        assert inserted_count() == 288
 
 
 # --------------------------- 15.8 atomic artifacts -------------------------- #

@@ -523,6 +523,9 @@ def stage_core(spec, xlsx, scratch, db, port, n_opt=0, cfg: BundleConfig = Bundl
     log = scratch / "core.log"
     timeout = int(cfg.core_timeout_seconds)
     r = run(f'timeout {timeout} {cfg.java_cmd} -jar "{core_jar}" </dev/null >"{log}" 2>&1', cwd=str(cwd))
+    if r.returncode != 0:
+        raise StageError(f"Core exited with status {r.returncode} (see {log}); "
+                         "refusing to use incomplete or stale fw_final rows")
     cnt, rc = psql(port, db, "select count(*) from fw_final;",
                    host=cfg.main_db_host, user=cfg.main_db_user, password=cfg.main_db_password)
     est = fg.estimate_core_combos(spec)

@@ -1,5 +1,7 @@
 # fintech_oot — small Bundle batches (run each: `python3 ../bundle_run.py batches/<name>`)
 
+Every verdict candidate requires httpx and the live two-node cluster. Missing or unusable live probe evidence raises before a verdict/metric record; Executor classifies the candidate as BROKEN. Intentional in-process peer outage factors remain valid domain cases.
+
 - **auth_matrix**  → ~16×1 = 16 candidates   (3 variation slots)
 - **cards_crud**  → ~256×1 = 256 candidates   (4 variation slots)
 - **intra_transfer**  → ~90×1 = 90 candidates   (4 variation slots)

@@ -66,8 +66,8 @@ GROUP_CLEANUP = (
 
 TEMPLATES: tuple[CellTemplate, ...] = (
     CellTemplate("exclude", "FW_Exclude", "Row role", "FW_Exclude", "Operand/intermediate row. Put before Reuse and generative cells.", "#b45309"),
-    CellTemplate("reuse", "FW_Reuse", "Row role", "FW_Reuse", "Only immediately after Exclude on both rows directly before a brace row.", "#b45309"),
-    CellTemplate("reuse_table", "FW_ReuseTableOnly", "Row role", "FW_ReuseTableOnly", "Table-only variant; same strict location as Reuse.", "#b45309"),
+    CellTemplate("reuse", "FW_Reuse", "Row role", "FW_Reuse", "Keep an excluded operand's rows for later joins; flag position does not affect its lifetime.", "#b45309"),
+    CellTemplate("reuse_table", "FW_ReuseTableOnly", "Row role", "FW_ReuseTableOnly", "Keep an excluded operand's table, but clear its rows after a join.", "#b45309"),
     CellTemplate("optional", "FW_Optional", "Row role", "FW_Optional", "Reader assembles this result as optional.", "#b45309"),
     CellTemplate("heading", "FW_Heading", "Row role", "FW_Heading", "Excluded row that also acts as a heading.", "#b45309"),
     CellTemplate("last_queue", "FW_LastInQueue", "Row role", "FW_LastInQueue", "Move this source to the end of the queue.", "#b45309"),
@@ -105,7 +105,7 @@ TEMPLATES: tuple[CellTemplate, ...] = (
     CellTemplate("brace_1_n", "Join · 1:N", "Compose", "FW_(,,LEFT,,RIGHT,,,,1:N)", "Brace multiplicity 1:N.", "#7c3aed"),
     CellTemplate("brace_m_1", "Join · M:1", "Compose", "FW_(,,LEFT,,RIGHT,,,,M:1)", "Brace multiplicity M:1.", "#7c3aed"),
     CellTemplate("brace_m_m", "Join · M:M", "Compose", "FW_(,,LEFT,,RIGHT,,,,M:M)", "Brace multiplicity M:M.", "#7c3aed"),
-    CellTemplate("brace", "Join · M:N", "Compose", "FW_(,,LEFT,,RIGHT,,,,M:N)", "Only after two excluded operand rows.", "#7c3aed"),
+    CellTemplate("brace", "Join · M:N", "Compose", "FW_(,,LEFT,,RIGHT,,,,M:N)", "Join named excluded result tables; retained operands may feed later joins.", "#7c3aed"),
     CellTemplate("brace_full_1_1", "Join full · 1:1", "Compose", "FW_(START,,LEFT,RELATION,RIGHT,,END,SEPARATOR,1:1)", "Nine-field join with start, relation, end and separator.", "#7c3aed"),
     CellTemplate("brace_full_1_n", "Join full · 1:N", "Compose", "FW_(START,,LEFT,RELATION,RIGHT,,END,SEPARATOR,1:N)", "Nine-field join with start, relation, end and separator.", "#7c3aed"),
     CellTemplate("brace_full_m_1", "Join full · M:1", "Compose", "FW_(START,,LEFT,RELATION,RIGHT,,END,SEPARATOR,M:1)", "Nine-field join with start, relation, end and separator.", "#7c3aed"),
@@ -315,42 +315,15 @@ class GridProject:
             reuse_table = self._positions(row, "FW_ReuseTableOnly")
             if optional and exclude:
                 issues.append(GridIssue("error", f"Row {excel_row} cannot be both FW_Optional and FW_Exclude.", row.id))
-            if reuse and reuse_table:
-                issues.append(GridIssue("error", f"Row {excel_row} cannot contain both reuse modes.", row.id))
-            occupied_positions = [column for column, cell in enumerate(row.directives, 1) if cell.strip()]
-            for position in reuse + reuse_table:
-                if not exclude:
-                    issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: reuse is allowed only on an FW_Exclude operand row.", row.id, position))
-                else:
-                    next_nonempty = next((item for item in occupied_positions if item > exclude[0]), None)
-                    if position != next_nonempty:
-                        issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: reuse must be the next non-empty cell after FW_Exclude; blank cells between them are allowed.", row.id, position))
 
             braces = self._brace_cells(row)
             if len(braces) > 1:
                 issues.append(GridIssue("error", f"Row {excel_row} contains more than one FW_(...) join cell.", row.id))
             for position, directive in braces:
-                if index < 2:
-                    issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: a brace row needs two immediately preceding operand rows.", row.id, position))
-                    continue
-                left, right = rows[index - 2], rows[index - 1]
-                if not self._positions(left, "FW_Exclude") or not self._positions(right, "FW_Exclude"):
-                    issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: FW_(...) is valid only directly after two FW_Exclude rows.", row.id, position))
                 match = re.fullmatch(r"FW_\((.*)\)", directive, flags=re.DOTALL)
                 fields = [part.strip() for part in match.group(1).split(",")] if match else []
                 if len(fields) != 9:
                     issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: FW_(...) needs exactly nine comma-separated fields.", row.id, position))
-                elif any(
-                    operand not in {target, "FW_()", "FW_()G"}
-                    for operand, target in (
-                        (fields[2], left.target.strip()),
-                        (fields[4], right.target.strip()),
-                    )
-                ):
-                    issues.append(GridIssue("error", f"{get_column_letter(position + 1)}{excel_row}: brace operands must be the two preceding targets (or Core nested markers FW_()/FW_()G), {left.target!r} then {right.target!r}.", row.id, position))
-                modes = (self._reuse_mode(left), self._reuse_mode(right))
-                if bool(modes[0]) != bool(modes[1]) or (modes[0] and modes[0] != modes[1]):
-                    issues.append(GridIssue("error", f"Rows {excel_row - 2}–{excel_row - 1}: both brace operands must use the same reuse mode, or neither.", row.id))
 
             for pattern in (r"FW_Separator\(([^)]+)\)", r"FW_Cartes(?:_first)?\(([^)]+)\)"):
                 for _, line in self._lines(row):
@@ -358,12 +331,22 @@ class GridProject:
                         if reference not in all_sheet_names:
                             issues.append(GridIssue("error", f"Row {excel_row} references missing sheet {reference!r}.", row.id))
 
-        brace_indexes = {index for index, row in enumerate(rows) if self._brace_cells(row)}
-        for index, row in enumerate(rows):
-            if not self._reuse_mode(row):
-                continue
-            if not any(index in (brace_index - 2, brace_index - 1) for brace_index in brace_indexes):
-                issues.append(GridIssue("error", f"Row {index + 1}: {self._reuse_mode(row)} is allowed only on one of the two rows immediately before FW_(...).", row.id))
+        # Core resolves named result tables and nested markers; row adjacency is
+        # not its operand contract. Share the launcher's dependency/lifetime
+        # checks so a later join may reuse rows without reading a cleaned table.
+        if not any(issue.severity == "error" for issue in issues):
+            from fwseq_graph import FwSeqGraph, build_graph
+            from .runtime_model import project_spec
+
+            graph = build_graph(project_spec(self))
+            dependency_issues = [issue for issue in graph.errors() if issue.code != "cycle"]
+            # Cartes and separator helpers supply raw cells, so crossing their
+            # references (including self-Cartes) is not a result-table cycle.
+            result_graph = FwSeqGraph(graph.nodes, [edge for edge in graph.edges if edge.kind in {
+                "brace_operand", "brace_nested_operand", "produces",
+            }])
+            dependency_issues.extend(issue for issue in result_graph.errors() if issue.code == "cycle")
+            issues.extend(GridIssue("error", issue.message) for issue in dependency_issues)
 
         for sheet_name in self.auxiliary_sheets:
             if not sheet_name or len(sheet_name) > 31 or INVALID_SHEET_CHARS.search(sheet_name) or sheet_name in CONTROL_SHEETS:

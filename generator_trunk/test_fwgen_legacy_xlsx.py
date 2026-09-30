@@ -309,6 +309,65 @@ def test_program_path_keeps_the_exact_sieve_precount():
     assert (post.mode, post.value) == (fg.CardinalityMode.EXACT, 133)
 
 
+def test_grouped_toml_uses_the_program_instead_of_its_first_verb():
+    """The shipped groupcheck has six Core rows, not the four first-order subsets.
+    Its lossy group rendering needs an honest bound rather than an EXACT four."""
+    spec = fg.load_spec(HERE / "llm_transformer_campaign" / "groupcheck" / "groupcheck.toml")
+    assert fg.uses_program_sizing(spec)
+    plan = fg.spec_cardinality_plan(spec)
+    assert plan.final.mode == fg.CardinalityMode.BOUNDED
+    assert (plan.final.lower, plan.final.upper) == (1, 15)
+    assert plan.final.lower <= 6 <= plan.final.upper
+    assert fg.estimate_core_combos(spec) == plan.mandatory.upper
+
+
+def test_separator_toml_accounts_for_the_removed_empty_subset():
+    spec = fg.parse_spec({"slots": [
+        {"sheet": "S", "verb": "FW_Subsets", "values": ["a", "b"], "separator": "GLUE"},
+        {"sheet": "GLUE", "values": ["+"], "flags": ["FW_Exclude"]},
+    ]}, "separator-subsets")
+    assert fg.uses_program_sizing(spec)
+    plan = fg.spec_cardinality_plan(spec)
+    assert (plan.mandatory.mode, plan.mandatory.value) == (fg.CardinalityMode.EXACT, 3)
+
+
+def test_toml_nested_brace_uses_prior_result_sizing():
+    spec = fg.parse_spec({
+        "slots": [
+            {"sheet": "A", "values": ["a1", "a2"], "flags": ["FW_Exclude"]},
+            {"sheet": "B", "values": ["b1", "b2"], "flags": ["FW_Exclude"]},
+            {"sheet": "J1", "values": ["placeholder"], "flags": ["FW_Exclude"]},
+            {"sheet": "C", "values": ["c"], "flags": ["FW_Exclude"]},
+            {"sheet": "J2", "values": ["placeholder"]},
+        ],
+        "seq_extra": [["J1", "FW_(,,A,,B,,,,M:N)"],
+                      ["J2", "FW_(,,FW_()G,,C,,,,M:N)"]],
+    }, "nested-grouped-brace")
+    assert fg.uses_program_sizing(spec)
+    plan = fg.spec_cardinality_plan(spec)
+    assert (plan.per_slot["J1"].mode, plan.per_slot["J1"].value) == (fg.CardinalityMode.EXACT, 4)
+    assert plan.per_slot["J2"].upper == 1
+    assert plan.final.upper == 1
+
+
+def test_structural_optional_slot_keeps_a_simple_mandatory_exact_sieve():
+    spec = fg.parse_spec({
+        "slots": [
+            {"sheet": "A", "values": ["x", "y"]},
+            {"sheet": "B", "values": ["x", "y"]},
+            {"sheet": "OPT", "verb": "FW_Subsets", "values": ["o1", "o2"],
+             "flags": ["FW_Optional"], "group_replace": [["unused", "unused"]]},
+        ],
+        "constraints": [{"id": "no_xx", "sets": {"A": ["x"], "B": ["x"]},
+                         "polarity": "forbid"}],
+    }, "grouped-optional-exact-sieve")
+    assert fg.uses_program_sizing(spec)
+    plan = fg.spec_cardinality_plan(spec)
+    assert (plan.mandatory.mode, plan.mandatory.value) == (fg.CardinalityMode.EXACT, 4)
+    assert (plan.post_sieve.mode, plan.post_sieve.value) == (fg.CardinalityMode.EXACT, 3)
+    assert plan.optional_multiplier.mode == fg.CardinalityMode.BOUNDED
+
+
 def test_legacy_workbook_quirks_are_accepted(tmp_path):
     """Author workbooks: a shared-strings part declared but absent (Core's POI reader accepts it),
     and Core's data-cell tokens (FW_EMPTY_STRING) are values, not verbs. Neither may be refused."""

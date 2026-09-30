@@ -63,12 +63,14 @@ def test_blank_columns_between_nonempty_cells_are_preserved_and_valid():
     assert sequence["F3"].value == "FW_(,,LEFT,,RIGHT,,,,M:N)"
 
 
-def test_reuse_must_be_next_nonempty_cell_but_not_physically_adjacent():
+def test_reuse_flag_may_follow_an_algorithm_cell():
     project = _brace_project_with_gaps()
     project.rows[0].directives[2] = "FW_Subsets"  # D now intervenes before Reuse in E
 
-    messages = [issue.message for issue in project.validate()]
-    assert any("next non-empty cell after FW_Exclude" in message for message in messages)
+    assert project.validate() == []
+    workbook = load_workbook(BytesIO(project.to_xlsx_bytes()), data_only=False)
+    assert workbook["FW_Seq"]["D1"].value == "FW_Subsets"
+    assert workbook["FW_Seq"]["E1"].value == "FW_Reuse"
 
 
 def test_group_cells_are_valid_in_middle_and_multiple_positions():
@@ -79,14 +81,15 @@ def test_group_cells_are_valid_in_middle_and_multiple_positions():
     assert project.validate() == []
 
 
-def test_brace_requires_exactly_the_previous_two_excluded_rows():
+def test_brace_resolves_named_operands_across_intervening_rows():
     project = _brace_project_with_gaps()
     extra = project._new_row("INTERVENING", ["x"])
     extra.directives[0] = "FW_Combi(1)"
     project.rows.insert(2, extra)
 
-    messages = [issue.message for issue in project.validate()]
-    assert any("only directly after two FW_Exclude rows" in message for message in messages)
+    assert project.validate() == []
+    workbook = load_workbook(BytesIO(project.to_xlsx_bytes()), data_only=False)
+    assert workbook["FW_Seq"]["F4"].value == "FW_(,,LEFT,,RIGHT,,,,M:N)"
 
 
 def test_example_import_is_explicit_and_round_trips_the_full_contract():

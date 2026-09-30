@@ -126,6 +126,65 @@ def test_nested_brace_chain_resolves_prior_targets():
     assert nested == {("brace#1.2", "R1"), ("brace#2.2", "R2")}
 
 
+@pytest.mark.parametrize("source_format", ["toml", "xlsx"])
+@pytest.mark.parametrize("marker", ["FW_()", "FW_()G"])
+@pytest.mark.parametrize("explicit_first", [False, True])
+def test_nested_operands_keep_rows_globally(source_format, marker, explicit_first):
+    # J1 is consumed by J2 and J3. Even if J2 names J1 explicitly, the later
+    # nested reference enables retention before either join runs in the Core.
+    rows = [
+        ["J1", "FW_(,,A,,B,,,,M:N)"],
+        ["J2", f"FW_(,,{'J1' if explicit_first else marker},,C,,,,M:N)"],
+        ["J3", f"FW_(,,{marker},,{marker},,,,M:N)"],
+    ]
+    spec = fg.parse_spec({
+        "runme": "class R{}",
+        "slots": [
+            {"sheet": name, "values": [name.lower()], "flags": ["FW_Exclude", "FW_ReuseTableOnly"]}
+            for name in ("A", "B", "C")
+        ] + [
+            {"sheet": "J1", "values": ["j1"],
+             "flags": ["FW_ReuseTableOnly"] + (["FW_Exclude"] if explicit_first else [])},
+            {"sheet": "J2", "values": ["j2"], "flags": ["FW_ReuseTableOnly"]},
+            {"sheet": "J3", "values": ["j3"]},
+        ],
+        "seq_extra": rows,
+    }, "nested-retention")
+    if source_format == "xlsx":
+        spec.source_format = source_format
+        spec.program = fg.parse_fw_seq_rows([
+            [slot.sheet, *slot.flags, slot.verb] for slot in spec.slots
+        ] + rows, [slot.sheet for slot in spec.slots])
+    graph = fwg.validate_spec_graph(spec)
+    for name in ("J1", "J2"):
+        assert graph.nodes[name].attrs["keeps_rows"] is True
+        assert graph.nodes[name].attrs["implicit_reuse"] is True
+    assert graph.nodes["A"].attrs["keeps_rows"] is False
+    assert graph.errors() == []
+
+
+@pytest.mark.parametrize("source_format", ["toml", "xlsx"])
+def test_ordinary_shared_operand_still_requires_retention(source_format):
+    rows = [["J1", "FW_(,,A,,B,,,,M:N)"], ["J2", "FW_(,,A,,C,,,,M:N)"]]
+    spec = fg.parse_spec({
+        "runme": "class R{}",
+        "slots": [
+            {"sheet": name, "values": [name.lower()], "flags": ["FW_Exclude", "FW_ReuseTableOnly"]}
+            for name in ("A", "B", "C")
+        ] + [{"sheet": name, "values": [name.lower()]} for name in ("J1", "J2")],
+        "seq_extra": rows,
+    }, "ordinary-retention")
+    if source_format == "xlsx":
+        spec.source_format = source_format
+        spec.program = fg.parse_fw_seq_rows([
+            [slot.sheet, *slot.flags, slot.verb] for slot in spec.slots
+        ] + rows, [slot.sheet for slot in spec.slots])
+    graph = fwg.build_graph(spec)
+    assert not graph.nodes["A"].attrs.get("implicit_reuse")
+    issues = [issue for issue in graph.errors() if issue.code == "consumed_result_ambiguity"]
+    assert len(issues) == 1 and issues[0].nodes == ("A",)
+
+
 def test_graph_hash_is_stable_and_content_addressed():
     g1 = fwg.build_graph(_brace_spec())
     g2 = fwg.build_graph(_brace_spec())
@@ -176,6 +235,16 @@ def test_consumed_result_ambiguity_two_braces_one_operand():
                fwg.GraphEdge("br2", "A", "brace_operand")],
     )
     assert any(i.code == "consumed_result_ambiguity" for i in g.errors())
+
+
+def test_same_operand_twice_in_one_brace_is_not_two_consumers():
+    graph = fwg.FwSeqGraph(
+        nodes={"A": fwg.GraphNode("A", "slot", {"excluded": True, "keeps_rows": False}),
+               "br": fwg.GraphNode("br", "brace", {})},
+        edges=[fwg.GraphEdge("br", "A", "brace_operand"),
+               fwg.GraphEdge("br", "A", "brace_operand")],
+    )
+    assert graph.errors() == []
 
 
 def test_consumed_result_ambiguity_operand_not_excluded():

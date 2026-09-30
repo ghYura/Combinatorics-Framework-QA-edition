@@ -199,7 +199,9 @@ class FwSeqGraph:
         consumers: dict = {}
         for e in self.edges:
             if e.kind in {"brace_operand", "brace_nested_operand"}:
-                consumers.setdefault(e.dst, []).append(e.src)
+                # A self-join reads the same result twice before cleanup. Only
+                # separate braces can read an operand after its rows are cleared.
+                consumers.setdefault(e.dst, set()).add(e.src)
         for slot, braces in sorted(consumers.items()):
             node = self.nodes.get(slot)
             # FW_Reuse keeps the operand's generated rows after a join precisely so
@@ -341,6 +343,16 @@ def build_graph(spec: "fg.Spec") -> FwSeqGraph:
                     edges.append(GraphEdge(bid, op, "brace_ref"))
             if target:
                 prior_brace_targets.append(target)
+
+    # SeqParser resolves the whole FW_Seq before executing any brace. Every
+    # resolved FW_()/FW_()G operand is added to both reuse sets globally, so its
+    # rows survive earlier explicit consumption as well as the nested joins.
+    for op in {e.dst for e in edges if e.kind == "brace_nested_operand"}:
+        node = nodes.get(op)
+        if node is not None and node.kind == "slot":
+            attrs = dict(node.attrs)
+            attrs.update(keeps_rows=True, implicit_reuse=True)
+            nodes[op] = GraphNode(op, node.kind, attrs)
 
     return FwSeqGraph(nodes=nodes, edges=edges)
 

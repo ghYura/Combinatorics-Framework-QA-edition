@@ -181,6 +181,25 @@ def _dimension_choices(dimension_id: str, *, encode=None, exclude=(), selection=
     return options
 
 
+class _CapabilitySelect(ui.select):
+    """Keep NiceGUI's indexed values while marking blocked Quasar options."""
+
+    def __init__(self, choices: list[dict[str, Any]], **kwargs: Any) -> None:
+        self._disabled_values = {choice["value"] for choice in choices if choice["disable"]}
+        super().__init__({choice["value"]: choice["label"] for choice in choices}, **kwargs)
+
+    def set_capability_options(self, choices: list[dict[str, Any]]) -> None:
+        self._disabled_values = {choice["value"] for choice in choices if choice["disable"]}
+        self.set_options({choice["value"]: choice["label"] for choice in choices})
+
+    def _update_options(self) -> None:
+        super()._update_options()
+        disabled_indexes = {index for index, value in enumerate(self.options)
+                            if value in self._disabled_values}
+        self.props["options"] = [dict(option, disable=option["value"] in disabled_indexes)
+                                 for option in self.props["options"]]
+
+
 def render_run_center(state: dict[str, Any]) -> None:
     """Render one live run center and register its project-refresh callback in state."""
     config = state.setdefault("runtime_config", default_run_config(state["project"].name))
@@ -223,8 +242,8 @@ def render_run_center(state: dict[str, Any]) -> None:
                     with ui.element("div").classes("run-fields"):
                         db_input = ui.input("Database", value=config.get("db", "")).props("outlined dense").classes("w-full")
                         run_id_input = ui.input("Run id", value=config.get("runId", "r1")).props("outlined dense").classes("w-full")
-                        language = ui.select(_dimension_choices("language", encode=lambda value: "py" if value == "python" else value, selection=capability_selection), value=config.get("lang", "py"), label="Candidate language").props("outlined dense options-dense").classes("w-full")
-                        run_mode = ui.select(_dimension_choices("run_mode", selection=capability_selection), value=config.get("runMode", "verdict"), label="Run mode").props("outlined dense options-dense").classes("w-full")
+                        language = _CapabilitySelect(_dimension_choices("language", encode=lambda value: "py" if value == "python" else value, selection=capability_selection), value=config.get("lang", "py"), label="Candidate language").props("outlined dense options-dense").classes("w-full")
+                        run_mode = _CapabilitySelect(_dimension_choices("run_mode", selection=capability_selection), value=config.get("runMode", "verdict"), label="Run mode").props("outlined dense options-dense").classes("w-full")
                         goals = ui.input("Goals · metric:min|max", value=config.get("analyzer", ""), placeholder="latency_ms:min, throughput:max").props("outlined dense").classes("w-full run-field-wide")
                         analysis_mode = ui.select(_dimension_choices("analyzer", exclude=("none",)), value=config.get("mode", "exploratory"), label="Analysis contract").props("outlined dense options-dense").classes("w-full")
                         # Audit F2: this list used to be hand-written and offered
@@ -234,7 +253,7 @@ def render_run_center(state: dict[str, Any]) -> None:
                         # and there is no pre-selected value: choosing an execution
                         # policy is the operator's explicit decision.
                         _profile_choices = _dimension_choices("execution_policy", selection=capability_selection, label_overrides=profile_labels)
-                        profile = ui.select(_profile_choices, value=(config.get("profile") or None), label="Execution policy · required").props("outlined dense options-dense").classes("w-full")
+                        profile = _CapabilitySelect(_profile_choices, value=(config.get("profile") or None), label="Execution policy · required").props("outlined dense options-dense").classes("w-full")
                         origin = ui.select(
                             {name: name for name in ORIGINS},
                             value=(config.get("candidateOrigin") or None),
@@ -249,7 +268,7 @@ def render_run_center(state: dict[str, Any]) -> None:
                             "Trusted-local warning (applies only when selected): "
                             + next(c["warning"] for c in profile_choices() if c["warning"])
                         ).classes("text-[10px] text-red-600 px-1 run-field-wide")
-                        transport = ui.select(_dimension_choices("candidate_sink", selection=capability_selection), value=config.get("transport", "loose-files"), label="Candidate transport").props("outlined dense options-dense").classes("w-full")
+                        transport = _CapabilitySelect(_dimension_choices("candidate_sink", selection=capability_selection), value=config.get("transport", "loose-files"), label="Candidate transport").props("outlined dense options-dense").classes("w-full")
                         pool = ui.number("Executor pool", value=int(config.get("executorPool") or 1), min=1, step=1).props("outlined dense").classes("w-full")
                         iterations = ui.number("Iterations", value=int(config.get("iterations") or 1), min=1, max=50, step=1).props("outlined dense").classes("w-full")
                         main_port = ui.number("Main DB port", value=config.get("mainPort") or 5433, min=1, max=65535, step=1).props("outlined dense").classes("w-full")
@@ -355,15 +374,13 @@ def render_run_center(state: dict[str, Any]) -> None:
             selection = runtime_capability_selection(config)
         except capability_registry.UnknownDimensionValue:
             return
-        language.options = _dimension_choices(
+        language.set_capability_options(_dimension_choices(
             "language", encode=lambda value: "py" if value == "python" else value,
-            selection=selection)
-        run_mode.options = _dimension_choices("run_mode", selection=selection)
-        transport.options = _dimension_choices("candidate_sink", selection=selection)
-        profile.options = _dimension_choices(
-            "execution_policy", selection=selection, label_overrides=profile_labels)
-        for control in (language, run_mode, transport, profile):
-            control.update()
+            selection=selection))
+        run_mode.set_capability_options(_dimension_choices("run_mode", selection=selection))
+        transport.set_capability_options(_dimension_choices("candidate_sink", selection=selection))
+        profile.set_capability_options(_dimension_choices(
+            "execution_policy", selection=selection, label_overrides=profile_labels))
 
     def set_config(key: str, value: Any) -> None:
         config[key] = value
