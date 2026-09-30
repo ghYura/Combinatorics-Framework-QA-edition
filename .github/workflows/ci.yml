@@ -511,6 +511,12 @@ jobs:
       BUNDLE_RESULTS_DB_PASSWORD: ci-local-only
       BUNDLE_SUT_ROOT: ${{ github.workspace }}/SUT
       PYTHONPATH: ${{ github.workspace }}/SUT/automation-scheme-studio/src
+      # Opt in to the live-database tests (generator_trunk/live_db_guard.py): without both variables
+      # they are skipped, and the release gate refuses a run that silently skipped them. The
+      # databases here are the throwaway service containers above, and every database these tests
+      # create carries this owned prefix.
+      BUNDLE_TEST_LIVE_DB: "1"
+      BUNDLE_TEST_DB_PREFIX: "ci_"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -634,6 +640,13 @@ jobs:
 
       - name: Build the reactor from a clean state
         run: mvn -B --no-transfer-progress clean package
+
+      - name: Pull the sandbox image the container-backend tests need
+        # Executor_trunk/test_py_executor_sandbox.py runs its container tests only when the Docker
+        # CLI is present AND the sandbox image is already local; otherwise it skips them as
+        # MISSING_AUTHORIZED_BACKEND, and the release gate refuses a run that skipped its
+        # sandbox evidence. `python:3-slim` is the backend's default image (BUNDLE_SANDBOX_IMAGE).
+        run: docker pull python:3-slim
 
       - name: Full suite with classified skips
         # Deliberately continue to the release step so a failed run still emits

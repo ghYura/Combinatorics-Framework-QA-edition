@@ -139,7 +139,11 @@ def test_cli_hygiene_reports_clean_build():
 def test_component_compiles_without_picking_up_backups():
     """The Reader (most backups: .djava/.bak/.may29.bak) compiles cleanly — proving
     the production build excludes the historical backups."""
-    r = subprocess.run("mvn -o -q compile", shell=True, cwd=str(hy.SRC / "Reader_trunk"),
+    # Built from the reactor root with `-am`. The Reader depends on the Analyzer module, and a CI job
+    # only ever *packages* it inside the reactor (it is never installed into ~/.m2), so an offline
+    # compile of Reader_trunk on its own cannot find that artifact there. The reactor resolves it from
+    # the sibling module's own build, on a developer machine and on a clean runner alike.
+    r = subprocess.run("mvn -o -q -pl Reader_trunk -am compile", shell=True, cwd=str(hy.SRC),
                        capture_output=True, text=True, timeout=400)
     assert r.returncode == 0, (r.stdout + r.stderr)[-1000:]
 

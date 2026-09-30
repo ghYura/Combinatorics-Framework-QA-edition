@@ -327,9 +327,14 @@ def test_real_cli_doctor_deploy_green_and_data_preserved(tmp_path, monkeypatch):
 
         # the REAL `bundle doctor --deploy` CLI auto-consumes deploy/.env (ports +
         # password) and is GREEN against the deployed stack (acceptance).
+        # What is under acceptance is the deployed DB stack, so the doctor's sandbox check is
+        # taken out of the verdict: on a host whose container/bubblewrap backend cannot pass its
+        # self-test (a stock CI runner) that check is a WARNING by design, and a single WARNING
+        # turns `overall` into WARNING. The sandbox check has its own tests (test_bundle_doctor.py).
         r = subprocess.run([sys.executable, str(HERE / "bundle_run.py"), "doctor", "--deploy"],
                            cwd=str(HERE), capture_output=True, text=True, timeout=120,
-                           env={**os.environ, "BUNDLE_DEPLOY_ENV_FILE": str(envfile)})
+                           env={**os.environ, "BUNDLE_DEPLOY_ENV_FILE": str(envfile),
+                                "BUNDLE_SANDBOX_POLICY": "none"})
         out = r.stdout + r.stderr
         assert r.returncode == 0, out
         assert "using LOCAL deploy stack: 127.0.0.1:15433/15432" in out          # auto-consumed deploy/.env
