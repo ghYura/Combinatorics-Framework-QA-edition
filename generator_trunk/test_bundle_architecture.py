@@ -75,7 +75,7 @@ def test_every_repository_tree_is_classified() -> None:
     assert arch.unclassified_paths() == []
 
 
-@pytest.mark.skipif(shutil.which("git") is None, reason="git not available")
+@pytest.mark.skipif(shutil.which("git") is None, reason="EXPECTED_OPTIONAL: git is not installed")
 def test_a_git_excluded_tree_is_not_an_unclassified_tree(tmp_path, monkeypatch) -> None:
     """CI checks the sibling SUT out inside the workspace and lists it in
     .git/info/exclude to keep it outside the framework's source identity; the
