@@ -511,6 +511,12 @@ jobs:
       BUNDLE_RESULTS_DB_PASSWORD: ci-local-only
       BUNDLE_SUT_ROOT: ${{ github.workspace }}/SUT
       PYTHONPATH: ${{ github.workspace }}/SUT/automation-scheme-studio/src
+      # Opt in to the live-database tests (generator_trunk/live_db_guard.py): without both variables
+      # they are skipped, and the release gate refuses a run that silently skipped them. The
+      # databases here are the throwaway service containers above, and every database these tests
+      # create carries this owned prefix.
+      BUNDLE_TEST_LIVE_DB: "1"
+      BUNDLE_TEST_DB_PREFIX: "ci_"
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
