@@ -44,14 +44,18 @@ not a repeat.
 
 ## Exactness semantics
 
-- **EXACT** — first-order verbs (`FW_Combi(k)`, `FW_Permut(k)`, `FW_Subsets`, …) and the optional
-  multiplier have closed-form cardinality.
-- **BOUNDED `[0, mandatory]`** — a declared constraint's selectivity is not known without running
-  the sieve, so post-sieve is a provable range, not a point.
-- **UNKNOWN** — the brace (`FW_(…)`) and `FW_Group` are second-order: their joined/grouped result
-  row counts are not known until Core runs, so the planner refuses to fold them into an exact
-  product (verified: `brace_demo`/`group_sep_demo` plan → mandatory UNKNOWN, run class X). This
-  matches `estimate_core_combos`, which intentionally does not estimate brace/Group.
+- **EXACT** — a closed-form count or a program whose distinct output is certified. A small
+  simple product can also retain an exact post-sieve count by evaluating its declared bonds.
+- **BOUNDED** — a finite safe range when DISTINCT, grouped rendering or a join can collapse
+  outputs without a certified count. The reported point is the upper bound. Post-sieve uses
+  `[0, mandatory]` when the exact pre-count's prerequisites do not hold.
+- **UNKNOWN** — no supported finite estimate is available for an operation or its inputs.
+
+TOML verb chains, `group_replace`, `separator` and brace rows use the effective `FW_Seq` program,
+as XLSX inputs do. They are sized from prior result rows, rather than from each slot's first verb.
+For example, the shipped `groupcheck.toml` has six observed Core rows; its first-order Subsets
+count of four is not the final count. Its grouped rendering is planned as BOUNDED `[1, 15]`.
+Simple mandatory slots keep their exact sieve pre-count even when an optional slot is structural.
 
 ## Worked example — the flagship secure-pipeline (verified `bundle plan`)
 

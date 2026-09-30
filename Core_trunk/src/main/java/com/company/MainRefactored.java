@@ -121,7 +121,7 @@ try {
 config = AppConfig.load();
 } catch (IOException e) {
 log.fatal("Cannot load fw.properties", e);
-return;
+throw new IllegalStateException("Cannot load fw.properties", e);
 }
 log.info("Configuration loaded from fw.properties");
 
@@ -261,7 +261,7 @@ try {
 workbook = scheduleParser.parse(inputPath, config.workbook);
 } catch (Exception e) {
 log.fatal("Schedule parsing failed", e);
-return;
+throw new IllegalStateException("Schedule parsing failed", e);
 }
 log.info("Workbook parsed: {} data sheets ({} virtual)",
 workbook.shortSheetHM.size(), workbook.virtualSheetNames.size());
@@ -459,7 +459,7 @@ try (HeapWatchdog watchdog = new HeapWatchdog(
     } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
         log.error("Sheet processing interrupted", e);
-        return;
+        throw new IllegalStateException("Sheet processing interrupted", e);
     }
     watchdog.setStage("post-processing + FinalTableAssembler.assemble");
     // (the rest of the try-block below — post-processing maps, final assembly,
@@ -573,7 +573,7 @@ schema.createFinalTable("_base", finalTableColumns, "int2[]", "_pkey");
 createSqlFinal = "";
 } catch (SQLException e) {
 log.error("Failed to create fw_final tables", e);
-return;
+throw new IllegalStateException("Failed to create fw_final tables", e);
 }
 
 
@@ -590,7 +590,8 @@ worker.getMapTable2combs(),
 createSqlFinal);
 } catch (InterruptedException | ExecutionException e) {
 log.error("Final assembly failed", e);
-return;
+if (e instanceof InterruptedException) Thread.currentThread().interrupt();
+throw new IllegalStateException("Final assembly failed", e);
 }
 
 // [Keys/EXPERIMENTAL] byte tier only: every key array in the run's tables must lie inside the byte
@@ -679,7 +680,8 @@ log.warn("Failed to launch CombinatoricsReader", e);
 
 } catch (Exception e) {
 log.fatal("Unhandled exception in main", e);
-return;
+if (e instanceof RuntimeException runtime) throw runtime;
+throw new IllegalStateException("Core processing failed", e);
 }
 
 long elapsed = System.currentTimeMillis() - startTime;

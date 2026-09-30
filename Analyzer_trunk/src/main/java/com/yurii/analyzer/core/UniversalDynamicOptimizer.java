@@ -76,14 +76,16 @@ public final class UniversalDynamicOptimizer {
             "    has_scipy = False\n" +
             "payload = sys.argv[1] if len(sys.argv) > 1 else ''\n" +
             "parts = [p.strip() for p in payload.split(';') if p.strip()]\n" +
-            "env = {}\n" +
+            // Lambdas and comprehensions resolve free names in their globals,
+            // so payload assignments must share that namespace with eval.
+            "env = {'__builtins__': {}}\n" +
             "obj = None\n" +
             "for p in parts:\n" +
             "    if '=' not in p: continue\n" +
             "    k, v = p.split('=', 1)\n" +
             "    k, v = k.strip(), v.strip()\n" +
             "    try:\n" +
-            "        val = eval(v, {'__builtins__': {}}, env)\n" +
+            "        val = eval(v, env, env)\n" +
             "        env[k] = val\n" +
             "        if callable(val) and ('lambda' in v or k in ['objective','func','loss_func','target']):\n" +
             "            obj = val\n" +
@@ -91,7 +93,7 @@ public final class UniversalDynamicOptimizer {
             "        pass\n" +
             "out = {}\n" +
             "for k, v in env.items():\n" +
-            "    if not callable(v): out[k] = str(v)\n" +
+            "    if k != '__builtins__' and not callable(v): out[k] = str(v)\n" +
             "if obj and has_scipy:\n" +
             "    try:\n" +
             "        x0 = env.get('params', {}).get('start_point', [0.0]) if isinstance(env.get('params'), dict) else [0.0]\n" +

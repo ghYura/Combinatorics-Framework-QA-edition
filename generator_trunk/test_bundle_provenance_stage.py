@@ -33,6 +33,7 @@ AnalyzeKv.
 Run: `python3 -m pytest test_bundle_provenance_stage.py -q`.
 """
 import json
+import shutil
 import sys
 from pathlib import Path
 
@@ -46,11 +47,11 @@ from bundle.errors import StageError
 
 _AZ = stages.SRC / "Analyzer_trunk"
 _ANALYZER_READY = (
-    (_AZ / "target/heuristic-analyzer-flatlaf-1.0.0.jar").exists()
-    and (_AZ / "target/analyzekv/AnalyzeKv.class").exists()
-    and (_AZ / "analyzer_cp.txt").exists()
+    shutil.which("java") is not None
+    and (_AZ / "target/heuristic-analyzer-flatlaf-1.0.0.jar").is_file()
+    and stages.resolve_analyzer_driver(_AZ) is not None
 )
-pytestmark = pytest.mark.skipif(not _ANALYZER_READY, reason="Analyzer jar/AnalyzeKv build not present")
+pytestmark = pytest.mark.skipif(not _ANALYZER_READY, reason="MISSING_AUTHORIZED_BACKEND: Analyzer Java runtime / jar / compiled driver not present")
 
 _GOALS = "latency_ms:min,severity:min"
 _CAND = "print('app=svc mode={m} latency_ms={lat} severity={sev} FW_VAR={fw}')\n"

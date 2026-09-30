@@ -170,12 +170,9 @@ private volatile boolean cancelled = false;
 
 // `core.replace.*` policy violations recorded while a `fail` policy is active.
 //
-// processAll runs each sheet in its own virtual thread and catches Exception per
-// sheet, logging it and carrying on — so throwing inside a sheet marks that sheet
-// failed but leaves the run reporting success. A `fail` policy that does not fail
-// the run would be worse than no policy at all, so violations are collected here
-// and re-raised on the calling thread once all sheets have finished. Only these
-// policies populate it; general sheet-failure behaviour is untouched.
+// Keep detailed policy diagnostics alongside the ordinary sheet-failure propagation.
+// A failed sheet completes its dependency future exceptionally and aborts processAll;
+// neither a dependent brace nor final assembly may consume its partial results.
 private final List<String> replacePolicyFailures =
 java.util.Collections.synchronizedList(new ArrayList<>());
 
@@ -283,6 +280,14 @@ allKeys.addAll(toCombinatoricsHMexclude.keySet());
 
 List<CompletableFuture<Void>> futures = new ArrayList<>(allKeys.size());
 
+// Publish every dependency future before starting any sheet. A brace can run immediately
+// on another virtual thread and must not mistake an as-yet-unsubmitted operand for a
+// completed/passive sheet.
+for (Short key : allKeys) {
+List<String> seqList = mapShKey2seqList.get(key);
+if (seqList != null && !seqList.isEmpty()) sheetDone.put(key, new CompletableFuture<>());
+}
+
 
 
 try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
@@ -297,20 +302,19 @@ if (seqList == null || seqList.isEmpty()) continue;
 
 
 final Short finalKey = key;
-final var doneFuture = new CompletableFuture<Void>();
-sheetDone.put(finalKey, doneFuture);
+final var doneFuture = sheetDone.get(finalKey);
 
 futures.add(CompletableFuture.runAsync(() -> {
 try {
 processSheet(finalKey, seqList,
 toCombinatoricsHM, toCombinatoricsHMoptional,
 toCombinatoricsHMexclude);
-} catch (Exception e) {
-log.error("Sheet {} processing failed", finalKey, e);
-} finally {
-
-
 doneFuture.complete(null);
+} catch (Throwable e) {
+log.error("Sheet {} processing failed", finalKey, e);
+doneFuture.completeExceptionally(e);
+throw new CompletionException("Sheet " + workbook.shortStringSheetKey2SheetNameHM
+.getOrDefault(finalKey, finalKey.toString()) + " processing failed", e);
 }
 }, executor));
 }
@@ -321,12 +325,12 @@ CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
 if (Thread.currentThread().isInterrupted()) {
 throw new InterruptedException("Interrupted during sheet processing");
 }
+throw new IllegalStateException("Sheet processing failed; refusing final assembly", e);
 }
 }
 
-// Re-raise any `core.replace.*` violation on this thread: inside a sheet it was
-// swallowed by the per-sheet catch above, which would have left a `fail` policy
-// silently not failing.
+// Retain the aggregate policy diagnostic for any recorded violation that did not
+// already abort a sheet's future.
 synchronized (replacePolicyFailures) {
 if (!replacePolicyFailures.isEmpty()) {
 throw new IllegalStateException(
@@ -402,10 +406,14 @@ if (future == null) return;
 try {
 future.get(10, java.util.concurrent.TimeUnit.MINUTES);
 } catch (java.util.concurrent.TimeoutException e) {
-log.warn("Timeout (10 min) waiting for sheet {} to complete — "
-+ "proceeding with brace operation anyway", key);
-} catch (Exception e) {
-log.warn("Error waiting for sheet {} completion: {}", key, e.getMessage());
+throw new IllegalStateException("Timeout (10 min) waiting for operand sheet " + key
++ "; refusing brace operation on incomplete results", e);
+} catch (InterruptedException e) {
+Thread.currentThread().interrupt();
+throw new IllegalStateException("Interrupted waiting for operand sheet " + key, e);
+} catch (ExecutionException e) {
+throw new IllegalStateException("Operand sheet " + key
++ " failed; refusing brace operation on partial results", e.getCause());
 }
 }
 
@@ -530,6 +538,7 @@ isCombi2 = false;
 log.debug("Table rebuild: fw_ ↔ fw2_ swap for key={} between directives", key);
 } catch (SQLException e) {
 log.error("Table rebuild failed for key={}", key, e);
+throw e;
 }
 }
 }
@@ -1089,8 +1098,9 @@ case "FW_Cartes": {
 // FW_Group mode pairs the GROUPED rows with the operand sheet, exactly as the per-row pass
 // pairs a row's elements with it: FW_Cartes(X) = rows x X, FW_Cartes_first(X) = X x rows
 // (author's intent, 2026-09-26; this used to pair the rows with themselves and ignore X).
-// Each X value becomes a one-code atom, so FW_ReplaceRE sees the same nested
-// "[[row codes], [x code]]" shape it sees for any other grouped verb.
+// X values remain bare codes, as in the original grouped Cartes renderer. Wrapping
+// them in singleton FW rows changes the code-string that FW_ReplaceRE sees, even
+// though cardinality stays identical (notably the digit-comma boundary in _first).
 final List<Short> operandValues = (spec.keyShort2 != null && allSourceDataSnapshot != null)
 ? allSourceDataSnapshot.get(spec.keyShort2)
 : null;
@@ -1098,15 +1108,9 @@ if (operandValues == null || operandValues.isEmpty()) {
 log.warn("FW_Group: FW_Cartes operand of key={} is missing or empty — the grouped pass emits no rows", key);
 continue;
 }
-final List<FW> operandAtoms = new ArrayList<>(operandValues.size());
-for (Short code : operandValues) {
-FW atom = new FW();
-atom.setCombo(new int[]{ code });
-operandAtoms.add(atom);
-}
 gStream = spec.isCartesFirst
-? new com.company.combinatorics.CartesianProductG(operandAtoms, inListFWasList).getCartesianProduct()
-: new com.company.combinatorics.CartesianProductG(inListFWasList, operandAtoms).getCartesianProduct();
+? new com.company.combinatorics.CartesianProductG(operandValues, inListFWasList).getCartesianProduct()
+: new com.company.combinatorics.CartesianProductG(inListFWasList, operandValues).getCartesianProduct();
 break;
 }
 default:

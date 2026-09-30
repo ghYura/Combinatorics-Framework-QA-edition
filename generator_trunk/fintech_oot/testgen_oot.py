@@ -34,6 +34,9 @@ Strategy (per the user's guidance):
   * Each candidate exercises the LIVE 2-connected-instance cluster over signed HTTP
     (HMAC enforcement + cross-node connectivity) AND runs the deep parameter/factor
     combinatorics IN-PROCESS (isolated per candidate, so candidates never interfere).
+    Missing live dependencies, transport failures, and unusable probe responses
+    raise before a verdict is emitted; Executor records BROKEN, not a passing
+    domain candidate. Deliberate peer outages remain in-process test factors.
   * EXTERNAL FACTORS are modeled as FW_Optional "sudden actions" fired at DIFFERENT
     positions of the flow (after_register / after_initiate / after_confirm) and in
     different subsets — peer hold/down/recover, freeze, sanction, ttl-shrink,
@@ -178,23 +181,35 @@ METRICS = {"app": "fintech_oot", "currency": "USD", "amount": "100.00", "auth": 
 FW_VAR = 0
 FW_CUSTOM_VAR = 0
 
-def _http(base, path, method="POST", payload=None, secret=None):
+def _live_request(method, url, **kwargs):
+    """Required live evidence must not turn a missing backend into a verdict."""
     if _httpx is None:
-        return None, None
+        raise RuntimeError("fintech_oot required live probe needs httpx")
+    try:
+        r = _httpx.request(method, url, timeout=6.0, **kwargs)
+    except Exception as exc:
+        raise RuntimeError("fintech_oot required live probe unavailable: " + method + " " + url) from exc
+    if r.status_code >= 500:
+        raise RuntimeError("fintech_oot required live probe returned HTTP " + str(r.status_code) + ": " + method + " " + url)
+    try:
+        return r.status_code, r.json()
+    except ValueError:
+        return r.status_code, r.text
+
+def _http(base, path, method="POST", payload=None, secret=None):
     secret = secret or HTTP_SECRET
     body = b"" if payload is None else json.dumps(payload).encode("utf-8")
     ts = str(int(time.time())); nn = uuid.uuid4().hex
     headers = {"x-timestamp": ts, "x-nonce": nn,
                "x-signature": sign_request(secret, method, path, body, ts, nn),
                "content-type": "application/json"}
-    try:
-        r = _httpx.request(method, base + path, content=body, headers=headers, timeout=6.0)
-        try:
-            return r.status_code, r.json()
-        except Exception:
-            return r.status_code, r.text
-    except Exception:
-        return None, None
+    return _live_request(method, base + path, content=body, headers=headers)
+
+def _live_json(base, path, method="POST", payload=None, fields=()):
+    status, body = _http(base, path, method, payload)
+    if status != 200 or not isinstance(body, dict) or any(field not in body for field in fields):
+        raise RuntimeError("fintech_oot required live probe has no usable response: " + method + " " + path)
+    return body
 
 def fw_fire(_client):
     """One signed 'shot' for the combinatorial storm — its shape varies by this
@@ -268,69 +283,62 @@ TAIL = r'''# ============ LIVE phase: exercise the 2 connected instances over HM
 _cli = {"display_name": "OOT " + _ik("u"), "email": _ik("e") + "@oot.test", "kyc_status": "VERIFIED"}
 _path = "/toBank1/v1/clients"
 if AUTH == "valid_hmac":
-    _sc, _ = _http(TARGET1, _path, "POST", _cli)
-    if _sc is None:
-        connected = 0
-    elif _sc == 401:
+    _sc, _created = _http(TARGET1, _path, "POST", _cli)
+    if _sc == 401:
         auth_enforced = 0
+    elif _sc != 200 or not isinstance(_created, dict) or not _created.get("client_id"):
+        raise RuntimeError("fintech_oot required live client probe has no usable response")
 elif AUTH == "bad_signature":
     _sc, _ = _http(TARGET1, _path, "POST", _cli, secret="wrong-secret")
     if _sc is not None and _sc != 401:
         auth_enforced = 0
-elif AUTH == "missing_headers" and _httpx is not None:
-    try:
-        if _httpx.post(TARGET1 + _path, json=_cli, timeout=6.0).status_code != 401:
-            auth_enforced = 0
-    except Exception:
-        connected = 0
-elif AUTH == "expired_timestamp" and _httpx is not None:
+elif AUTH == "missing_headers":
+    _sc, _ = _live_request("POST", TARGET1 + _path, json=_cli)
+    if _sc != 401:
+        auth_enforced = 0
+elif AUTH == "expired_timestamp":
     _b = json.dumps(_cli).encode(); _old = str(int(time.time()) - REPLAY_WINDOW - 60); _nn = uuid.uuid4().hex
     _sig = sign_request(HTTP_SECRET, "POST", _path, _b, _old, _nn)
-    try:
-        _r = _httpx.post(TARGET1 + _path, content=_b, headers={"x-timestamp": _old, "x-nonce": _nn,
-                         "x-signature": _sig, "content-type": "application/json"}, timeout=6.0)
-        if _r.status_code != 401:
-            auth_enforced = 0
-    except Exception:
-        connected = 0
-if _httpx is not None:
-    try:
-        if _httpx.get(TARGET1 + "/toBank2/health", timeout=6.0).status_code != 200:
-            connected = 0
-    except Exception:
-        connected = 0
+    _sc, _ = _live_request("POST", TARGET1 + _path, content=_b, headers={"x-timestamp": _old, "x-nonce": _nn,
+                         "x-signature": _sig, "content-type": "application/json"})
+    if _sc != 401:
+        auth_enforced = 0
+_sc, _health = _live_request("GET", TARGET1 + "/toBank2/health")
+if _sc != 200 or not isinstance(_health, dict) or _health.get("ok") is not True:
+    raise RuntimeError("fintech_oot required cross-node health probe failed")
 
 # ---- LIVE time-unit sync between the two banks (cross-instance) ----
-if _httpx is not None and TIME_SYNC != "none":
+if TIME_SYNC != "none":
     _base = 4321
-    _http(TARGET2, "/toBank2/v1/time-config", "PUT", {"values": {TIME_SYNC: _base}, "accept_sync": (ACCEPT_SYNC == "true")})
-    _http(TARGET1, "/toBank1/v1/time-config", "PUT", {"values": {TIME_SYNC: int(TIME_VALUE)}, "propagate": PROPAGATE})
-    _sc, _r2 = _http(TARGET2, "/toBank2/v1/time-config", "GET")
-    if isinstance(_r2, dict) and TIME_SYNC in _r2:
-        _should = (PROPAGATE == "connected" and ACCEPT_SYNC == "true")
-        if _r2.get(TIME_SYNC) != (int(TIME_VALUE) if _should else _base):
-            time_sync_ok = 0
+    _reset = _live_json(TARGET2, "/toBank2/v1/time-config", "PUT", {"values": {TIME_SYNC: _base}, "accept_sync": (ACCEPT_SYNC == "true")}, fields=("applied",))
+    _update = _live_json(TARGET1, "/toBank1/v1/time-config", "PUT", {"values": {TIME_SYNC: int(TIME_VALUE)}, "propagate": PROPAGATE}, fields=("applied",))
+    _r2 = _live_json(TARGET2, "/toBank2/v1/time-config", "GET", fields=(TIME_SYNC,))
+    _should = (PROPAGATE == "connected" and ACCEPT_SYNC == "true")
+    if _reset["applied"] is not True or _update["applied"] is not True or _r2[TIME_SYNC] != (int(TIME_VALUE) if _should else _base):
+        time_sync_ok = 0
 
 # ---- LIVE cross-bank settlement: real money movement across the 2 instances ----
-if _httpx is not None and LIVE_XFER == "on" and AUTH == "valid_hmac":
-    _, _la = _http(TARGET1, "/toBank1/v1/clients", "POST", {"display_name": "LX " + _ik("u"), "email": _ik("e") + "@oot.test", "kyc_status": "VERIFIED"})
-    _, _lb = _http(TARGET2, "/toBank2/v1/clients", "POST", {"display_name": "LY " + _ik("u"), "email": _ik("e") + "@oot.test", "kyc_status": "VERIFIED"})
-    if isinstance(_la, dict) and isinstance(_lb, dict):
-        _, _laa = _http(TARGET1, "/toBank1/v1/banks/AURUM/accounts", "POST", {"client_id": _la["client_id"], "currency": "USD", "initial_deposit": "500.00"})
-        _, _lbb = _http(TARGET2, "/toBank2/v1/banks/NORD/accounts", "POST", {"client_id": _lb["client_id"], "currency": "USD"})
-        if isinstance(_laa, dict) and isinstance(_lbb, dict):
-            _, _lc = _http(TARGET1, "/toBank1/v1/transfers", "POST", {"source_account_id": _laa["account_id"], "target_bank": "NORD", "target_account_id": _lbb["account_id"], "amount": AMOUNT, "idempotency_key": _ik("lx")})
-            if isinstance(_lc, dict) and isinstance(_lc.get("transfer"), dict) and _lc["transfer"].get("status") == "AWAITING_CONFIRMATION":
-                _lref = _lc["transfer"]["reference"]; _ltok = _lc["confirmation_tokens"]
-                for _lp in OPSEQ:
-                    _http(TARGET1, "/toBank1/v1/transfers/" + _lref + "/confirm", "POST", {"party": _lp, "token": _ltok[_lp]})
-                _, _lfin = _http(TARGET1, "/toBank1/v1/transfers/" + _lref, "GET")
-                if isinstance(_lfin, dict):
-                    METRICS["http_final"] = _lfin.get("status") or "NONE"
-                    if _lfin.get("status") == "SETTLED":
-                        http_settled = 1
-                    elif AMOUNT == "100.00":
-                        live_xfer_ok = 0
+if LIVE_XFER == "on" and AUTH == "valid_hmac":
+    _la = _live_json(TARGET1, "/toBank1/v1/clients", "POST", {"display_name": "LX " + _ik("u"), "email": _ik("e") + "@oot.test", "kyc_status": "VERIFIED"}, fields=("client_id",))
+    _lb = _live_json(TARGET2, "/toBank2/v1/clients", "POST", {"display_name": "LY " + _ik("u"), "email": _ik("e") + "@oot.test", "kyc_status": "VERIFIED"}, fields=("client_id",))
+    _laa = _live_json(TARGET1, "/toBank1/v1/banks/AURUM/accounts", "POST", {"client_id": _la["client_id"], "currency": "USD", "initial_deposit": "500.00"}, fields=("account_id",))
+    _lbb = _live_json(TARGET2, "/toBank2/v1/banks/NORD/accounts", "POST", {"client_id": _lb["client_id"], "currency": "USD"}, fields=("account_id",))
+    _lc = _live_json(TARGET1, "/toBank1/v1/transfers", "POST", {"source_account_id": _laa["account_id"], "target_bank": "NORD", "target_account_id": _lbb["account_id"], "amount": AMOUNT, "idempotency_key": _ik("lx")}, fields=("transfer",))
+    if not isinstance(_lc["transfer"], dict) or not _lc["transfer"].get("status"):
+        raise RuntimeError("fintech_oot live transfer probe has no usable transfer")
+    _lfin = _lc["transfer"]
+    if _lfin["status"] == "AWAITING_CONFIRMATION":
+        _lref = _lfin.get("reference"); _ltok = _lc.get("confirmation_tokens")
+        if not _lref or not isinstance(_ltok, dict) or any(not _ltok.get(p) for p in OPSEQ):
+            raise RuntimeError("fintech_oot live transfer probe has no confirmation tokens")
+        for _lp in OPSEQ:
+            _live_json(TARGET1, "/toBank1/v1/transfers/" + _lref + "/confirm", "POST", {"party": _lp, "token": _ltok[_lp]}, fields=("status",))
+        _lfin = _live_json(TARGET1, "/toBank1/v1/transfers/" + _lref, "GET", fields=("status",))
+    METRICS["http_final"] = _lfin["status"]
+    http_settled = int(_lfin["status"] == "SETTLED")
+    # The live source owns 500.00; the 2000.00 boundary must be rejected.
+    _expected_live = "REJECTED" if Decimal(AMOUNT) > Decimal("500.00") else "SETTLED"
+    live_xfer_ok = int(_lfin["status"] == _expected_live)
 
 # ============ IN-PROCESS combinatorial flow (isolated per candidate) ==========
 _kyc = {"VERIFIED": KycStatus.VERIFIED, "PENDING": KycStatus.PENDING,
@@ -700,7 +708,8 @@ def _toml_slot(sheet, key, verb, values, flags):
 
 def emit():
     BATCHES.mkdir(parents=True, exist_ok=True)
-    manifest = ["# fintech_oot — small Bundle batches (run each: `python3 ../bundle_run.py batches/<name>`)\n"]
+    manifest = ["# fintech_oot — small Bundle batches (run each: `python3 ../bundle_run.py batches/<name>`)\n",
+                "Every verdict candidate requires httpx and the live two-node cluster. Missing or unusable live probe evidence raises before a verdict/metric record; Executor classifies the candidate as BROKEN. Intentional in-process peer outage factors remain valid domain cases.\n"]
     for name, slots in batches().items():
         d = BATCHES / name
         d.mkdir(parents=True, exist_ok=True)

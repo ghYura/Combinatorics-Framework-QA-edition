@@ -59,16 +59,26 @@ def scan_surface(paths: Iterable[Path] = UI_SOURCES) -> SurfaceInventory:
     icon_only: set[str] = set()
     for path in paths:
         tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        element_classes: dict[str, str] = {}
         for node in ast.walk(tree):
-            if not (
-                isinstance(node, ast.Call)
-                and isinstance(node.func, ast.Attribute)
-                and isinstance(node.func.value, ast.Name)
-                and node.func.value.id == "ui"
-                and node.func.attr in INTERACTIVE_KINDS
-            ):
+            if not isinstance(node, ast.ClassDef):
                 continue
-            kind = node.func.attr
+            for base in node.bases:
+                if isinstance(base, ast.Attribute) and isinstance(base.value, ast.Name) \
+                        and base.value.id == "ui" and base.attr in INTERACTIVE_KINDS:
+                    element_classes[node.name] = base.attr
+                elif isinstance(base, ast.Name) and base.id in element_classes:
+                    element_classes[node.name] = element_classes[base.id]
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            if isinstance(node.func, ast.Attribute) and isinstance(node.func.value, ast.Name) \
+                    and node.func.value.id == "ui" and node.func.attr in INTERACTIVE_KINDS:
+                kind = node.func.attr
+            elif isinstance(node.func, ast.Name) and node.func.id in element_classes:
+                kind = element_classes[node.func.id]
+            else:
+                continue
             calls[kind] += 1
             found_label = False
             if node.args and isinstance(node.args[0], ast.Constant) and isinstance(node.args[0].value, str):

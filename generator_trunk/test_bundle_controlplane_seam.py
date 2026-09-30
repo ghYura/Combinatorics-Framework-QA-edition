@@ -50,6 +50,7 @@ assertions here pin the POLICY SEMANTICS both sides must agree on:
 Skips (like the other Java-gated tests) when the Analyzer build is absent.
 """
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -65,11 +66,13 @@ from bundle import stages                          # noqa: E402
 
 _AZ = stages.SRC / "Analyzer_trunk"
 _CP_CLASS = _AZ / "target/classes/com/yurii/analyzer/core/optimization/BundleControlPlane.class"
-_CP_FILE = _AZ / "analyzer_cp.txt"
-_SEAM_READY = _CP_CLASS.exists() and _CP_FILE.exists()
+_ANALYZER_DRIVER = stages.resolve_analyzer_driver(_AZ)
+_CP_FILE = _ANALYZER_DRIVER[1] if _ANALYZER_DRIVER else _AZ / "analyzer_cp.txt"
+_SEAM_READY = shutil.which("java") is not None and _CP_CLASS.is_file() and _ANALYZER_DRIVER is not None
 
-pytestmark = pytest.mark.skipif(not _SEAM_READY,
-                                reason="Analyzer build (BundleControlPlane.class + analyzer_cp.txt) not present")
+pytestmark = pytest.mark.skipif(
+    not _SEAM_READY,
+    reason="MISSING_AUTHORIZED_BACKEND: Analyzer Java runtime / control-plane class / driver not present")
 
 _CANDIDATES = [(1, "101_0_0", "candA"), (2, "102_0_0", "candB")]
 

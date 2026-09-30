@@ -188,10 +188,8 @@ def project_spec(project: GridProject, analyzer: str = "") -> fg.Spec:
             prefix=row.prefix,
             ending=row.suffix,
         ))
-        # Normal brace syntax is understood by fwgen's confidence planner.  Nested
-        # FW_()/FW_()G variants are retained by the workbook but represented by an
-        # explicit UNKNOWN issue in plan_project because the spec parser cannot model
-        # those markers without rewriting them.
+        # Retain normal braces in the compact metadata as well. The complete
+        # program below preserves nested markers and all ordered directives.
         for brace in braces:
             if fg.is_core_verb(brace):
                 seq_extra.append([row.target.strip(), brace])
@@ -205,6 +203,11 @@ def project_spec(project: GridProject, analyzer: str = "") -> fg.Spec:
             custom_vars.append(fg.CustomVar(int(str(code).strip()), str(message)))
         except ValueError:
             continue
+    sequence_rows = [[row.target.strip(), *row.directives] for row in project.sequence_rows]
+    program = fg.parse_fw_seq_rows(
+        sequence_rows,
+        [row.target.strip() for row in project.sequence_rows] + list(project.auxiliary_sheets),
+    )
     return fg.Spec(
         name=slug_db(project.name, "task"),
         title=project.name or "Face 1 workbook",
@@ -215,6 +218,9 @@ def project_spec(project: GridProject, analyzer: str = "") -> fg.Spec:
         runme=project.run_once_source,
         seq_extra=seq_extra,
         spec_version="1",
+        source_format="xlsx",
+        program=program,
+        passive_sheets={name: list(values) for name, values in project.auxiliary_sheets.items()},
     )
 
 
@@ -235,25 +241,6 @@ def plan_project(project: GridProject, analyzer: str = "") -> PlanView:
 
     spec = project_spec(project, analyzer)
     raw_plan = fg.cardinality_plan_to_dict(fg.spec_cardinality_plan(spec))
-    extra_unknown: list[str] = []
-    for index, row in enumerate(project.sequence_rows, 1):
-        _primary, _flags, braces, verbs = _row_metadata(row)
-        nested = [brace for brace in braces if not fg.is_core_verb(brace)]
-        if nested:
-            extra_unknown.append(
-                f"row {index} uses nested/grouped brace markers; its joined result-table size is known only after Core"
-            )
-        # Multiple algorithm verbs on one physical row are order-sensitive.  A
-        # single representative verb must never be advertised as an exact plan.
-        cardinality_verbs = [verb for verb in verbs if not verb.startswith("FW_Separator")]
-        if len(cardinality_verbs) > 1:
-            extra_unknown.append(
-                f"row {index} contains {len(cardinality_verbs)} ordered algorithm verbs; their combined row count is runtime-dependent"
-            )
-    if extra_unknown:
-        raw_plan["mandatory"] = _unknown("; ".join(extra_unknown))
-        raw_plan["post_sieve"] = _unknown("mandatory count is unknown before Core")
-        raw_plan["final"] = _unknown("post-sieve count is unknown; optional factor remains shown separately")
     final_count = raw_plan["final"].get("value") if raw_plan["final"].get("mode") != "UNKNOWN" else None
     run_class = ResourceThresholds().classify(final_count).value
     return PlanView(
@@ -363,7 +350,7 @@ def validate_runtime(project: GridProject, config: dict[str, Any]) -> list[Runti
 
 
 def spec_toml(project: GridProject, analyzer: str = "") -> str:
-    """Serialize the launcher's metadata spec using TOML-compatible JSON strings."""
+    """Export compact metadata; the actual launcher reads the complete XLSX."""
     spec = project_spec(project, analyzer)
     q = lambda value: json.dumps(str(value), ensure_ascii=False)
     arr = lambda values: "[" + ", ".join(q(value) for value in values) + "]"
@@ -412,7 +399,10 @@ def build_bundle_command(config: dict[str, Any], spec_dir: Path, runs_root: Path
 
 
 def build_worker_command(config: dict[str, Any], workbook: Path, spec_dir: Path, runs_root: Path) -> list[str]:
-    direct = build_bundle_command(config, spec_dir, runs_root)
+    # The workbook is also the launcher's planning input. A compact TOML
+    # projection loses ordered directives and passive helper sheets, leaving
+    # preflight/budgets with a different program from the one Core executes.
+    direct = build_bundle_command(config, workbook, runs_root)
     # direct[0:2] is ``python bundle_run.py``.  The worker invokes bundle.cli in
     # process so its exact-workbook stage patch remains active.
     return [sys.executable, "-m", "face1_new.workbook_runner", "--workbook", str(workbook), "--", *direct[2:]]
@@ -604,14 +594,12 @@ class RunSession:
         if errors:
             raise ValueError("Cannot run invalid workbook: " + "; ".join(errors[:6]))
         root = Path(tempfile.mkdtemp(prefix="face1_new_run_"))
-        spec_dir, runs_root = root / "spec", root / "runs"
-        spec_dir.mkdir()
+        runs_root = root / "runs"
         runs_root.mkdir()
         db = slug_db(str(config.get("db") or project.name), "task")
         workbook = root / f"{db}.xlsx"
         workbook.write_bytes(project.to_xlsx_bytes())
-        (spec_dir / f"{db}.toml").write_text(spec_toml(project, str(config.get("analyzer") or "")), encoding="utf-8")
-        command = build_worker_command(config, workbook, spec_dir, runs_root)
+        command = build_worker_command(config, workbook, root, runs_root)
         return cls._spawn(command, runs_root / slug_id(str(config.get("runId") or "r1")), root)
 
     @classmethod
